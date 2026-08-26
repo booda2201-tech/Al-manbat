@@ -17,7 +17,7 @@
         </button>
       </header>
 
-      <div class="rail flex-1 overflow-y-auto">
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
         <ng-container *ngIf="rows().length; else emptyCart">
           <div class="border-b border-olive-800/10 bg-white px-5 py-4">
             <p class="text-[13px] text-ink-soft">{{ shipHint() }}</p>

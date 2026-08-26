@@ -69,10 +69,11 @@ export class AppComponent implements OnInit {
   payments = ['mada', 'VISA', 'Mastercard', 'Apple Pay', 'tabby', 'tamara'];
   bareLayout = false;
   focusLayout = false;
+  heroBleed = false;
 
   constructor(public locale: LocaleService, public store: StoreService, private router: Router) {
     effect((onCleanup) => {
-      const lock = this.store.menuOpen() || this.store.searchOpen();
+      const lock = this.store.menuOpen() || this.store.searchOpen() || this.store.cartOpen();
       document.body.style.overflow = lock ? 'hidden' : '';
       onCleanup(() => {
         document.body.style.overflow = '';
@@ -87,6 +88,7 @@ export class AppComponent implements OnInit {
       this.openMenu = null;
       this.store.menuOpen.set(false);
       this.store.searchOpen.set(false);
+      this.store.cartOpen.set(false);
       window.scrollTo({ top: 0 });
     });
   }
@@ -95,6 +97,14 @@ export class AppComponent implements OnInit {
     const path = url.split('?')[0];
     this.bareLayout = path === '/login' || path === '/signup';
     this.focusLayout = path === '/checkout';
+    this.heroBleed =
+      path === '/' ||
+      path === '' ||
+      path === '/about' ||
+      path === '/offers' ||
+      path === '/new' ||
+      path === '/maintenance' ||
+      path.startsWith('/category/');
   }
 
   searchHits() {

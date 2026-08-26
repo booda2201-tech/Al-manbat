@@ -20,18 +20,18 @@ import { applyFilters, emptyFilters, sortProducts, type FilterState } from '../c
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, IconComponent, SortSelectComponent, ProductCardComponent, CrumbsComponent, CountPipe, FilterPanelComponent],
   template: `
-    <div class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-10">
+    <div class="mx-auto max-w-shell px-4 pb-6 pt-3 lg:px-10 lg:py-10">
       <app-crumbs [trail]="trail"></app-crumbs>
-      <div class="mt-5 flex flex-wrap items-end justify-between gap-4">
+      <div class="mt-3 flex flex-wrap items-end justify-between gap-4 lg:mt-5">
         <div class="min-w-0">
           <h1 class="font-displayAr text-4xl leading-tight text-olive-800 lg:text-[46px]">{{ pageTitle }}</h1>
           <p class="mt-1.5 text-sm text-ink-muted">{{ visible.length | countLoc }} {{ locale.ui('results') }}</p>
         </div>
-        <div class="flex w-full min-w-0 items-center gap-2.5 sm:w-auto">
+        <div class="flex w-full min-w-0 items-stretch gap-2.5 lg:w-auto">
           <button type="button" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-olive-800/15 bg-white px-3.5 text-[13px] lg:hidden" (click)="openDrawer()">
             <app-icon name="sliders" [size]="16"></app-icon> {{ locale.ui('filters') }}
           </button>
-          <app-sort-select class="min-w-0 flex-1 sm:flex-none" [(value)]="sort" (valueChange)="refresh()"></app-sort-select>
+          <app-sort-select class="min-w-0 flex-1 lg:flex-none" [(value)]="sort" (valueChange)="refresh()"></app-sort-select>
         </div>
       </div>
       <div class="mt-8 grid gap-8 lg:grid-cols-[280px_1fr] lg:gap-10">
@@ -247,7 +247,7 @@ export class ListingComponent implements OnInit, OnDestroy {
           </div>
         </div>
       </section>
-      <section class="mx-auto max-w-shell px-4 py-14 lg:px-10">
+      <section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-14">
         <app-section-header [title]="locale.isAr() ? 'تسوق حسب القسم' : 'Shop by department'" [subtitle]="locale.tr(category.tagline)"></app-section-header>
         <div class="rail -mx-4 flex gap-4 overflow-x-auto px-4 pb-3 lg:mx-0 lg:grid lg:grid-cols-6 lg:overflow-visible lg:px-0">
           <a *ngFor="let sub of category.subcategories" [routerLink]="['/listing', category.slug]" [queryParams]="{ sub: sub.slug }" class="w-[150px] shrink-0 rounded-lg border border-olive-800/10 bg-white p-5 text-center hover:border-gold-400/50 lg:w-auto">
@@ -257,20 +257,20 @@ export class ListingComponent implements OnInit, OnDestroy {
           </a>
         </div>
       </section>
-      <section *ngIf="deals.length" class="grain relative bg-olive-800 py-14">
+      <section *ngIf="deals.length" class="grain relative bg-olive-800 py-8 lg:py-14">
         <div class="mx-auto max-w-shell px-4 lg:px-10">
-          <h2 class="mb-8 font-displayAr text-3xl text-sand-50">{{ locale.isAr() ? 'عروض القسم' : 'Highlighted offers' }}</h2>
+          <h2 class="mb-5 font-displayAr text-3xl text-sand-50 lg:mb-8">{{ locale.isAr() ? 'عروض القسم' : 'Highlighted offers' }}</h2>
           <div class="rounded-xl bg-sand-50 p-4"><app-product-rail [products]="deals"></app-product-rail></div>
         </div>
       </section>
-      <section class="mx-auto max-w-shell px-4 py-16 lg:px-10">
+      <section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-16">
         <app-section-header [title]="locale.isAr() ? 'منتجات مميزة' : 'Featured products'" [linkTo]="'/listing/' + category.slug" [linkLabel]="locale.ui('viewAll')"></app-section-header>
         <div class="grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-3 xl:grid-cols-4">
           <app-product-card *ngFor="let p of featured" [product]="p"></app-product-card>
         </div>
       </section>
-      <section class="border-y border-olive-800/10 bg-sand-100/50 py-12"><div class="mx-auto max-w-shell px-4 lg:px-10"><app-trust-strip></app-trust-strip></div></section>
-      <section class="mx-auto max-w-shell px-4 py-16 lg:px-10">
+      <section class="border-y border-olive-800/10 bg-sand-100/50 py-8 lg:py-12"><div class="mx-auto max-w-shell px-4 lg:px-10"><app-trust-strip></app-trust-strip></div></section>
+      <section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-16">
         <app-section-header [title]="locale.isAr() ? 'تابع التسوق' : 'Continue exploring'"></app-section-header>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <a *ngFor="let s of siblings" [routerLink]="['/category', s.slug]" class="group relative flex h-40 items-end overflow-hidden rounded-lg p-5">
@@ -315,7 +315,7 @@ export class CategoryComponent implements OnInit {
   standalone: true,
   imports: [CommonModule, FormsModule, ProductCardComponent, ProductRailComponent, SectionHeaderComponent, CountPipe],
   template: `
-    <div class="mx-auto max-w-shell px-4 py-9 lg:px-10">
+    <div class="mx-auto max-w-shell px-4 pb-6 pt-3 lg:px-10 lg:py-9">
       <p class="text-2xs uppercase tracking-[0.2em] text-gold-400">{{ locale.ui('search') }}</p>
       <h1 class="mt-3 font-displayAr text-4xl text-olive-800">“{{ query }}”</h1>
       <p class="mt-2 text-sm text-ink-muted">{{ results.length | countLoc }} {{ locale.ui('results') }}</p>
@@ -381,14 +381,14 @@ export class SearchComponent implements OnInit {
         </div>
       </div>
     </section>
-    <div class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-10">
+    <div class="mx-auto max-w-shell px-4 py-5 lg:px-10 lg:py-10">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <p class="text-sm text-ink-muted">{{ visible.length | countLoc }} {{ locale.ui('results') }}</p>
-        <div class="flex w-full min-w-0 items-center gap-2.5 sm:w-auto">
+        <div class="flex w-full min-w-0 items-stretch gap-2.5 lg:w-auto">
           <button type="button" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-olive-800/15 bg-white px-3.5 text-[13px] lg:hidden" (click)="openDrawer()">
             <app-icon name="sliders" [size]="16"></app-icon> {{ locale.ui('filters') }}
           </button>
-          <app-sort-select class="min-w-0 flex-1 sm:flex-none" [(value)]="sort" (valueChange)="refresh()"></app-sort-select>
+          <app-sort-select class="min-w-0 flex-1 lg:flex-none" [(value)]="sort" (valueChange)="refresh()"></app-sort-select>
         </div>
       </div>
       <div class="mt-8 grid gap-8 lg:grid-cols-[280px_1fr] lg:gap-10">

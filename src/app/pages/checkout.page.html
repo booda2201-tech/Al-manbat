@@ -13,18 +13,34 @@
 
   <div class="checkout-page__inner">
     <div class="checkout-progress lg:hidden">
-      <div class="flex items-end justify-between gap-3">
-        <div class="min-w-0">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-400">
-            {{ locale.isAr() ? 'خطوة ' + (step + 1) + ' من 4' : 'Step ' + (step + 1) + ' of 4' }}
-          </p>
-          <h1 class="mt-1 font-displayAr text-[26px] leading-tight text-olive-800">{{ currentStepName }}</h1>
-        </div>
-        <span class="shrink-0 rounded-full bg-olive-800 px-2.5 py-1 text-[11px] font-medium text-sand-50">{{ step + 1 }}/4</span>
-      </div>
-      <div class="checkout-progress__track" aria-hidden="true">
-        <span class="checkout-progress__fill" [style.width.%]="progressPct"></span>
-      </div>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-400">
+        {{ locale.isAr() ? 'خطوة ' + (step + 1) + ' من 4' : 'Step ' + (step + 1) + ' of 4' }}
+      </p>
+      <h1 class="mt-1 font-displayAr text-[26px] leading-tight text-olive-800">{{ currentStepName }}</h1>
+      <ol class="checkout-stepper" [attr.aria-label]="locale.isAr() ? 'خطوات الدفع' : 'Checkout steps'">
+        <li *ngFor="let s of steps; let i = index" class="checkout-stepper__item">
+          <span
+            *ngIf="i > 0"
+            class="checkout-stepper__line"
+            [class.is-on]="i <= step"
+            aria-hidden="true"
+          ></span>
+          <button
+            type="button"
+            class="checkout-stepper__btn"
+            (click)="goStep(i)"
+            [disabled]="i > step"
+            [attr.aria-current]="i === step ? 'step' : null"
+            [attr.aria-label]="s"
+          >
+          <span class="checkout-steps__dot" [ngClass]="stepCircleClass(i)">
+              <app-icon *ngIf="i < step" name="check" [size]="12"></app-icon>
+              <ng-container *ngIf="i >= step">{{ i + 1 }}</ng-container>
+            </span>
+            <span class="checkout-stepper__name" [ngClass]="stepLabelClass(i)">{{ s }}</span>
+          </button>
+        </li>
+      </ol>
     </div>
 
     <ol class="checkout-steps hidden lg:flex">
@@ -42,37 +58,6 @@
 
     <div class="mt-5 grid min-w-0 gap-6 lg:mt-9 lg:grid-cols-[1fr_320px] lg:gap-12">
       <div class="min-w-0">
-        <div class="checkout-bag lg:hidden">
-          <button type="button" class="checkout-bag__toggle" [attr.aria-expanded]="summaryOpen" (click)="toggleSummary()">
-            <span class="checkout-bag__thumbs">
-              <span *ngFor="let r of previewRows; let i = index" class="checkout-bag__thumb" [style.z-index]="previewRows.length - i">
-                <img [src]="r.product.image" alt="" />
-              </span>
-            </span>
-            <span class="min-w-0 flex-1 text-start">
-              <span class="block text-[13px] font-medium text-olive-800">{{ locale.ui('orderSummary') }}</span>
-              <span class="block text-[11px] text-ink-muted">{{ rows().length }} {{ locale.isAr() ? 'منتجات' : 'items' }}</span>
-            </span>
-            <span class="price text-base font-bold">{{ checkoutTotal() | sar }}</span>
-            <app-icon name="chevron-down" [size]="16" class="text-ink-muted transition-transform duration-200" [class.rotate-180]="summaryOpen"></app-icon>
-          </button>
-          <div *ngIf="summaryOpen" class="checkout-bag__panel">
-            <ul class="space-y-2.5">
-              <li *ngFor="let r of rows()" class="flex items-center gap-3">
-                <span class="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-sand-100">
-                  <img [src]="r.product.image" alt="" class="h-full w-full object-cover" />
-                </span>
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate text-[13px] font-medium text-olive-800">{{ locale.tr(r.product.name) }}</span>
-                  <span class="text-[11px] text-ink-muted">× {{ r.qty }}</span>
-                </span>
-                <span class="price shrink-0 text-[13px] font-semibold">{{ r.product.price * r.qty | sar }}</span>
-              </li>
-            </ul>
-            <ng-container *ngTemplateOutlet="totals"></ng-container>
-          </div>
-        </div>
-
         <section *ngIf="step === 0">
           <h1 class="checkout-title hidden font-displayAr lg:block">{{ locale.ui('stepAddress') }}</h1>
           <div class="checkout-seg" role="tablist">
@@ -262,18 +247,51 @@
     </div>
   </div>
 
+  <div *ngIf="summaryOpen" class="checkout-sheet-scrim lg:hidden" (click)="toggleSummary()"></div>
+  <aside *ngIf="summaryOpen" class="checkout-sheet lg:hidden" role="dialog" [attr.aria-label]="locale.ui('orderSummary')">
+    <header class="checkout-sheet__head">
+      <div>
+        <h2 class="text-[15px] font-semibold text-olive-800">{{ locale.ui('orderSummary') }}</h2>
+        <p class="mt-0.5 text-[12px] text-ink-muted">{{ itemsCountLabel }}</p>
+      </div>
+      <button type="button" class="checkout-sheet__close" (click)="toggleSummary()" [attr.aria-label]="locale.ui('close')">
+        <app-icon name="close" [size]="16"></app-icon>
+      </button>
+    </header>
+    <ul class="checkout-sheet__list">
+      <li *ngFor="let r of rows()" class="checkout-sheet__row">
+        <span class="checkout-sheet__img">
+          <img [src]="r.product.image" alt="" />
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="checkout-sheet__name">{{ locale.tr(r.product.name) }}</span>
+          <span class="checkout-sheet__meta">{{ r.qty }} × {{ r.product.price | sar }}</span>
+        </span>
+        <span class="checkout-sheet__line">{{ r.product.price * r.qty | sar }}</span>
+      </li>
+    </ul>
+    <div class="checkout-sheet__totals">
+      <ng-container *ngTemplateOutlet="totals"></ng-container>
+    </div>
+  </aside>
+
   <div class="checkout-dock lg:hidden">
     <button *ngIf="step > 0" type="button" class="checkout-dock__back" (click)="back()">
       {{ locale.ui('back') }}
     </button>
     <a *ngIf="step === 0" routerLink="/cart" class="checkout-dock__back">{{ locale.ui('back') }}</a>
+    <button type="button" class="checkout-dock__sum" [attr.aria-expanded]="summaryOpen" (click)="toggleSummary()">
+      <span class="checkout-dock__sum-kicker">{{ itemsCountLabel }}</span>
+      <span class="checkout-dock__sum-row">
+        <span class="price font-bold">{{ checkoutTotal() | sar }}</span>
+        <app-icon name="chevron-down" [size]="14" [class.rotate-180]="summaryOpen"></app-icon>
+      </span>
+    </button>
     <button *ngIf="step < 3" type="button" class="checkout-dock__next" (click)="advance()">
-      <span>{{ locale.ui('continue') }}</span>
-      <span class="checkout-dock__price">{{ checkoutTotal() | sar }}</span>
+      {{ locale.ui('continue') }}
     </button>
     <button *ngIf="step === 3" type="button" class="checkout-dock__place" [disabled]="placing" (click)="place()">
-      <span>{{ placing ? locale.ui('loading') : locale.ui('placeOrder') }}</span>
-      <span class="checkout-dock__price">{{ checkoutTotal() | sar }}</span>
+      {{ placing ? locale.ui('loading') : locale.ui('placeOrder') }}
     </button>
   </div>
 </div>

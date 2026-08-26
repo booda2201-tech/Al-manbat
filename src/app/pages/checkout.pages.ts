@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { productById, products } from '../data/products';
@@ -40,11 +40,10 @@ import { CrumbsComponent } from '../commerce/crumbs.component';
       <p class="mt-2 text-sm text-ink-muted">{{ shipHint() }}</p>
       <div class="mt-9 grid gap-10 lg:grid-cols-[1fr_380px]">
         <div>
-          <div class="cart-scroller max-h-[30rem] overflow-y-auto overscroll-contain">
-            <ul class="divide-y divide-olive-800/10 border-y border-olive-800/10">
+          <ul class="divide-y divide-olive-800/10 border-y border-olive-800/10">
               <li *ngFor="let row of rows()" class="flex gap-4 py-6">
               <a [routerLink]="['/product', row.product.slug]" class="h-28 w-28 shrink-0 overflow-hidden rounded-lg bg-sand-100">
-                <img [src]="row.product.image" [alt]="locale.tr(row.product.name)" class="h-full w-full object-cover" />
+                <img [src]="row.product.image" [alt]="locale.tr(row.product.name)" draggable="false" class="h-full w-full object-cover" />
               </a>
               <div class="flex min-w-0 flex-1 flex-col">
                 <p class="text-2xs uppercase tracking-[0.16em] text-gold-400">{{ locale.tr(row.product.brand) }}</p>
@@ -65,12 +64,11 @@ import { CrumbsComponent } from '../commerce/crumbs.component';
               </div>
             </li>
           </ul>
-          </div>
           <div *ngIf="saved().length" class="mt-10">
             <h2 class="text-sm font-semibold uppercase tracking-[0.14em]">{{ locale.ui('savedForLater') }}</h2>
             <ul class="mt-4 space-y-3">
               <li *ngFor="let p of saved()" class="flex items-center gap-4 rounded-lg border border-olive-800/10 bg-white p-3">
-                <img [src]="p.image" class="h-20 w-20 rounded object-cover" alt="" />
+                <img [src]="p.image" class="h-20 w-20 rounded object-cover" alt="" draggable="false" />
                 <div class="flex-1"><p class="text-sm font-medium">{{ locale.tr(p.name) }}</p><p class="price text-sm font-bold">{{ p.price | sar }}</p></div>
                 <button type="button" class="h-9 rounded-md border px-3 text-sm" (click)="store.moveToCart(p.id)">{{ locale.ui('moveToCart') }}</button>
               </li>
@@ -166,7 +164,7 @@ export class CartPageComponent {
   imports: [CommonModule, FormsModule, RouterLink, IconComponent, SarPipe, LogoComponent],
   templateUrl: './checkout.page.html',
 })
-export class CheckoutPageComponent {
+export class CheckoutPageComponent implements OnDestroy {
   step = 0;
   summaryOpen = false;
   guest = true;
@@ -205,11 +203,13 @@ export class CheckoutPageComponent {
   get currentStepName(): string {
     return this.steps[this.step];
   }
-  get progressPct(): number {
-    return ((this.step + 1) / 4) * 100;
-  }
   get previewRows() {
     return this.rows().slice(0, 3);
+  }
+  get itemsCountLabel(): string {
+    const n = this.rows().length;
+    if (this.locale.isAr()) return n === 1 ? 'منتج واحد' : n + ' منتجات';
+    return n === 1 ? '1 item' : n + ' items';
   }
   payIcon(id: string): string {
     if (id === 'apple' || id === 'tabby') return 'phone';
@@ -221,6 +221,10 @@ export class CheckoutPageComponent {
   }
   toggleSummary(): void {
     this.summaryOpen = !this.summaryOpen;
+    document.body.style.overflow = this.summaryOpen ? 'hidden' : '';
+  }
+  ngOnDestroy(): void {
+    document.body.style.overflow = '';
   }
   back(): void {
     this.step = Math.max(0, this.step - 1);
@@ -276,6 +280,7 @@ export class CheckoutPageComponent {
     this.emailError = '';
     this.step = Math.min(3, this.step + 1);
     this.summaryOpen = false;
+    document.body.style.overflow = '';
     this.scrollTop();
   }
   goStep(i: number): void {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, OnDestroy, computed, effect } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, computed, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { productById } from '../data/products';
 import { LocaleService } from '../services/locale.service';
@@ -15,7 +15,7 @@ import { IconComponent } from './icon.component';
   imports: [CommonModule, RouterLink, IconComponent, QtyComponent, SarPipe],
   templateUrl: './cart-drawer.component.html',
 })
-export class CartDrawerComponent implements OnDestroy {
+export class CartDrawerComponent {
   rows = computed(() =>
     this.store
       .lines()
@@ -29,14 +29,9 @@ export class CartDrawerComponent implements OnDestroy {
     private cdr: ChangeDetectorRef
   ) {
     effect(() => {
-      document.body.style.overflow = this.store.cartOpen() ? 'hidden' : '';
       this.store.lines();
       this.cdr.markForCheck();
     });
-  }
-
-  ngOnDestroy(): void {
-    document.body.style.overflow = '';
   }
 
   @HostListener('document:keydown.escape')

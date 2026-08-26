@@ -38,19 +38,13 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
       getComputedStyle(el).borderTopLeftRadius || (mode === 'panel' ? '24px' : '12px');
 
     this.mm = gsap.matchMedia();
+    this.mm.add('(max-width: 1023px), (prefers-reduced-motion: reduce)', () => {
+      gsap.set(el, { clipPath: 'none', clearProps: 'clipPath' });
+      if (media) gsap.set(media, { scale: 1, clearProps: 'transform' });
+    });
     this.mm.add(
-      {
-        motion: '(prefers-reduced-motion: no-preference)',
-        reduce: '(prefers-reduced-motion: reduce)',
-      },
-      (context) => {
-        const reduce = Boolean((context.conditions as { reduce?: boolean } | undefined)?.reduce);
-        if (reduce) {
-          gsap.set(el, { clipPath: `inset(0% 0% 0% 0% round ${radius})` });
-          if (media) gsap.set(media, { scale: 1 });
-          return;
-        }
-
+      '(min-width: 1024px) and (prefers-reduced-motion: no-preference)',
+      () => {
         const fromClip =
           mode === 'panel'
             ? `inset(46% 0% 46% 0% round ${radius})`
@@ -79,8 +73,7 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
             img.addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
           }
         });
-      },
-      el
+      }
     );
   }
 

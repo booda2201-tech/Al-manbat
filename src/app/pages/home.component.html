@@ -118,13 +118,13 @@
     </div>
   </div>
   <div class="border-b border-olive-800/10 bg-sand-100/60">
-    <div class="mx-auto max-w-shell px-4 py-5 lg:px-10 lg:py-8">
+    <div class="mx-auto max-w-shell px-4 py-3.5 lg:px-10 lg:py-8">
       <app-trust-strip></app-trust-strip>
     </div>
   </div>
 </section>
 
-<section class="mx-auto max-w-shell px-4 py-16 lg:px-10 lg:py-24">
+<section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-24">
   <app-section-header [title]="locale.ui('featuredCategories')" [subtitle]="locale.isAr() ? 'من العصرة إلى المونة. ابدأ من الزيت، أو الزيتون، أو المخلل.' : 'From the press to the pantry. Start with oil, olives, or pickles.'"></app-section-header>
   <div class="grid gap-4 lg:grid-cols-3 lg:grid-rows-2">
     <a [routerLink]="['/category', lead.slug]" appScrollOpen class="group relative flex h-full min-h-[300px] flex-col justify-end overflow-hidden rounded-xl p-8 lg:col-span-2 lg:row-span-2 lg:min-h-[520px] lg:p-10">
@@ -155,14 +155,14 @@
   </div>
 </section>
 
-<section class="mx-auto max-w-shell px-4 pb-16 lg:px-10 lg:pb-20">
+<section class="mx-auto max-w-shell px-4 pb-8 lg:px-10 lg:pb-20">
   <app-section-header [title]="locale.ui('bestSellers')" [subtitle]="locale.isAr() ? 'ما يعود إلى السلة أكثر من غيره: الزيت، الزيتون، ومخلل البيت.' : 'What returns to the cart most: the oil, the olives, and the house pickle.'" linkTo="/listing/all" [linkLabel]="locale.ui('viewAll')"></app-section-header>
   <app-product-rail [products]="bestSellers"></app-product-rail>
 </section>
 
-<section class="grain relative bg-olive-800 py-14 lg:py-20">
+<section class="grain relative bg-olive-800 py-8 lg:py-20">
   <div class="mx-auto max-w-shell px-4 lg:px-10">
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-5">
+    <div class="mb-5 flex flex-wrap items-end justify-between gap-4 lg:mb-8 lg:gap-5">
       <div>
         <span class="inline-flex items-center gap-2 text-2xs uppercase tracking-[0.24em] text-gold-300">
           <app-icon name="zap" [size]="14"></app-icon>
@@ -186,7 +186,7 @@
   </div>
 </section>
 
-<section class="mx-auto max-w-shell px-4 py-16 lg:px-10 lg:py-24">
+<section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-24">
   <div appScrollOpen="panel" class="overflow-hidden rounded-2xl lg:rounded-3xl">
     <div class="grid min-h-[420px] lg:min-h-[640px] lg:grid-cols-2">
       <div class="relative min-h-[280px] overflow-hidden">
@@ -228,7 +228,7 @@
   </div>
 </section>
 
-<section *ngFor="let spot of spotlights" class="py-10 lg:py-24" [ngClass]="spotlightSectionClass(spot.dark)">
+<section *ngFor="let spot of spotlights" class="py-6 lg:py-24" [ngClass]="spotlightSectionClass(spot.dark)">
   <div class="mx-auto max-w-shell px-4 lg:px-10">
     <div class="grid gap-6 lg:gap-14" [ngClass]="spot.flip ? 'lg:grid-cols-[1fr_340px]' : 'lg:grid-cols-[340px_1fr]'">
       <div class="lg:sticky lg:top-28" [ngClass]="spot.flip ? 'lg:order-2' : ''">
@@ -267,7 +267,7 @@
   </div>
 </section>
 
-<section class="mx-auto max-w-shell px-4 py-16 lg:px-10 lg:py-20">
+<section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-20">
   <app-section-header [title]="locale.ui('newArrivals')" [subtitle]="locale.isAr() ? 'إضافات هذا الأسبوع، بعد مرورها على معايير الاختيار.' : 'This week’s additions, after passing our curation standard.'" linkTo="/new" [linkLabel]="locale.ui('viewAll')"></app-section-header>
   <app-product-rail [products]="newArrivals"></app-product-rail>
 </section>

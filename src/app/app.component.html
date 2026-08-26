@@ -1,6 +1,9 @@
 <a class="skip-link" href="#main">{{ locale.isAr() ? 'تخطي إلى المحتوى' : 'Skip to content' }}</a>
 <div class="flex min-h-screen w-full min-w-0 flex-col bg-sand-50" [attr.dir]="locale.dir()" [class.font-ar]="locale.isAr()">
-  <div *ngIf="!bareLayout && !focusLayout" class="sticky top-0 z-50">
+  <div
+    *ngIf="!bareLayout && !focusLayout"
+    class="z-50 max-lg:absolute max-lg:inset-x-0 max-lg:top-0 lg:sticky lg:top-0"
+  >
   <div class="grain relative bg-olive-800 text-sand-100">
     <div class="mx-auto flex h-10 max-w-shell items-center gap-4 px-4 text-[11px] lg:px-10 lg:text-xs">
       <div class="hidden shrink-0 items-center gap-2 lg:flex">
@@ -35,9 +38,15 @@
     </div>
   </div>
 
-  <header class="bg-sand-50/95 backdrop-blur" [class.shadow-md]="true" (mouseleave)="openMenu = null">
+  <header class="bg-transparent shadow-none lg:bg-sand-50/95 lg:backdrop-blur lg:shadow-md" (mouseleave)="openMenu = null">
     <div class="mx-auto flex h-[72px] max-w-shell items-center gap-3 px-4 lg:gap-4 lg:px-10">
-      <button type="button" class="-ms-2 rounded p-2 text-olive-700 lg:hidden" (click)="store.menuOpen.set(true)" [attr.aria-label]="locale.ui('menu')">
+      <button
+        type="button"
+        class="-ms-2 rounded p-2 lg:hidden"
+        [ngClass]="heroBleed ? 'text-sand-50' : 'text-olive-700'"
+        (click)="store.menuOpen.set(true)"
+        [attr.aria-label]="locale.ui('menu')"
+      >
         <app-icon name="menu"></app-icon>
       </button>
       <app-logo class="ms-auto lg:ms-0" size="md"></app-logo>
@@ -151,13 +160,19 @@
   </header>
   </div>
 
-  <main id="main" class="min-w-0 flex-1" [class.pb-24]="!bareLayout && !focusLayout" [class.lg:pb-0]="!bareLayout">
+  <main
+    id="main"
+    class="min-w-0 flex-1"
+    [class.pb-24]="!bareLayout && !focusLayout"
+    [class.lg:pb-0]="!bareLayout"
+    [class.max-lg:pt-[7rem]]="!bareLayout && !focusLayout && !heroBleed"
+  >
     <router-outlet></router-outlet>
   </main>
 
-  <footer *ngIf="!bareLayout && !focusLayout" class="grain relative mt-20 bg-olive-800 pb-24 text-sand-100 lg:pb-0">
+  <footer *ngIf="!bareLayout && !focusLayout" class="grain relative mt-8 bg-olive-800 pb-24 text-sand-100 lg:mt-20 lg:pb-0">
     <div class="mx-auto max-w-shell px-4 lg:px-10">
-      <div class="grid gap-10 border-b border-sand-100/10 py-14 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr]">
+      <div class="grid gap-8 border-b border-sand-100/10 py-9 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-10 lg:py-14">
         <div>
           <app-logo tone="light" size="md"></app-logo>
           <p class="mt-5 max-w-xs text-[13px] leading-relaxed text-sand-100/70">{{ locale.isAr() ? 'متجر الزيتون والمخللات — من بستان الجوف إلى مائدة بيتك، باختيار دقيق لكل دفعة.' : 'An olive and pickle house — from the Al-Jouf grove to your table, every batch chosen with care.' }}</p>
@@ -171,7 +186,7 @@
           <a *ngFor="let l of col.links" [routerLink]="l.to" class="mb-2.5 block text-[13px] text-sand-100/75 hover:text-gold-300">{{ locale.tr(l.label) }}</a>
         </div>
       </div>
-      <div class="grid gap-8 border-b border-sand-100/10 py-12 lg:grid-cols-[1.2fr_1fr]">
+      <div class="grid gap-8 border-b border-sand-100/10 py-8 lg:grid-cols-[1.2fr_1fr] lg:py-12">
         <div>
           <h2 class="font-display text-3xl text-sand-50">{{ locale.ui('newsletter') }}</h2>
           <p class="mt-2 text-[13px] text-sand-100/70">{{ locale.ui('newsletterHint') }}</p>
@@ -291,8 +306,10 @@
         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="heart" [size]="18"></app-icon></span>
         {{ locale.ui('wishlist') }}
       </a>
-      <a routerLink="/compare" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="store.menuOpen.set(false)">
-        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="scale" [size]="18"></app-icon></span>
+      <a routerLink="/compare" routerLinkActive="text-gold-400" class="relative flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="store.menuOpen.set(false)">
+        <span class="relative flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="scale" [size]="18"></app-icon>
+          <span *ngIf="store.compare().length" class="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-400 px-1 text-[9px] font-bold text-olive-900">{{ store.compare().length }}</span>
+        </span>
         {{ locale.ui('compare') }}
       </a>
       <button type="button" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="locale.toggle()">

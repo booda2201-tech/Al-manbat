@@ -109,7 +109,7 @@ export class QtyComponent {
       <div class="relative overflow-hidden bg-sand-100">
         <a [routerLink]="['/product', product.slug]" class="block" tabindex="-1" aria-hidden="true">
           <div class="aspect-[4/5] w-full overflow-hidden">
-            <img [src]="product.image" alt="" class="h-full w-full object-cover transition-transform duration-[600ms] ease-premium group-hover:scale-[1.06]" [class.opacity-60]="soldOut" />
+            <img [src]="product.image" alt="" draggable="false" class="h-full w-full object-cover transition-transform duration-[600ms] ease-premium group-hover:scale-[1.06]" [class.opacity-60]="soldOut" />
           </div>
         </a>
         <div class="absolute start-3 top-3 flex flex-col gap-1.5">
@@ -236,7 +236,7 @@ export class ProductCardComponent {
   standalone: true,
   imports: [CommonModule, RouterLink, IconComponent],
   template: `
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-3 lg:mb-8 lg:gap-4">
       <div class="max-w-xl">
         <h2 class="font-display text-3xl leading-tight text-olive-800 md:text-[40px]">{{ title }}</h2>
         <p *ngIf="subtitle" class="mt-2 text-sm leading-relaxed text-ink-muted md:text-[15px]">{{ subtitle }}</p>
@@ -271,6 +271,7 @@ export class SectionHeaderComponent {
         (pointermove)="onPointerMove($event)"
         (pointerup)="onPointerUp($event)"
         (pointercancel)="onPointerUp($event)"
+        (lostpointercapture)="onPointerUp($event)"
       >
         <div *ngFor="let p of products" class="product-rail__item">
           <app-product-card [product]="p"></app-product-card>
@@ -322,10 +323,12 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
     this.timer = window.setTimeout(() => this.onScroll(), 400);
     const el = this.rail?.nativeElement;
     if (!el) return;
-    this.wheelBound = (ev: WheelEvent) => this.onWheel(ev);
     this.clickBound = (ev: MouseEvent) => this.onRailClick(ev);
-    el.addEventListener('wheel', this.wheelBound, { passive: false });
     el.addEventListener('click', this.clickBound, true);
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      this.wheelBound = (ev: WheelEvent) => this.onWheel(ev);
+      el.addEventListener('wheel', this.wheelBound, { passive: false });
+    }
   }
 
   ngOnDestroy(): void {
@@ -354,7 +357,7 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
   }
 
   onPointerDown(ev: PointerEvent): void {
-    if (ev.pointerType === 'touch' || ev.button !== 0) return;
+    if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
     const el = this.rail?.nativeElement;
     if (!el || el.scrollWidth <= el.clientWidth + 1) return;
     this.dragging = true;

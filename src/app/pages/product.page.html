@@ -105,7 +105,7 @@
     </div>
   </section>
 
-  <section class="border-y border-olive-800/10 bg-sand-100/50 py-10 md:py-12">
+  <section class="border-y border-olive-800/10 bg-sand-100/50 py-7 md:py-12">
     <div class="mx-auto max-w-shell px-4 md:px-6 lg:px-10">
       <h2 class="font-display text-2xl text-olive-800">{{ locale.ui('boughtTogether') }}</h2>
       <div class="mt-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -129,7 +129,7 @@
     </div>
   </section>
 
-  <section id="pdp-reviews" class="mx-auto max-w-shell scroll-mt-32 px-4 py-10 md:px-6 md:py-12 lg:px-10 lg:py-16">
+  <section id="pdp-reviews" class="mx-auto max-w-shell scroll-mt-32 px-4 py-7 md:px-6 md:py-12 lg:px-10 lg:py-16">
     <div class="no-rail flex gap-1 overflow-x-auto border-b border-olive-800/10" role="tablist">
       <button type="button" role="tab" class="relative shrink-0 px-3 py-3.5 text-sm font-medium transition-colors duration-200 ease-premium md:px-4" [ngClass]="tab === 'description' ? 'text-olive-800' : 'text-ink-muted hover:text-olive-700'" [attr.aria-selected]="tab === 'description'" (click)="tab = 'description'">
         {{ locale.ui('description') }}
@@ -219,7 +219,7 @@
     </div>
   </section>
 
-  <section class="mx-auto max-w-shell px-4 pb-12 md:px-6 md:pb-16 lg:px-10">
+  <section class="mx-auto max-w-shell px-4 pb-8 md:px-6 md:pb-16 lg:px-10">
     <app-section-header [title]="locale.ui('faq')"></app-section-header>
     <div class="max-w-3xl divide-y divide-olive-800/10 border-y border-olive-800/10">
       <div *ngFor="let f of faqs; let i = index">
@@ -236,7 +236,7 @@
     </div>
   </section>
 
-  <section class="mx-auto max-w-shell px-4 pb-16 md:px-6 md:pb-20 lg:px-10">
+  <section class="mx-auto max-w-shell px-4 pb-8 md:px-6 md:pb-20 lg:px-10">
     <app-section-header [title]="locale.ui('relatedProducts')" [linkTo]="'/listing/' + product.category" [linkLabel]="locale.ui('viewAll')"></app-section-header>
     <app-product-rail [products]="related"></app-product-rail>
   </section>

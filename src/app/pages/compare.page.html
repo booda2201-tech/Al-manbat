@@ -1,4 +1,4 @@
-<div class="mx-auto max-w-shell px-4 py-9 lg:px-10">
+<div class="mx-auto max-w-shell px-4 pb-6 pt-3 lg:px-10 lg:py-9">
   <app-crumbs [trail]="trail"></app-crumbs>
 
   <ng-container *ngIf="items() as list">
@@ -27,17 +27,17 @@
     </div>
 
     <div *ngIf="list.length">
-      <div class="mt-5 flex flex-wrap items-end justify-between gap-4">
+      <div class="mt-3 flex flex-col gap-3 md:mt-5 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4">
         <div>
-          <h1 class="font-displayAr text-4xl leading-[1.35] text-olive-800 lg:text-[46px]">{{ locale.ui('compare') }}</h1>
-          <p class="mt-2 text-sm text-ink-muted">{{ list.length | countLoc }} {{ locale.isAr() ? 'من أصل ٤ منتجات' : 'of 4 products' }}</p>
+          <h1 class="font-displayAr text-[26px] leading-tight text-olive-800 md:text-4xl lg:text-[46px]">{{ locale.ui('compare') }}</h1>
+          <p class="mt-1 text-sm text-ink-muted md:mt-2">{{ list.length | countLoc }} {{ locale.isAr() ? 'من أصل ٤ منتجات' : 'of 4 products' }}</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2.5">
+        <div class="compare-actions">
           <button
             *ngIf="list.length > 1"
             type="button"
-            class="inline-flex h-10 items-center rounded-full border px-3.5 text-[13px] font-medium transition-colors duration-150 ease-premium"
-            [ngClass]="diffOnly() ? 'border-olive-700 bg-olive-800 text-sand-50' : 'border-olive-800/15 bg-white text-olive-800 hover:border-gold-400'"
+            class="compare-actions__chip"
+            [class.is-on]="diffOnly()"
             (click)="diffOnly.set(!diffOnly())"
           >
             {{ locale.ui('compareDiffs') }}
@@ -45,24 +45,20 @@
           <button
             *ngIf="list.length < 4"
             type="button"
-            class="inline-flex h-10 items-center gap-1.5 rounded-full bg-gold-400 px-4 text-[13px] font-medium text-olive-900 transition-colors duration-150 ease-premium hover:bg-gold-300"
+            class="compare-actions__add"
             (click)="openPicker()"
           >
             <app-icon name="plus" [size]="14"></app-icon>
             {{ locale.ui('addProduct') }}
           </button>
-          <button
-            type="button"
-            class="h-10 px-2 text-[13px] font-medium text-ink-muted transition-colors duration-150 ease-premium hover:text-state-danger"
-            (click)="store.clearCompare()"
-          >
+          <button type="button" class="compare-actions__clear" (click)="store.clearCompare()">
             {{ locale.ui('clearAll') }}
           </button>
         </div>
       </div>
 
-      <div class="compare-scroll mt-8">
-        <div class="compare-stack" [style.--n]="columns().length">
+      <div class="compare-scroll mt-4 md:mt-8">
+        <div class="compare-stack" [ngStyle]="{ '--n': columns().length }">
           <div class="compare-head">
             <div class="compare-head-spacer" aria-hidden="true"></div>
             <div *ngFor="let p of columns()" class="compare-col">
@@ -84,22 +80,20 @@
                   <app-icon name="close" [size]="14"></app-icon>
                 </button>
                 <div class="compare-card__body">
-                  <p class="text-2xs uppercase tracking-[0.16em] text-gold-400">{{ locale.tr(p.brand) }}</p>
-                  <a [routerLink]="['/product', p.slug]" class="compare-card__name transition-colors duration-150 ease-premium hover:text-olive-600">
+                  <a [routerLink]="['/product', p.slug]" class="compare-card__name">
                     {{ locale.tr(p.name) }}
                   </a>
-                  <div class="mt-auto pt-3">
-                    <app-price-block [price]="p.price" [compareAt]="p.compareAt" [stack]="true"></app-price-block>
-                    <button
-                      type="button"
-                      class="mt-3.5 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-gold-400 px-3.5 text-[13px] font-medium tracking-tight text-olive-900 transition-colors duration-200 ease-premium hover:bg-gold-300 disabled:cursor-not-allowed disabled:bg-olive-200 disabled:text-olive-500"
-                      [disabled]="p.stock === 0"
-                      (click)="addToCart(p.id)"
-                    >
-                      <app-icon name="cart" [size]="14"></app-icon>
-                      {{ p.stock === 0 ? locale.ui('outOfStock') : locale.ui('addToCart') }}
-                    </button>
-                  </div>
+                  <p class="compare-card__price">{{ p.price | sar }}</p>
+                  <button
+                    type="button"
+                    class="compare-card__cart"
+                    [disabled]="p.stock === 0"
+                    (click)="addToCart(p.id)"
+                  >
+                    <app-icon name="cart" [size]="14"></app-icon>
+                    <span class="compare-card__cart-short">{{ p.stock === 0 ? locale.ui('outOfStock') : (locale.isAr() ? 'أضف' : 'Add') }}</span>
+                    <span class="compare-card__cart-full">{{ p.stock === 0 ? locale.ui('outOfStock') : locale.ui('addToCart') }}</span>
+                  </button>
                 </div>
               </article>
             </div>
@@ -116,7 +110,7 @@
             <div *ngIf="showRatingRow()" class="compare-row">
               <div class="compare-axis">{{ locale.ui('rating') }}</div>
               <div *ngFor="let p of columns()" class="compare-cell" [class.is-best]="isBestRating(p)">
-                <app-rating [rating]="p.rating" [reviews]="p.reviews"></app-rating>
+                <app-rating [rating]="p.rating" size="sm"></app-rating>
                 <p *ngIf="isBestRating(p)" class="compare-flag mt-2">{{ locale.ui('topRated') }}</p>
               </div>
             </div>

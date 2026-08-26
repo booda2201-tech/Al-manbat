@@ -427,9 +427,9 @@ export class AccountPageComponent implements OnInit {
   standalone: true,
   imports: [CommonModule, RouterLink, ProductCardComponent, ProductRailComponent, SectionHeaderComponent, CrumbsComponent, CountPipe, SarPipe, IconComponent],
   template: `
-    <div class="wishlist-page mx-auto max-w-shell px-4 py-6 md:py-9 lg:px-10" [class.has-dock]="items().length > 0">
+    <div class="wishlist-page mx-auto max-w-shell px-4 pb-5 pt-2 md:py-9 lg:px-10" [class.has-dock]="items().length > 0">
       <app-crumbs [trail]="trail"></app-crumbs>
-      <div class="mt-4 flex items-end justify-between gap-4 md:mt-5">
+      <div class="mt-2.5 flex items-end justify-between gap-4 md:mt-5">
         <div>
           <h1 class="font-displayAr text-[28px] leading-tight text-olive-800 md:text-4xl lg:text-[46px]">{{ locale.ui('wishlist') }}</h1>
           <p class="mt-1 text-sm text-ink-muted">{{ items().length | countLoc }} {{ savedLabel }}</p>
