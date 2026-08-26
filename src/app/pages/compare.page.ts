@@ -1,0 +1,181 @@
+import { CommonModule } from '@angular/common';
+import { Component, computed, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import {
+  PriceBlockComponent,
+  ProductRailComponent,
+  RatingComponent,
+  SectionHeaderComponent,
+  StockComponent,
+} from '../commerce/commerce.component';
+import { CrumbsComponent } from '../commerce/crumbs.component';
+import { categoryBySlug } from '../data/categories';
+import { byCategory, productById, products } from '../data/products';
+import { LocaleService } from '../services/locale.service';
+import { StoreService } from '../services/store.service';
+import type { Product } from '../types';
+import { IconComponent } from '../ui/icon.component';
+import { CountPipe, SarPipe } from '../utils/sar.pipe';
+
+@Component({
+  selector: 'app-compare',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterLink,
+    IconComponent,
+    CrumbsComponent,
+    RatingComponent,
+    StockComponent,
+    PriceBlockComponent,
+    ProductRailComponent,
+    SectionHeaderComponent,
+    SarPipe,
+    CountPipe,
+  ],
+  templateUrl: './compare.page.html',
+})
+export class ComparePageComponent {
+  pickerOpen = signal(false);
+  pickerQuery = signal('');
+  diffOnly = signal(false);
+
+  items = computed(() =>
+    this.store.compare().map(productById).filter((p): p is Product => Boolean(p))
+  );
+
+  columns = computed(() => this.items());
+
+  specLabels = computed(() => {
+    const loc = this.locale.locale();
+    const labels = Array.from(new Set(this.items().flatMap((p) => p.specs.map((s) => s.label[loc]))));
+    if (!this.diffOnly()) return labels;
+    return labels.filter((label) => this.valuesDiffer(this.items().map((p) => this.specValue(p, label) ?? '')));
+  });
+
+  suggestions = computed(() => this.pool().slice(0, 8));
+
+  candidates = computed(() => {
+    const q = this.pickerQuery().trim().toLowerCase();
+    const pool = this.pool();
+    if (!q) return pool.slice(0, 12);
+    return pool
+      .filter((p) => `${p.name.ar} ${p.name.en} ${p.brand.ar} ${p.brand.en}`.toLowerCase().includes(q))
+      .slice(0, 12);
+  });
+
+  constructor(public locale: LocaleService, public store: StoreService) {}
+
+  get trail() {
+    return [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.ui('compare') }];
+  }
+
+  specValue(product: Product, label: string): string | null {
+    const loc = this.locale.locale();
+    const match = product.specs.find((s) => s.label[loc] === label);
+    return match ? this.locale.tr(match.value) : null;
+  }
+
+  categoryName(product: Product): string {
+    const cat = categoryBySlug(product.category);
+    return cat ? this.locale.tr(cat.name) : '';
+  }
+
+  badgeTone(b: Product['badges'][number]): string {
+    const map: Record<string, string> = {
+      new: 'bg-olive-600 text-sand-50',
+      bestseller: 'bg-olive-800 text-sand-100',
+      deal: 'bg-gold-400 text-olive-900',
+      organic: 'bg-olive-600 text-sand-50',
+      exclusive: 'bg-clay-400 text-sand-50',
+    };
+    return map[b] ?? 'bg-olive-600 text-sand-50';
+  }
+
+  badgeLabel(b: Product['badges'][number]): string {
+    const map: Record<string, { ar: string; en: string }> = {
+      new: { ar: 'جديد', en: 'New' },
+      bestseller: { ar: 'الأكثر مبيعاً', en: 'Best seller' },
+      deal: { ar: 'عرض', en: 'Deal' },
+      organic: { ar: 'عضوي', en: 'Organic' },
+      exclusive: { ar: 'حصري', en: 'Exclusive' },
+    };
+    return map[b]?.[this.locale.locale()] ?? b;
+  }
+
+  isBestPrice(product: Product): boolean {
+    const items = this.items();
+    if (items.length < 2) return false;
+    const min = Math.min(...items.map((p) => p.price));
+    return product.price === min && this.valuesDiffer(items.map((p) => String(p.price)));
+  }
+
+  isBestRating(product: Product): boolean {
+    const items = this.items();
+    if (items.length < 2) return false;
+    const max = Math.max(...items.map((p) => p.rating));
+    return product.rating === max && this.valuesDiffer(items.map((p) => String(p.rating)));
+  }
+
+  showPriceRow(): boolean {
+    return this.showFixedRow(this.items().map((p) => String(p.price)));
+  }
+
+  showRatingRow(): boolean {
+    return this.showFixedRow(this.items().map((p) => String(p.rating)));
+  }
+
+  showStockRow(): boolean {
+    return this.showFixedRow(this.items().map((p) => String(p.stock > 0)));
+  }
+
+  showShipRow(): boolean {
+    return this.showFixedRow(this.items().map((p) => `${p.freeShipping}:${p.deliveryDays}`));
+  }
+
+  specCellClass(product: Product, label: string): string {
+    const value = this.specValue(product, label);
+    if (!value) return 'is-same';
+    return this.specDiffers(label) ? 'is-diff' : 'is-same';
+  }
+
+  specDiffers(label: string): boolean {
+    return this.valuesDiffer(this.items().map((p) => this.specValue(p, label) ?? ''));
+  }
+
+  openPicker(): void {
+    if (this.items().length >= 4) return;
+    this.pickerQuery.set('');
+    this.pickerOpen.set(true);
+  }
+
+  pick(id: string): void {
+    this.store.toggleCompare(id);
+    this.pickerOpen.set(false);
+  }
+
+  addToCart(id: string): void {
+    this.store.addToCart(id);
+  }
+
+  private pool(): Product[] {
+    const taken = new Set(this.store.compare());
+    const lead = this.items()[0];
+    const source = lead ? [...byCategory(lead.category), ...products] : products;
+    const seen = new Set<string>();
+    return source.filter((p) => {
+      if (taken.has(p.id) || seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }
+
+  private showFixedRow(values: string[]): boolean {
+    if (!this.diffOnly() || this.items().length < 2) return true;
+    return this.valuesDiffer(values);
+  }
+
+  private valuesDiffer(values: string[]): boolean {
+    return new Set(values).size > 1;
+  }
+}

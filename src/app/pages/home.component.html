@@ -1,0 +1,273 @@
+<section class="relative">
+  <div
+    class="hero-stage"
+    role="region"
+    [attr.aria-roledescription]="locale.isAr() ? 'معرض إعلانات' : 'advertisement carousel'"
+    [attr.aria-label]="locale.isAr() ? 'حملات المنبت' : 'Almanbat campaigns'"
+    (mouseenter)="pauseHero()"
+    (mouseleave)="resumeHero()"
+  >
+    <div class="absolute inset-0">
+      <img
+        *ngFor="let ad of ads; trackBy: trackAd; let i = index"
+        [src]="ad.image"
+        alt=""
+        [ngClass]="heroImgClass(i === heroIndex)"
+        [style.animation-play-state]="heroPlayState()"
+      />
+    </div>
+    <div class="hero-grain pointer-events-none absolute inset-0"></div>
+    <div class="hero-scrim-mobile pointer-events-none absolute inset-0 lg:hidden"></div>
+    <div class="pointer-events-none absolute inset-0 hidden lg:block" [ngClass]="heroScrimClass()"></div>
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 hidden h-40 bg-gradient-to-t from-olive-900/80 to-transparent lg:block"></div>
+
+    <div class="absolute inset-0 flex items-end lg:items-center">
+      <div class="mx-auto w-full max-w-shell px-4 pb-[5.25rem] pt-10 lg:px-10 lg:pb-0 lg:pt-0">
+        <div *ngFor="let ad of ads; trackBy: trackAd; let i = index">
+          <div *ngIf="i === heroIndex" class="hero-copy-in hero-copy max-w-xl">
+            <span *ngIf="ad.badge" class="inline-flex items-center gap-2 rounded-full border border-gold-300/50 bg-olive-900/55 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-gold-300 backdrop-blur-sm lg:px-3 lg:text-2xs lg:tracking-[0.22em]">
+              <span class="h-1 w-1 rounded-full bg-gold-300"></span>
+              {{ locale.tr(ad.badge) }}
+            </span>
+            <p class="hero-kicker mt-3 text-[10px] uppercase tracking-[0.22em] lg:mt-5 lg:text-2xs lg:tracking-[0.3em]">{{ locale.tr(ad.eyebrow) }}</p>
+            <h1 class="mt-3 whitespace-pre-line font-displayAr text-[32px] leading-[1.4] sm:text-[40px] lg:mt-4 lg:text-[68px] lg:leading-[1.25]">{{ locale.tr(ad.heading) }}</h1>
+            <p class="hero-lede mt-3 max-w-lg text-[14px] leading-relaxed sm:text-[15px] lg:mt-6 lg:text-base">{{ locale.tr(ad.body) }}</p>
+            <div class="mt-5 flex flex-col gap-2.5 sm:mt-9 sm:flex-row sm:flex-wrap sm:gap-3">
+              <a [routerLink]="ad.primary.to" class="hero-cta bg-gold-400 text-olive-900 shadow-gold transition-[background-color,transform] duration-200 ease-premium hover:bg-gold-300 active:scale-[0.985]">
+                {{ locale.tr(ad.primary.label) }}
+                <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
+              </a>
+              <a *ngIf="ad.secondary" [routerLink]="ad.secondary.to" class="hero-cta border border-sand-100/35 text-sand-100 backdrop-blur-sm transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300">
+                {{ locale.tr(ad.secondary.label) }}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a
+      [routerLink]="nextAd.primary.to"
+      class="group absolute bottom-28 end-6 z-10 hidden w-[240px] overflow-hidden rounded-xl border border-sand-100/20 bg-sand-50/10 shadow-lg backdrop-blur-md transition-[transform,border-color] duration-300 ease-premium hover:-translate-y-0.5 hover:border-gold-300/50 lg:block"
+    >
+      <span class="flex gap-3 p-3">
+        <span class="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+          <img [src]="nextAd.image" alt="" class="h-full w-full object-cover" />
+        </span>
+        <span class="min-w-0 self-center">
+          <span class="block text-2xs uppercase tracking-[0.2em] text-gold-300">{{ locale.isAr() ? 'التالي' : 'Up next' }}</span>
+          <span class="mt-1 block truncate text-[13px] font-medium text-sand-50">{{ locale.tr(nextAd.eyebrow) }}</span>
+        </span>
+      </span>
+    </a>
+
+    <div class="absolute inset-x-0 bottom-0 z-10">
+      <div class="mx-auto flex w-full max-w-shell items-center justify-between gap-3 px-4 pb-4 lg:items-end lg:gap-6 lg:px-10 lg:pb-6">
+        <div class="min-w-0 flex-1">
+          <div class="mb-2 flex items-baseline gap-2 font-display text-[12px] tabular-nums text-sand-100/80 lg:mb-3 lg:text-[13px]">
+            <span class="text-sand-50">{{ padSlide(heroIndex) }}</span>
+            <span class="text-sand-100/40">/</span>
+            <span>{{ heroCount }}</span>
+          </div>
+          <div class="flex gap-1.5 lg:gap-2">
+            <button
+              *ngFor="let ad of ads; trackBy: trackAd; let i = index"
+              type="button"
+              class="relative h-1 flex-1 overflow-hidden rounded-full transition-colors duration-200 ease-premium lg:h-0.5"
+              [ngClass]="heroTrackClass(i === heroIndex)"
+              (click)="goToHero(i)"
+              [attr.aria-label]="locale.tr(ad.eyebrow)"
+              [attr.aria-current]="i === heroIndex ? 'true' : null"
+            >
+              <span
+                *ngIf="i === heroIndex"
+                class="hero-fill absolute inset-0 bg-gold-400"
+                [style.animation-play-state]="heroPlayState()"
+              ></span>
+              <span *ngIf="i < heroIndex" class="absolute inset-0 bg-gold-400/70"></span>
+            </button>
+          </div>
+        </div>
+        <div class="flex shrink-0 items-center gap-1.5 lg:gap-2">
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-sand-100/25 text-sand-100 backdrop-blur-sm transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300 lg:h-10 lg:w-10"
+            (click)="toggleHeroPause(); $event.stopPropagation()"
+            [attr.aria-label]="heroPaused ? (locale.isAr() ? 'تشغيل' : 'Play') : (locale.isAr() ? 'إيقاف' : 'Pause')"
+          >
+            <app-icon [name]="heroPaused ? 'play' : 'pause'" [size]="14"></app-icon>
+          </button>
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-sand-100/25 text-sand-100 backdrop-blur-sm transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300 lg:h-10 lg:w-10"
+            (click)="prevHero(); $event.stopPropagation()"
+            [attr.aria-label]="locale.isAr() ? 'الإعلان السابق' : 'Previous campaign'"
+          >
+            <app-icon [name]="locale.isAr() ? 'chevron-right' : 'chevron-left'" [size]="16"></app-icon>
+          </button>
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-sand-100/25 text-sand-100 backdrop-blur-sm transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300 lg:h-10 lg:w-10"
+            (click)="nextHero(); $event.stopPropagation()"
+            [attr.aria-label]="locale.isAr() ? 'الإعلان التالي' : 'Next campaign'"
+          >
+            <app-icon [name]="locale.isAr() ? 'chevron-left' : 'chevron-right'" [size]="16"></app-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="border-b border-olive-800/10 bg-sand-100/60">
+    <div class="mx-auto max-w-shell px-4 py-5 lg:px-10 lg:py-8">
+      <app-trust-strip></app-trust-strip>
+    </div>
+  </div>
+</section>
+
+<section class="mx-auto max-w-shell px-4 py-16 lg:px-10 lg:py-24">
+  <app-section-header [title]="locale.ui('featuredCategories')" [subtitle]="locale.isAr() ? 'من العصرة إلى المونة. ابدأ من الزيت، أو الزيتون، أو المخلل.' : 'From the press to the pantry. Start with oil, olives, or pickles.'"></app-section-header>
+  <div class="grid gap-4 lg:grid-cols-3 lg:grid-rows-2">
+    <a [routerLink]="['/category', lead.slug]" appScrollOpen class="group relative flex h-full min-h-[300px] flex-col justify-end overflow-hidden rounded-xl p-8 lg:col-span-2 lg:row-span-2 lg:min-h-[520px] lg:p-10">
+      <span class="scroll-open__media absolute inset-0">
+        <img [src]="lead.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.04]" />
+      </span>
+      <span class="absolute inset-0 bg-olive-900/55 transition-colors duration-500 ease-premium group-hover:bg-olive-900/45"></span>
+      <span class="relative">
+        <span class="text-2xs uppercase tracking-[0.24em] text-gold-300">{{ catCount(lead) | countLoc }} {{ locale.isAr() ? 'منتج' : 'products' }}</span>
+        <span class="mt-3 block font-displayAr text-4xl leading-tight text-sand-50 lg:text-5xl">{{ locale.tr(lead.name) }}</span>
+        <span class="mt-3 block max-w-md text-sm leading-relaxed text-sand-100/80">{{ locale.tr(lead.tagline) }}</span>
+        <span class="mt-6 inline-flex items-center gap-2 text-[13px] font-medium text-gold-300">
+          {{ locale.ui('explore') }}
+          <app-icon name="arrow-up-right" [size]="16" class="transition-transform duration-200 ease-premium group-hover:-translate-y-0.5"></app-icon>
+        </span>
+      </span>
+    </a>
+    <a *ngFor="let c of rest" [routerLink]="['/category', c.slug]" appScrollOpen class="group relative flex h-full min-h-[170px] items-end overflow-hidden rounded-xl p-6">
+      <span class="scroll-open__media absolute inset-0">
+        <img [src]="c.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.05]" />
+      </span>
+      <span class="absolute inset-0 bg-olive-900/55 transition-colors duration-500 ease-premium group-hover:bg-olive-900/40"></span>
+      <span class="relative">
+        <span class="block font-displayAr text-2xl leading-tight text-sand-50">{{ locale.tr(c.name) }}</span>
+        <span class="mt-1 block text-xs text-sand-100/75">{{ locale.tr(c.tagline) }}</span>
+      </span>
+    </a>
+  </div>
+</section>
+
+<section class="mx-auto max-w-shell px-4 pb-16 lg:px-10 lg:pb-20">
+  <app-section-header [title]="locale.ui('bestSellers')" [subtitle]="locale.isAr() ? 'ما يعود إلى السلة أكثر من غيره: الزيت، الزيتون، ومخلل البيت.' : 'What returns to the cart most: the oil, the olives, and the house pickle.'" linkTo="/listing/all" [linkLabel]="locale.ui('viewAll')"></app-section-header>
+  <app-product-rail [products]="bestSellers"></app-product-rail>
+</section>
+
+<section class="grain relative bg-olive-800 py-14 lg:py-20">
+  <div class="mx-auto max-w-shell px-4 lg:px-10">
+    <div class="mb-8 flex flex-wrap items-end justify-between gap-5">
+      <div>
+        <span class="inline-flex items-center gap-2 text-2xs uppercase tracking-[0.24em] text-gold-300">
+          <app-icon name="zap" [size]="14"></app-icon>
+          {{ locale.isAr() ? 'لفترة محدودة' : 'Limited window' }}
+        </span>
+        <h2 class="mt-3 font-displayAr text-3xl text-sand-50 md:text-[40px]">{{ locale.ui('flashDeals') }}</h2>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-sand-100/70">{{ locale.ui('endsIn') }}</span>
+        <div class="flex gap-1.5">
+          <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ hours }}</span>
+          <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ minutes }}</span>
+          <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ seconds }}</span>
+        </div>
+        <a routerLink="/offers" class="ms-2 hidden border-b border-sand-100/25 pb-1 text-[13px] font-medium text-sand-100 transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300 sm:block">{{ locale.ui('viewAll') }}</a>
+      </div>
+    </div>
+    <div class="rounded-xl bg-sand-50 p-4 lg:p-6">
+      <app-product-rail [products]="deals"></app-product-rail>
+    </div>
+  </div>
+</section>
+
+<section class="mx-auto max-w-shell px-4 py-16 lg:px-10 lg:py-24">
+  <div appScrollOpen="panel" class="overflow-hidden rounded-2xl lg:rounded-3xl">
+    <div class="grid min-h-[420px] lg:min-h-[640px] lg:grid-cols-2">
+      <div class="relative min-h-[280px] overflow-hidden">
+        <span class="scroll-open__media absolute inset-0">
+          <img [src]="images.campaign" alt="" class="h-full w-full object-cover" />
+        </span>
+        <span class="absolute bottom-5 start-5 rounded bg-sand-50/95 px-4 py-3">
+          <span class="block text-2xs uppercase tracking-[0.2em] text-gold-400">{{ locale.isAr() ? 'الجوف · السعودية' : 'Al-Jouf · Saudi Arabia' }}</span>
+          <span class="mt-1 block text-[13px] font-medium text-olive-800">{{ locale.isAr() ? 'بستان المنبت الأول' : 'The first Almanbat grove' }}</span>
+        </span>
+      </div>
+      <div class="grain relative flex flex-col justify-center bg-olive-800 px-8 py-12 lg:px-14 lg:py-16">
+        <p class="text-2xs uppercase tracking-[0.28em] text-gold-300">{{ locale.isAr() ? 'قصة المنبت' : 'The Almanbat story' }}</p>
+        <h2 class="mt-5 font-displayAr text-[40px] leading-[1.05] text-sand-50 lg:text-[56px]">{{ locale.isAr() ? 'من الجوف إلى مائدتك' : 'From the grove to your table' }}</h2>
+        <p class="mt-6 max-w-md text-[15px] leading-relaxed text-sand-100/80">{{ locale.isAr() ? 'كل منتج له مصدر نعرفه بالاسم. بدأنا من بستان واحد، وما زلنا نختار كما لو كنا نضع الطعام على مائدتنا.' : 'Every product has a source we know by name. We began with one grove, and we still choose as if we were setting our own table.' }}</p>
+        <a routerLink="/about" class="group mt-10 inline-flex w-fit items-center gap-2 border-b border-sand-100/25 pb-1 text-sm font-medium text-sand-50 transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300">
+          {{ locale.ui('aboutBrand') }}
+          <app-icon name="arrow-up-right" [size]="16" class="transition-transform duration-200 ease-premium group-hover:-translate-y-0.5"></app-icon>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="mt-8 lg:mt-12">
+    <div class="grid lg:grid-cols-3 lg:gap-10">
+      <article
+        *ngFor="let pillar of pillars; let last = last"
+        class="flex gap-4 lg:block lg:border-s-2 lg:border-gold-400/40 lg:ps-5"
+      >
+        <span class="flex w-3 shrink-0 flex-col items-center self-stretch lg:hidden" aria-hidden="true">
+          <span class="mt-2.5 h-2.5 w-2.5 rounded-full bg-gold-400"></span>
+          <span *ngIf="!last" class="mt-2 w-px flex-1 bg-gold-400/40"></span>
+        </span>
+        <div class="min-w-0 flex-1 lg:pb-0" [class.pb-8]="!last">
+          <h3 class="font-displayAr text-[26px] leading-[1.25] text-olive-800 lg:text-[22px]">{{ locale.tr(pillar.title) }}</h3>
+          <p class="mt-2 text-[15px] leading-[1.85] text-ink-muted lg:mt-1.5 lg:text-sm lg:leading-relaxed">{{ locale.tr(pillar.body) }}</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section *ngFor="let spot of spotlights" class="py-10 lg:py-24" [ngClass]="spotlightSectionClass(spot.dark)">
+  <div class="mx-auto max-w-shell px-4 lg:px-10">
+    <div class="grid gap-6 lg:gap-14" [ngClass]="spot.flip ? 'lg:grid-cols-[1fr_340px]' : 'lg:grid-cols-[340px_1fr]'">
+      <div class="lg:sticky lg:top-28" [ngClass]="spot.flip ? 'lg:order-2' : ''">
+        <p class="text-[11px] font-medium leading-relaxed" [ngClass]="spot.dark ? 'text-gold-300' : 'text-gold-400'">{{ locale.tr(spotlight(spot.slug).category.tagline) }}</p>
+        <div class="mt-2 flex items-end justify-between gap-3 lg:mt-4 lg:block">
+          <h2 class="min-w-0 font-displayAr text-[28px] leading-tight lg:text-4xl" [ngClass]="spot.dark ? 'text-sand-50' : 'text-olive-800'">{{ locale.tr(spotlight(spot.slug).category.name) }}</h2>
+          <a [routerLink]="['/listing', spot.slug]" class="group mb-0.5 inline-flex shrink-0 items-center gap-1.5 border-b pb-0.5 text-[13px] font-medium transition-colors duration-200 ease-premium lg:hidden" [ngClass]="shopAllClass(spot.dark)">
+            {{ locale.ui('shopAll') }}
+            <app-icon name="arrow-up-right" [size]="14"></app-icon>
+          </a>
+        </div>
+        <p class="mt-3 text-sm leading-relaxed lg:mt-5" [ngClass]="storyClass(spot.dark)">{{ locale.tr(spotlight(spot.slug).category.story) }}</p>
+        <ul class="chip-rail no-rail -mx-4 mt-5 flex gap-2 px-4 lg:mx-0 lg:mt-7 lg:px-0">
+          <li *ngFor="let sub of spotlight(spot.slug).category.subcategories.slice(0, 4)" class="shrink-0">
+            <a [routerLink]="['/category', spot.slug]" [queryParams]="{ sub: sub.slug }" class="inline-flex h-9 items-center rounded-full border px-3.5 text-[13px] transition-colors duration-200 ease-premium" [ngClass]="chipClass(spot.dark)">
+              {{ locale.tr(sub.name) }}
+            </a>
+          </li>
+        </ul>
+        <a [routerLink]="['/listing', spot.slug]" class="group mt-8 hidden items-center gap-2 border-b pb-1 text-sm font-medium transition-colors duration-200 ease-premium lg:inline-flex" [ngClass]="shopAllClass(spot.dark)">
+          {{ locale.ui('shopAll') }}
+          <app-icon name="arrow-up-right" [size]="16" class="transition-transform duration-200 ease-premium group-hover:-translate-y-0.5"></app-icon>
+        </a>
+      </div>
+      <div class="min-w-0" [ngClass]="spot.flip ? 'lg:order-1' : ''">
+        <div class="lg:hidden">
+          <app-product-rail [products]="spotlight(spot.slug).items"></app-product-rail>
+        </div>
+        <div class="hidden gap-5 lg:grid lg:grid-cols-3">
+          <div *ngFor="let p of spotlight(spot.slug).items" [ngClass]="spot.dark ? 'rounded-lg bg-sand-50 p-4' : ''">
+            <app-product-card [product]="p"></app-product-card>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mx-auto max-w-shell px-4 py-16 lg:px-10 lg:py-20">
+  <app-section-header [title]="locale.ui('newArrivals')" [subtitle]="locale.isAr() ? 'إضافات هذا الأسبوع، بعد مرورها على معايير الاختيار.' : 'This week’s additions, after passing our curation standard.'" linkTo="/new" [linkLabel]="locale.ui('viewAll')"></app-section-header>
+  <app-product-rail [products]="newArrivals"></app-product-rail>
+</section>

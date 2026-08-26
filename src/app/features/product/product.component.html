@@ -1,0 +1,122 @@
+<div class="container page" *ngIf="loading">
+  <div class="skeleton hero-sk"></div>
+</div>
+
+<div class="container page" *ngIf="!loading && !product">
+  <h1>المنتج غير موجود</h1>
+  <a class="btn btn-primary" routerLink="/shop">العودة للتسوق</a>
+</div>
+
+<div class="container page" *ngIf="product as p">
+  <app-breadcrumbs [items]="crumbs"></app-breadcrumbs>
+  <div class="layout">
+    <div class="gallery">
+      <div class="thumbs">
+        <button type="button" *ngFor="let img of p.images; let i = index" [class.on]="i === imgIndex" (click)="imgIndex = i">
+          <img [src]="img" [alt]="p.nameAr + ' صورة ' + (i + 1)" />
+        </button>
+      </div>
+      <button class="main" type="button" (click)="zoom = true">
+        <img [src]="p.images[imgIndex]" [alt]="p.nameAr" />
+        <span class="chip disc" *ngIf="p.discountPercent">خصم {{ p.discountPercent }}٪</span>
+      </button>
+    </div>
+    <div class="info">
+      <p class="brand">{{ catalog.brandName(p.brandId) }}</p>
+      <div class="title-row">
+        <h1>{{ p.nameAr }}</h1>
+        <button type="button" class="icon-btn dark" (click)="toggleWish()" [attr.aria-label]="wished() ? 'إزالة من المفضلة' : 'المفضلة'">
+          <app-icon name="heart"></app-icon>
+        </button>
+      </div>
+      <app-rating [value]="p.rating" [count]="p.reviewCount"></app-rating>
+      <div class="prices">
+        <span class="price">{{ p.price | egp }}</span>
+        <s *ngIf="p.oldPrice">{{ p.oldPrice | egp }}</s>
+      </div>
+      <p class="stock" [class.out]="p.stockStatus === 'out_of_stock'">
+        {{ p.stockStatus === 'out_of_stock' ? 'غير متوفر' : p.stockStatus === 'low_stock' ? 'كمية محدودة' : 'متوفر' }}
+      </p>
+      <p class="muted">التوصيل المتوقع: {{ p.deliveryEstimate }}</p>
+      <div class="buy">
+        <app-qty [value]="qty" [max]="p.stockQuantity || 1" (valueChange)="qty = $event"></app-qty>
+        <button class="btn btn-primary" type="button" (click)="add(false)" [disabled]="p.stockStatus === 'out_of_stock'">أضف إلى السلة</button>
+        <button class="btn btn-gold" type="button" (click)="add(true)" [disabled]="p.stockStatus === 'out_of_stock'">اشترِ الآن</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button type="button" [class.on]="tab === 'desc'" (click)="tab = 'desc'">وصف المنتج</button>
+    <button type="button" [class.on]="tab === 'specs'" (click)="tab = 'specs'">المواصفات</button>
+    <button type="button" [class.on]="tab === 'ship'" (click)="tab = 'ship'">التوصيل والاسترجاع</button>
+    <button type="button" [class.on]="tab === 'reviews'" (click)="tab = 'reviews'">التقييمات</button>
+  </div>
+  <section class="panel" *ngIf="tab === 'desc'">
+    <p>{{ p.description }}</p>
+    <div *ngIf="p.grocery" class="extra">
+      <p><strong>الوزن:</strong> {{ p.grocery.weight }}</p>
+      <p><strong>المكوّنات:</strong> {{ p.grocery.ingredients }}</p>
+      <p><strong>المنشأ:</strong> {{ p.grocery.origin }}</p>
+      <p><strong>التخزين:</strong> {{ p.grocery.storage }}</p>
+      <p><strong>الصلاحية:</strong> {{ p.grocery.expiryPlaceholder }}</p>
+      <p><strong>القيمة الغذائية:</strong> {{ p.grocery.nutritionPlaceholder }}</p>
+    </div>
+    <div *ngIf="p.beauty" class="extra">
+      <p><strong>النوع:</strong> {{ p.beauty.skinHairType }}</p>
+      <p><strong>المكوّنات:</strong> {{ p.beauty.ingredients }}</p>
+      <p><strong>طريقة الاستخدام:</strong> {{ p.beauty.usage }}</p>
+      <p><strong>احتياطات:</strong> {{ p.beauty.precautions }}</p>
+      <p><strong>الحجم:</strong> {{ p.beauty.size }}</p>
+    </div>
+    <div *ngIf="p.appliance" class="extra">
+      <p><strong>القدرة:</strong> {{ p.appliance.power }}</p>
+      <p><strong>السعة:</strong> {{ p.appliance.capacity }}</p>
+      <p><strong>الأبعاد:</strong> {{ p.appliance.dimensions }}</p>
+      <p><strong>الضمان:</strong> {{ p.appliance.warranty }}</p>
+      <p><strong>المحتويات:</strong> {{ p.appliance.includedItems }}</p>
+    </div>
+    <div *ngIf="p.electronics" class="extra">
+      <p><strong>التوافق:</strong> {{ p.electronics.compatibility }}</p>
+      <p><strong>الاتصال:</strong> {{ p.electronics.connectivity }}</p>
+      <p><strong>البطارية:</strong> {{ p.electronics.battery }}</p>
+      <p><strong>الضمان:</strong> {{ p.electronics.warranty }}</p>
+      <p><strong>الأبعاد:</strong> {{ p.electronics.dimensions }}</p>
+      <p><strong>المحتويات:</strong> {{ p.electronics.includedItems }}</p>
+    </div>
+  </section>
+  <section class="panel" *ngIf="tab === 'specs'">
+    <table>
+      <tr *ngFor="let s of p.specifications"><th>{{ s.label }}</th><td>{{ s.value }}</td></tr>
+    </table>
+  </section>
+  <section class="panel" *ngIf="tab === 'ship'">
+    <p>التوصيل التقديري: {{ p.deliveryEstimate }}. الإرجاع خلال 14 يوماً للمنتجات غير المفتوحة، مع استثناء الأغذية المفتوحة ومنتجات العناية المفضوضة.</p>
+    <p *ngIf="p.warrantyOrStorage">{{ p.warrantyOrStorage }}</p>
+  </section>
+  <section class="panel" *ngIf="tab === 'reviews'">
+    <article *ngFor="let r of reviews()" class="rev">
+      <strong>{{ r.customerName }}</strong> — {{ r.rating }}/5
+      <h3>{{ r.title }}</h3>
+      <p>{{ r.body }}</p>
+    </article>
+    <p *ngIf="!reviews().length">لا توجد تقييمات بعد.</p>
+  </section>
+
+  <section *ngIf="related.length">
+    <h2 class="headline">منتجات مشابهة</h2>
+    <div class="product-grid">
+      <app-product-card *ngFor="let r of related" [product]="r"></app-product-card>
+    </div>
+  </section>
+  <section *ngIf="recent.length">
+    <h2 class="headline">شاهدته مؤخراً</h2>
+    <div class="product-grid">
+      <app-product-card *ngFor="let r of recent" [product]="r"></app-product-card>
+    </div>
+  </section>
+</div>
+
+<div class="lightbox" *ngIf="zoom && product" (click)="zoom = false">
+  <img [src]="product.images[imgIndex]" [alt]="product.nameAr" />
+</div>

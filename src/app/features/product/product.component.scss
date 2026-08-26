@@ -1,0 +1,156 @@
+.page {
+  padding-block: 28px 64px;
+}
+
+.layout {
+  display: grid;
+  gap: 28px;
+}
+
+.gallery {
+  display: grid;
+  gap: 12px;
+}
+
+.thumbs {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+}
+
+.thumbs img {
+  width: 72px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.thumbs .on img {
+  outline: 2px solid var(--color-primary);
+}
+
+.main {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  padding: 0;
+}
+
+.main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.disc {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 12px;
+}
+
+.info .brand {
+  color: var(--color-warm-brown);
+  font-weight: 700;
+}
+
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.icon-btn.dark {
+  color: var(--color-primary);
+  background: var(--color-surface-raised);
+}
+
+.prices {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  margin: 12px 0;
+}
+
+.buy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  margin: 40px 0 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabs button {
+  padding: 10px 12px;
+  font-weight: 700;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs .on {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-olive-gold);
+}
+
+.panel {
+  background: var(--color-surface);
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 32px;
+}
+
+.extra p,
+table {
+  margin-top: 8px;
+}
+
+th {
+  text-align: right;
+  padding-inline-end: 16px;
+  color: var(--color-text-muted);
+}
+
+.rev {
+  margin-bottom: 16px;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(46, 51, 16, 0.85);
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.lightbox img {
+  max-height: 90vh;
+  max-width: 90vw;
+}
+
+.hero-sk {
+  min-height: 360px;
+}
+
+.stock.out {
+  color: var(--color-danger);
+}
+
+@media (min-width: 960px) {
+  .layout {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+  .gallery {
+    grid-template-columns: 88px 1fr;
+  }
+  .thumbs {
+    flex-direction: column;
+  }
+}

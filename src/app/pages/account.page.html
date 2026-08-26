@@ -1,0 +1,397 @@
+<div class="account-page mx-auto w-full min-w-0 max-w-shell px-4 pb-28 pt-5 lg:px-10 lg:py-9">
+  <div class="hidden lg:block">
+    <app-crumbs [trail]="trail"></app-crumbs>
+  </div>
+
+  <section class="account-hero grain relative overflow-hidden rounded-2xl bg-olive-800 p-5 text-sand-50 lg:mt-6 lg:p-8">
+    <div class="relative z-10">
+      <div class="flex items-center gap-3.5">
+        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gold-400 font-display text-xl text-olive-900 shadow-[0_0_0_4px_rgba(168,137,55,0.35)] lg:h-16 lg:w-16 lg:text-2xl">{{ initial }}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-gold-300">{{ locale.isAr() ? 'دائرة المنبت' : 'Almanbat circle' }}</p>
+          <h1 class="mt-0.5 font-displayAr text-[22px] leading-snug lg:text-[34px] lg:leading-[1.5]">{{ greeting }}</h1>
+          <p class="mt-0.5 truncate text-[12px] text-sand-100/70">{{ email }}<span class="hidden sm:inline"> · {{ locale.isAr() ? 'عضوة منذ ٢٠٢٣' : 'Member since 2023' }}</span></p>
+        </div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <a routerLink="/wishlist" class="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-sand-100/25 px-3 text-[13px] font-medium text-sand-100 transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300 lg:flex-none lg:px-4 lg:text-sm">
+          <app-icon name="heart" [size]="16"></app-icon>
+          {{ locale.ui('wishlist') }}
+        </a>
+        <a *ngIf="active" routerLink="/track" class="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-gold-400 px-3 text-[13px] font-semibold text-olive-900 transition-colors duration-200 ease-premium hover:bg-gold-300 lg:flex-none lg:px-4 lg:text-sm">
+          <app-icon name="truck" [size]="16"></app-icon>
+          {{ locale.ui('trackOrder') }}
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <div class="mt-5 grid min-w-0 gap-6 lg:mt-8 lg:grid-cols-[240px_1fr] lg:gap-10">
+    <nav class="account-nav h-fit min-w-0 lg:sticky lg:top-32" [attr.aria-label]="locale.ui('account')">
+      <ul #navList class="account-nav-list rail no-rail flex gap-2 overflow-x-auto pb-0.5 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
+        <li *ngFor="let n of nav" class="shrink-0 lg:w-full">
+          <a [routerLink]="['/account', n.id]" [ngClass]="navClass(n.id)">
+            <app-icon [name]="n.icon" [size]="16" [ngClass]="isTab(n.id) ? 'text-gold-400' : 'text-ink-muted'"></app-icon>
+            {{ n.label }}
+          </a>
+        </li>
+        <li class="hidden shrink-0 lg:mt-2 lg:block lg:w-full lg:border-t lg:border-olive-800/10 lg:pt-2">
+          <button type="button" class="account-nav-link text-ink-muted hover:text-state-danger" (click)="signOut()">
+            <app-icon name="logout" [size]="16"></app-icon>
+            {{ locale.ui('signOut') }}
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="min-w-0">
+      <section *ngIf="isTab('overview')">
+        <div class="grid grid-cols-3 gap-2 sm:gap-4">
+          <article *ngFor="let stat of stats; let i = index" class="min-w-0 rounded-xl border p-3 sm:p-5" [ngClass]="statCardClass(i)">
+            <div class="flex items-start justify-between gap-1">
+              <p class="text-[10px] font-semibold leading-tight tracking-[0.08em] text-ink-muted sm:text-[11px] sm:uppercase sm:tracking-[0.14em]">{{ locale.isAr() ? stat.labelAr : stat.labelEn }}</p>
+              <app-icon [name]="stat.icon" [size]="14" class="hidden shrink-0 text-gold-400 sm:block"></app-icon>
+            </div>
+            <p class="mt-2 font-display text-xl text-olive-800 sm:mt-3 sm:text-3xl">{{ stat.value }}</p>
+          </article>
+        </div>
+
+        <article *ngIf="active" class="mt-5 overflow-hidden rounded-xl border border-olive-800/10 bg-white sm:mt-6">
+          <div class="flex flex-col gap-3 p-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4 sm:p-6">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-400">{{ locale.isAr() ? 'طلب نشط' : 'Active order' }}</p>
+              <p class="mt-1.5 text-base font-semibold text-olive-800 sm:text-lg">{{ active.id }}</p>
+              <p *ngIf="active.eta" class="mt-0.5 text-sm text-state-success">{{ locale.tr(active.eta) }}</p>
+            </div>
+            <a routerLink="/track" class="inline-flex h-11 w-full items-center justify-center rounded-xl bg-olive-600 px-5 text-sm font-medium text-sand-50 transition-colors duration-200 ease-premium hover:bg-olive-700 sm:h-11 sm:w-auto">{{ locale.ui('trackOrder') }}</a>
+          </div>
+          <ol class="grid grid-cols-3 border-t border-olive-800/10 bg-sand-50/80 px-3 py-3.5 text-center text-[10px] sm:px-6 sm:py-4 sm:text-[11px]">
+            <li *ngFor="let step of trackSteps; let i = index" [ngClass]="stepClass(i)">
+              <span class="mx-auto mb-1.5 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold" [ngClass]="stepDotClass(i)">{{ i + 1 }}</span>
+              {{ locale.isAr() ? step.ar : step.en }}
+            </li>
+          </ol>
+          <ul class="grid gap-2 border-t border-olive-800/10 p-4 sm:p-5">
+            <li *ngFor="let id of active.itemIds" class="flex min-w-0 items-center gap-3 rounded-md bg-sand-50 p-2 pe-3">
+              <ng-container *ngIf="item(id) as p">
+                <span class="h-12 w-12 shrink-0 overflow-hidden rounded bg-sand-100"><img [src]="p.image" alt="" class="h-full w-full object-cover" /></span>
+                <span class="min-w-0 flex-1 text-[13px] font-medium leading-snug text-olive-800">{{ locale.tr(p.name) }}</span>
+              </ng-container>
+            </li>
+          </ul>
+        </article>
+
+        <h2 class="mt-8 text-sm font-semibold uppercase tracking-[0.14em] text-olive-800 sm:mt-9">{{ locale.ui('reorder') }}</h2>
+        <ul class="mt-3 grid gap-3 sm:mt-4 sm:grid-cols-2">
+          <li *ngFor="let id of reorderIds" class="flex flex-col gap-3 rounded-xl border border-olive-800/10 bg-white p-3 sm:flex-row sm:items-center sm:gap-3.5">
+            <ng-container *ngIf="item(id) as p">
+              <div class="flex min-w-0 flex-1 items-center gap-3.5">
+                <a [routerLink]="['/product', p.slug]" class="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-sand-100"><img [src]="p.image" alt="" class="h-full w-full object-cover" /></a>
+                <span class="min-w-0 flex-1">
+                  <a [routerLink]="['/product', p.slug]" class="block truncate text-sm font-medium text-olive-800">{{ locale.tr(p.name) }}</a>
+                  <span class="mt-0.5 block text-xs text-ink-muted">{{ p.price | sar }}</span>
+                </span>
+              </div>
+              <button type="button" class="inline-flex h-10 w-full items-center justify-center rounded-xl bg-olive-600 px-3.5 text-[13px] font-medium text-sand-50 transition-colors duration-200 ease-premium hover:bg-olive-700 sm:h-9 sm:w-auto" (click)="store.addToCart(id)">{{ locale.ui('reorder') }}</button>
+            </ng-container>
+          </li>
+        </ul>
+      </section>
+
+      <section *ngIf="isTab('orders')">
+        <h2 class="font-displayAr text-xl text-olive-800 sm:text-2xl">{{ locale.ui('orders') }}</h2>
+        <div class="no-rail -mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
+          <button *ngFor="let f of orderFilters" type="button" class="h-9 shrink-0 rounded-full px-3.5 text-[12px] font-medium transition-colors duration-150 ease-premium" [ngClass]="orderFilter === f.id ? 'bg-olive-800 text-sand-50' : 'bg-white text-olive-800 ring-1 ring-olive-800/15 hover:ring-olive-800/35'" (click)="orderFilter = f.id">{{ locale.isAr() ? f.ar : f.en }}</button>
+        </div>
+        <ul class="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
+          <li *ngFor="let o of filteredOrders" class="rounded-xl border border-olive-800/10 bg-white p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-olive-800">{{ o.id }}</p>
+                <p class="mt-0.5 text-xs text-ink-muted">{{ formatDate(o.date) }}</p>
+              </div>
+              <span class="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-2xs font-semibold uppercase tracking-[0.08em]" [ngClass]="statusTone(o.status)">{{ statusLabel(o.status) }}</span>
+            </div>
+            <ul class="mt-4 space-y-2.5">
+              <li *ngFor="let id of o.itemIds" class="rounded-lg bg-sand-50 p-2 sm:flex sm:items-center sm:gap-3 sm:pe-3">
+                <ng-container *ngIf="item(id) as p">
+                  <div class="flex min-w-0 flex-1 items-center gap-3">
+                    <a [routerLink]="['/product', p.slug]" class="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-sand-100">
+                      <img [src]="p.image" [alt]="locale.tr(p.name)" class="h-full w-full object-cover" />
+                    </a>
+                    <span class="min-w-0 flex-1">
+                      <a [routerLink]="['/product', p.slug]" class="block truncate text-[13px] font-medium text-olive-800">{{ locale.tr(p.name) }}</a>
+                      <span class="mt-0.5 block text-xs text-ink-muted">{{ p.price | sar }}</span>
+                      <span *ngIf="o.status === 'delivered' && ratingOf(o.id, id)" class="mt-1 inline-flex items-center gap-1 text-2xs font-medium text-gold-500">
+                        <app-icon name="star" [size]="12" [filled]="true"></app-icon>
+                        {{ locale.ui('alreadyRated') }} · {{ ratingOf(o.id, id) }}/5
+                      </span>
+                    </span>
+                  </div>
+                  <button
+                    *ngIf="o.status === 'delivered' && !ratingOf(o.id, id)"
+                    type="button"
+                    class="mt-2 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-olive-800/20 bg-white px-3 text-[12px] font-medium text-olive-800 transition-colors duration-200 ease-premium hover:border-gold-400 hover:text-gold-500 sm:mt-0 sm:h-9 sm:w-auto sm:shrink-0"
+                    (click)="openItemReview(o.id, id)"
+                  >
+                    <app-icon name="star" [size]="14"></app-icon>
+                    {{ locale.ui('rateProduct') }}
+                  </button>
+                </ng-container>
+              </li>
+            </ul>
+            <div class="mt-4 flex flex-col gap-3 border-t border-olive-800/10 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <p class="text-sm font-semibold text-olive-800">{{ o.total | sar }}</p>
+              <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                <a *ngIf="o.status === 'in_transit'" routerLink="/track" class="inline-flex h-10 items-center justify-center rounded-xl border border-olive-800/25 px-3.5 text-[13px] font-medium text-olive-800 transition-colors duration-200 ease-premium hover:border-olive-800/60 sm:h-9">{{ locale.ui('trackOrder') }}</a>
+                <button type="button" class="inline-flex h-10 items-center justify-center rounded-xl border border-olive-800/25 bg-transparent px-3.5 text-[13px] font-medium text-olive-800 transition-colors duration-200 ease-premium hover:bg-olive-50 sm:h-9" (click)="reorder(o.itemIds)">{{ locale.ui('reorder') }}</button>
+                <button *ngIf="o.status === 'delivered' && hasUnrated(o)" type="button" class="col-span-2 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-transparent px-3.5 text-[13px] font-medium text-olive-700 transition-colors duration-200 ease-premium hover:bg-olive-50 sm:col-span-1 sm:h-9" (click)="rateOrder(o)">
+                  <app-icon name="star" [size]="14"></app-icon>
+                  {{ locale.ui('rateItems') }}
+                </button>
+              </div>
+            </div>
+          </li>
+        </ul>
+        <p *ngIf="!filteredOrders.length" class="rounded-xl border border-dashed border-olive-800/20 bg-white px-6 py-12 text-center text-sm text-ink-muted">{{ locale.isAr() ? 'لا توجد طلبات في هذا التصنيف.' : 'No orders in this filter.' }}</p>
+      </section>
+
+      <section *ngIf="isTab('addresses')">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-5">
+          <h2 class="min-w-0 font-displayAr text-xl text-olive-800 sm:text-2xl">{{ locale.ui('addresses') }}</h2>
+          <button type="button" class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-olive-800/25 bg-white px-3 text-[13px] font-medium text-olive-800 transition-colors duration-200 ease-premium hover:border-gold-400 sm:h-9 sm:px-3.5" (click)="startAddress()">
+            <app-icon name="plus" [size]="14"></app-icon>
+            {{ locale.isAr() ? 'عنوان جديد' : 'Add address' }}
+          </button>
+        </div>
+
+        <form *ngIf="addressFormOpen" class="mb-5 rounded-xl border border-gold-400/40 bg-gold-50 p-4 sm:p-5" (submit)="saveAddress($event)">
+          <p class="text-sm font-semibold text-olive-800">{{ editingAddressId ? (locale.isAr() ? 'تعديل العنوان' : 'Edit address') : (locale.isAr() ? 'عنوان جديد' : 'New address') }}</p>
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="auth-label" for="ad-label"><span>{{ locale.isAr() ? 'الوصف' : 'Label' }}</span><span>{{ locale.isAr() ? 'Label' : 'الوصف' }}</span></label>
+              <input id="ad-label" name="adLabel" class="field-input !mt-1.5" [(ngModel)]="addrDraft.label" [placeholder]="locale.isAr() ? 'المنزل' : 'Home'" />
+            </div>
+            <div>
+              <label class="auth-label" for="ad-city"><span>{{ locale.isAr() ? 'المدينة' : 'City' }}</span><span>{{ locale.isAr() ? 'City' : 'المدينة' }}</span></label>
+              <input id="ad-city" name="adCity" class="field-input !mt-1.5" [(ngModel)]="addrDraft.city" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="auth-label" for="ad-line"><span>{{ locale.isAr() ? 'العنوان' : 'Street address' }}</span><span>{{ locale.isAr() ? 'Address' : 'العنوان' }}</span></label>
+              <input id="ad-line" name="adLine" class="field-input !mt-1.5" [(ngModel)]="addrDraft.line" />
+            </div>
+            <div>
+              <label class="auth-label" for="ad-phone"><span>{{ locale.isAr() ? 'الجوال' : 'Mobile' }}</span><span>{{ locale.isAr() ? 'Mobile' : 'الجوال' }}</span></label>
+              <input id="ad-phone" name="adPhone" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="addrDraft.phone" />
+            </div>
+          </div>
+          <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <button type="submit" class="inline-flex h-11 w-full items-center justify-center rounded-xl bg-olive-600 px-4 text-sm font-medium text-sand-50 hover:bg-olive-700 sm:h-10 sm:w-auto">{{ locale.isAr() ? 'حفظ العنوان' : 'Save address' }}</button>
+            <button type="button" class="inline-flex h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-medium text-ink-muted hover:text-olive-800 sm:h-10 sm:w-auto" (click)="cancelAddress()">{{ locale.ui('back') }}</button>
+          </div>
+        </form>
+
+        <ul class="grid gap-3 sm:grid-cols-2 sm:gap-4">
+          <li *ngFor="let a of addressList" class="min-w-0 rounded-xl border p-3.5 sm:p-5" [ngClass]="addressCardClass(a.isDefault)">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex min-w-0 items-center gap-2">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-olive-700 shadow-xs sm:h-9 sm:w-9"><app-icon name="pin" [size]="16"></app-icon></span>
+                <p class="truncate text-sm font-semibold text-olive-800">{{ locale.tr(a.label) }}</p>
+              </div>
+              <span *ngIf="a.isDefault" class="inline-flex shrink-0 items-center rounded-full bg-gold-400 px-2 py-0.5 text-2xs font-semibold uppercase text-olive-900">{{ locale.isAr() ? 'الافتراضي' : 'Default' }}</span>
+            </div>
+            <p class="mt-2.5 break-words text-sm leading-snug text-ink-soft">{{ locale.tr(a.line) }}</p>
+            <p class="mt-1 text-sm text-ink-muted">{{ locale.tr(a.city) }} · <span dir="ltr">{{ a.phone }}</span></p>
+            <div class="mt-3 grid grid-cols-1 gap-2">
+              <button type="button" class="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-[13px] font-medium text-olive-700 ring-1 ring-olive-800/10 hover:bg-sand-50" (click)="editAddress(a)">
+                <app-icon name="pencil" [size]="14"></app-icon>{{ locale.isAr() ? 'تعديل' : 'Edit' }}
+              </button>
+              <button *ngIf="!a.isDefault" type="button" class="inline-flex h-10 w-full items-center justify-center rounded-xl bg-white px-3 text-[13px] font-medium text-olive-700 ring-1 ring-olive-800/10 hover:bg-sand-50" (click)="setDefaultAddress(a.id)">{{ locale.isAr() ? 'اجعله افتراضياً' : 'Make default' }}</button>
+              <button type="button" class="inline-flex h-10 w-full items-center justify-center rounded-xl px-3 text-[13px] font-medium text-ink-muted hover:bg-white hover:text-state-danger" (click)="removeAddress(a.id)">{{ locale.ui('remove') }}</button>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section *ngIf="isTab('payments')">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-5">
+          <h2 class="min-w-0 font-displayAr text-xl text-olive-800 sm:text-2xl">{{ locale.ui('payments') }}</h2>
+          <button type="button" class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-olive-800/25 bg-white px-3 text-[13px] font-medium text-olive-800 hover:border-gold-400 sm:h-9 sm:px-3.5" (click)="cardFormOpen = !cardFormOpen">
+            <app-icon name="plus" [size]="14"></app-icon>
+            {{ locale.isAr() ? 'إضافة بطاقة' : 'Add card' }}
+          </button>
+        </div>
+
+        <form *ngIf="cardFormOpen" class="mb-5 rounded-xl border border-olive-800/10 bg-white p-4 sm:p-5" (submit)="addCard($event)">
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label class="auth-label" for="cd-brand"><span>{{ locale.isAr() ? 'النوع' : 'Brand' }}</span><span>{{ locale.isAr() ? 'Brand' : 'النوع' }}</span></label>
+              <select id="cd-brand" name="cdBrand" class="field-input !mt-1.5 appearance-none" [(ngModel)]="cardDraft.brand">
+                <option value="mada">mada</option>
+                <option value="VISA">VISA</option>
+                <option value="Mastercard">Mastercard</option>
+              </select>
+            </div>
+            <div>
+              <label class="auth-label" for="cd-last"><span>{{ locale.isAr() ? 'آخر ٤ أرقام' : 'Last 4' }}</span><span>{{ locale.isAr() ? 'Last 4' : 'آخر ٤' }}</span></label>
+              <input id="cd-last" name="cdLast" class="field-input !mt-1.5" maxlength="4" inputmode="numeric" [(ngModel)]="cardDraft.last4" placeholder="4417" />
+            </div>
+            <div>
+              <label class="auth-label" for="cd-exp"><span>{{ locale.isAr() ? 'الانتهاء' : 'Expiry' }}</span><span>{{ locale.isAr() ? 'Expiry' : 'الانتهاء' }}</span></label>
+              <input id="cd-exp" name="cdExp" class="field-input !mt-1.5" [(ngModel)]="cardDraft.exp" placeholder="09/28" />
+            </div>
+          </div>
+          <button type="submit" class="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-olive-600 px-4 text-sm font-medium text-sand-50 hover:bg-olive-700 sm:h-10 sm:w-auto">{{ locale.isAr() ? 'حفظ البطاقة' : 'Save card' }}</button>
+        </form>
+
+        <ul class="grid gap-3 sm:grid-cols-2 sm:gap-4">
+          <li *ngFor="let card of cards" [ngClass]="card.primary ? 'pay-card' : 'pay-card is-secondary'">
+            <div class="relative z-10 flex h-full min-h-[120px] flex-col justify-between sm:min-h-[168px]">
+              <div class="flex items-start justify-between">
+                <span class="text-[11px] font-semibold uppercase tracking-[0.16em]">{{ card.brand }}</span>
+                <span *ngIf="card.primary" class="rounded-full bg-gold-400 px-2 py-0.5 text-2xs font-semibold uppercase text-olive-900">{{ locale.isAr() ? 'أساسية' : 'Primary' }}</span>
+              </div>
+              <p class="font-display text-2xl tracking-[0.18em]" dir="ltr">•••• {{ card.last4 }}</p>
+              <div class="flex items-end justify-between gap-3">
+                <span class="text-xs opacity-80" dir="ltr">{{ card.exp }}</span>
+                <div class="flex gap-3">
+                  <button *ngIf="!card.primary" type="button" class="text-[11px] font-medium underline-offset-2 hover:underline" (click)="setPrimaryCard(card.last4)">{{ locale.isAr() ? 'تعيين أساسية' : 'Set primary' }}</button>
+                  <button type="button" class="text-[11px] font-medium underline-offset-2 hover:underline" (click)="removeCard(card.last4)">{{ locale.ui('remove') }}</button>
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section *ngIf="isTab('profile')">
+        <h2 class="mb-4 font-displayAr text-xl text-olive-800 sm:mb-5 sm:text-2xl">{{ locale.ui('profile') }}</h2>
+        <div class="grid gap-4 sm:gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <form class="rounded-xl border border-olive-800/10 bg-white p-4 sm:p-6" (submit)="saveProfile($event)">
+            <p class="text-sm font-semibold text-olive-800">{{ locale.isAr() ? 'البيانات الشخصية' : 'Personal details' }}</p>
+            <p class="mt-1 text-xs text-ink-muted">{{ locale.isAr() ? 'تظهر هذه البيانات على الطلبات والفواتير.' : 'Used on orders and invoices.' }}</p>
+            <div class="mt-5 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="auth-label" for="p-first"><span>{{ locale.isAr() ? 'الاسم الأول' : 'First name' }}</span><span>{{ locale.isAr() ? 'First name' : 'الاسم الأول' }}</span></label>
+                <input id="p-first" name="first" class="field-input !mt-1.5" [(ngModel)]="firstName" autocomplete="given-name" />
+              </div>
+              <div>
+                <label class="auth-label" for="p-last"><span>{{ locale.isAr() ? 'اسم العائلة' : 'Last name' }}</span><span>{{ locale.isAr() ? 'Last name' : 'اسم العائلة' }}</span></label>
+                <input id="p-last" name="last" class="field-input !mt-1.5" [(ngModel)]="lastName" autocomplete="family-name" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="auth-label" for="p-email"><span>{{ locale.isAr() ? 'البريد الإلكتروني' : 'Email' }}</span><span>{{ locale.isAr() ? 'Email' : 'البريد' }}</span></label>
+                <input id="p-email" name="email" type="email" class="field-input !mt-1.5" [(ngModel)]="email" autocomplete="email" />
+              </div>
+              <div>
+                <label class="auth-label" for="p-phone"><span>{{ locale.isAr() ? 'رقم الجوال' : 'Mobile' }}</span><span>{{ locale.isAr() ? 'Mobile' : 'الجوال' }}</span></label>
+                <input id="p-phone" name="phone" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="phone" autocomplete="tel" />
+              </div>
+              <div>
+                <p class="auth-label"><span>{{ locale.isAr() ? 'لغة الواجهة' : 'Language' }}</span><span>{{ locale.isAr() ? 'Language' : 'اللغة' }}</span></p>
+                <div class="mt-1.5 grid grid-cols-2 gap-2">
+                  <button type="button" class="h-12 rounded-xl text-sm font-medium transition-colors duration-150" [ngClass]="locale.isAr() ? 'bg-olive-800 text-sand-50' : 'bg-sand-50 text-olive-800 ring-1 ring-olive-800/15'" (click)="setLang('ar')">العربية</button>
+                  <button type="button" class="h-12 rounded-xl text-sm font-medium transition-colors duration-150" [ngClass]="!locale.isAr() ? 'bg-olive-800 text-sand-50' : 'bg-sand-50 text-olive-800 ring-1 ring-olive-800/15'" (click)="setLang('en')">English</button>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="shimmer-edge mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-gold-400 px-6 text-sm font-semibold text-olive-900 shadow-gold transition-colors duration-200 ease-premium hover:bg-gold-300 sm:w-auto">{{ locale.isAr() ? 'حفظ التغييرات' : 'Save changes' }}</button>
+          </form>
+
+          <div class="space-y-4 sm:space-y-5">
+            <aside class="member-card">
+              <div class="relative z-10 flex h-full flex-col justify-between">
+                <div class="flex items-center justify-between">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-300">{{ locale.isAr() ? 'بطاقة الدائرة' : 'Circle card' }}</p>
+                  <span class="text-[11px] text-sand-100/70">{{ locale.isAr() ? 'ذهبية' : 'Gold' }}</span>
+                </div>
+                <div>
+                  <p class="font-displayAr text-2xl">{{ firstName }} {{ lastName }}</p>
+                  <p class="mt-1 text-sm text-sand-100/70">{{ locale.isAr() ? '٢٬٤٨٠ نقطة ولاء' : '2,480 loyalty points' }}</p>
+                </div>
+                <p class="text-[11px] uppercase tracking-[0.14em] text-sand-100/55">{{ locale.isAr() ? 'سارية حتى ٢٠٢٧' : 'Valid through 2027' }}</p>
+              </div>
+            </aside>
+
+            <form class="rounded-xl border border-olive-800/10 bg-white p-4 sm:p-6" (submit)="savePassword($event)">
+              <p class="text-sm font-semibold text-olive-800">{{ locale.isAr() ? 'كلمة المرور' : 'Password' }}</p>
+              <div class="mt-4 space-y-3">
+                <input name="curPass" type="password" class="field-input !mt-0" [(ngModel)]="currentPassword" [placeholder]="locale.isAr() ? 'الحالية' : 'Current password'" autocomplete="current-password" />
+                <input name="newPass" type="password" class="field-input !mt-0" [(ngModel)]="nextPassword" [placeholder]="locale.isAr() ? 'الجديدة' : 'New password'" autocomplete="new-password" />
+                <input name="confPass" type="password" class="field-input !mt-0" [(ngModel)]="confirmPassword" [placeholder]="locale.isAr() ? 'تأكيد الجديدة' : 'Confirm new password'" autocomplete="new-password" />
+              </div>
+              <button type="submit" class="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-olive-800/20 px-4 text-sm font-medium text-olive-800 hover:border-olive-800/45 sm:h-10 sm:w-auto">{{ locale.isAr() ? 'تحديث كلمة المرور' : 'Update password' }}</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="isTab('notifications')">
+        <h2 class="mb-4 font-displayAr text-xl text-olive-800 sm:mb-5 sm:text-2xl">{{ locale.ui('notifications') }}</h2>
+        <ul class="divide-y divide-olive-800/10 overflow-hidden rounded-xl border border-olive-800/10 bg-white">
+          <li *ngFor="let row of notifRows" class="flex items-center justify-between gap-4 px-4 py-4 sm:p-5">
+            <div class="min-w-0">
+              <p class="text-sm font-medium leading-snug text-olive-800">{{ locale.isAr() ? row.labelAr : row.labelEn }}</p>
+              <p class="mt-0.5 text-xs text-ink-muted">{{ locale.isAr() ? row.hintAr : row.hintEn }}</p>
+            </div>
+            <label class="account-switch">
+              <input type="checkbox" [(ngModel)]="row.on" [name]="'n-' + row.labelEn" [attr.aria-label]="locale.isAr() ? row.labelAr : row.labelEn" (change)="toastPrefs()" />
+              <span></span>
+            </label>
+          </li>
+        </ul>
+        <p class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
+          <app-icon name="bell" [size]="14" class="mt-0.5 shrink-0 text-gold-400"></app-icon>
+          {{ locale.isAr() ? 'لا نرسل أي رسالة ترويجية أكثر من مرة أسبوعياً.' : 'We never send promotional messages more than once a week.' }}
+        </p>
+      </section>
+
+      <section *ngIf="isTab('returns')">
+        <h2 class="mb-4 font-displayAr text-xl text-olive-800 sm:mb-5 sm:text-2xl">{{ locale.ui('returns') }}</h2>
+        <div class="rounded-xl border border-olive-800/10 bg-white p-4 sm:p-6">
+          <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+            <div>
+              <h3 class="text-sm font-semibold text-olive-800">{{ locale.isAr() ? 'طلب إرجاع' : 'Start a return' }}</h3>
+              <p class="mt-1.5 max-w-lg text-sm leading-relaxed text-ink-muted">{{ locale.isAr() ? 'اختر طلباً مسلّماً، ونجمع الشحنة من بابك خلال ٤٨ ساعة دون أي رسوم.' : 'Pick a delivered order — we collect from your door within 48 hours at no cost.' }}</p>
+            </div>
+            <button type="button" class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-olive-600 px-5 text-sm font-medium text-sand-50 hover:bg-olive-700 sm:w-auto" (click)="returnPicker = !returnPicker">
+              <app-icon name="rotate" [size]="16"></app-icon>
+              {{ locale.isAr() ? 'ابدأ الإرجاع' : 'Begin return' }}
+            </button>
+          </div>
+          <ul *ngIf="returnPicker" class="mt-5 space-y-2">
+            <li *ngFor="let o of deliveredOrders">
+              <button type="button" class="flex w-full items-center justify-between gap-3 rounded-xl border border-olive-800/10 bg-sand-50 px-4 py-3 text-start hover:border-gold-400" (click)="startReturn(o.id)">
+                <span>
+                  <span class="block text-sm font-medium text-olive-800">{{ o.id }}</span>
+                  <span class="text-xs text-ink-muted">{{ formatDate(o.date) }} · {{ o.total | sar }}</span>
+                </span>
+                <app-icon name="chevron-left" [size]="16" class="text-ink-muted"></app-icon>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div class="mt-5 flex flex-col items-center justify-center rounded-xl border border-dashed border-olive-800/15 bg-white px-5 py-12 text-center sm:mt-6 sm:px-6 sm:py-14">
+          <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-sand-100 text-olive-600">
+            <app-icon name="package" [size]="28"></app-icon>
+          </div>
+          <h3 class="font-displayAr text-2xl text-olive-800">{{ locale.isAr() ? 'لا توجد طلبات إرجاع' : 'No returns yet' }}</h3>
+          <p class="mt-2 max-w-sm text-sm leading-relaxed text-ink-muted">{{ locale.isAr() ? 'كل طلباتك السابقة وصلت وبقيت معك. سنعرض حالة الإرجاع هنا عند وجودها.' : 'Everything you’ve ordered has stayed with you. Return status will appear here when there is one.' }}</p>
+        </div>
+      </section>
+
+      <button type="button" class="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-olive-800/15 bg-white text-sm font-medium text-ink-muted transition-colors duration-200 ease-premium hover:border-state-danger/30 hover:text-state-danger lg:hidden" (click)="signOut()">
+        <app-icon name="logout" [size]="16"></app-icon>
+        {{ locale.ui('signOut') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-review-form
+  *ngIf="reviewOpen && reviewProduct"
+  [productName]="locale.tr(reviewProduct.name)"
+  [reviewerName]="reviewerName"
+  (closed)="closeReview()"
+  (submitted)="submitReview($event)"
+></app-review-form>

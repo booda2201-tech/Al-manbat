@@ -1,0 +1,348 @@
+<a class="skip-link" href="#main">{{ locale.isAr() ? 'تخطي إلى المحتوى' : 'Skip to content' }}</a>
+<div class="flex min-h-screen w-full min-w-0 flex-col bg-sand-50" [attr.dir]="locale.dir()" [class.font-ar]="locale.isAr()">
+  <div *ngIf="!bareLayout && !focusLayout" class="sticky top-0 z-50">
+  <div class="grain relative bg-olive-800 text-sand-100">
+    <div class="mx-auto flex h-10 max-w-shell items-center gap-4 px-4 text-[11px] lg:px-10 lg:text-xs">
+      <div class="hidden shrink-0 items-center gap-2 lg:flex">
+        <app-icon name="pin" [size]="14" class="text-gold-300"></app-icon>
+        <span class="text-sand-100/80">{{ locale.isAr() ? 'التوصيل إلى الرياض' : 'Delivering to Riyadh' }}</span>
+      </div>
+      <div
+        class="ticker min-w-0 flex-1"
+        role="marquee"
+        [attr.aria-label]="locale.isAr() ? 'شريط العروض' : 'Offers ticker'"
+      >
+        <ng-template #tickerRow let-clone="clone">
+          <div class="ticker-group" [attr.aria-hidden]="clone">
+            <ng-container *ngFor="let item of tickerItems">
+              <span class="ticker-sep" aria-hidden="true"></span>
+              <a *ngIf="item.to && !clone" [routerLink]="item.to" class="ticker-item">{{ locale.tr(item.label) }}</a>
+              <span *ngIf="!item.to || clone" class="ticker-item">{{ locale.tr(item.label) }}</span>
+            </ng-container>
+          </div>
+        </ng-template>
+        <ng-container *ngTemplateOutlet="tickerRow; context: { clone: false }"></ng-container>
+        <ng-container *ngTemplateOutlet="tickerRow; context: { clone: true }"></ng-container>
+      </div>
+      <div class="hidden shrink-0 items-center gap-5 lg:flex">
+        <a routerLink="/support" class="hover:text-gold-300">{{ locale.ui('support') }}</a>
+        <a routerLink="/track" class="hover:text-gold-300">{{ locale.ui('trackOrder') }}</a>
+        <a routerLink="/login" class="hover:text-gold-300">{{ locale.ui('signIn') }}</a>
+        <button type="button" class="inline-flex items-center gap-1.5 hover:text-gold-300" (click)="locale.toggle()">
+          <app-icon name="globe" [size]="14"></app-icon> {{ locale.ui('language') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <header class="bg-sand-50/95 backdrop-blur" [class.shadow-md]="true" (mouseleave)="openMenu = null">
+    <div class="mx-auto flex h-[72px] max-w-shell items-center gap-3 px-4 lg:gap-4 lg:px-10">
+      <button type="button" class="-ms-2 rounded p-2 text-olive-700 lg:hidden" (click)="store.menuOpen.set(true)" [attr.aria-label]="locale.ui('menu')">
+        <app-icon name="menu"></app-icon>
+      </button>
+      <app-logo class="ms-auto lg:ms-0" size="md"></app-logo>
+      <button type="button" class="group hidden h-11 w-full max-w-xl items-center gap-3 rounded-md border border-olive-800/15 bg-white px-4 text-start text-sm text-ink-muted lg:ms-8 lg:flex" (click)="store.searchOpen.set(true)">
+        <app-icon name="search" [size]="16" class="text-gold-400"></app-icon>
+        <span class="truncate">{{ locale.ui('searchPlaceholder') }}</span>
+      </button>
+      <div class="ms-auto hidden shrink-0 items-center gap-0.5 lg:flex lg:gap-1">
+        <a routerLink="/login" class="hidden h-11 items-center gap-2 rounded-md px-2.5 text-[13px] font-medium text-olive-700 transition-colors duration-200 ease-premium hover:text-gold-400 lg:inline-flex" [attr.aria-label]="locale.ui('signIn')">
+          <app-icon name="user" [size]="20"></app-icon>
+          <span class="hidden lg:inline">{{ locale.ui('signIn') }}</span>
+        </a>
+        <a routerLink="/compare" class="header-icon hidden lg:inline-flex" [attr.aria-label]="locale.ui('compare')">
+          <app-icon name="scale" [size]="22"></app-icon>
+          <span *ngIf="store.compare().length" class="header-icon-badge">{{ store.compare().length }}</span>
+        </a>
+        <a routerLink="/wishlist" class="header-icon hidden lg:inline-flex" [attr.aria-label]="locale.ui('wishlist')">
+          <app-icon name="heart" [size]="22"></app-icon>
+          <span *ngIf="store.wishlist().length" class="header-icon-badge">{{ store.wishlist().length }}</span>
+        </a>
+        <button type="button" class="header-icon hidden lg:inline-flex" (click)="store.cartOpen.set(true)" [attr.aria-label]="locale.ui('cart')">
+          <app-icon name="cart" [size]="22"></app-icon>
+          <span *ngIf="store.cartCount()" class="header-icon-badge">{{ store.cartCount() }}</span>
+        </button>
+      </div>
+    </div>
+    <nav
+      [attr.aria-label]="locale.ui('allCategories')"
+      class="relative hidden border-t border-olive-800/10 lg:block"
+    >
+      <div class="mx-auto flex max-w-shell items-center gap-1 px-10">
+        <button
+          *ngFor="let c of categories"
+          type="button"
+          class="group relative flex items-center gap-1.5 whitespace-nowrap px-3.5 py-3.5 text-[13px] font-medium transition-colors duration-200 ease-premium"
+          [ngClass]="navCatClass(c.slug)"
+          [attr.aria-expanded]="openMenu === c.slug"
+          (mouseenter)="openMenu = c.slug"
+          (focus)="openMenu = c.slug"
+          (click)="openMenu = openMenu === c.slug ? null : c.slug"
+        >
+          {{ locale.tr(c.name) }}
+          <app-icon name="chevron-down" [size]="14" class="transition-transform duration-200 ease-premium" [class.rotate-180]="openMenu === c.slug"></app-icon>
+          <span class="absolute inset-x-3 bottom-0 h-[2px] origin-center bg-gold-400 transition-transform duration-200 ease-premium" [ngClass]="openMenu === c.slug ? 'scale-x-100' : 'scale-x-0'"></span>
+        </button>
+        <span class="mx-2 h-4 w-px bg-olive-800/15"></span>
+        <a routerLink="/offers" routerLinkActive="text-clay-400" class="whitespace-nowrap px-3.5 py-3.5 text-[13px] font-semibold text-clay-400/90 transition-colors duration-200 ease-premium hover:text-clay-400">{{ locale.ui('offers') }}</a>
+        <a routerLink="/new" routerLinkActive="text-olive-700" class="whitespace-nowrap px-3.5 py-3.5 text-[13px] font-medium text-ink-soft transition-colors duration-200 ease-premium hover:text-olive-700">{{ locale.ui('newArrivals') }}</a>
+        <a routerLink="/about" routerLinkActive="text-olive-700" class="whitespace-nowrap px-3.5 py-3.5 text-[13px] font-medium text-ink-soft transition-colors duration-200 ease-premium hover:text-olive-700">{{ locale.ui('aboutBrand') }}</a>
+      </div>
+
+      <div *ngIf="openMenu && openCategory as cat" class="absolute inset-x-0 top-full z-50 border-t border-olive-800/10 bg-sand-50 shadow-lg">
+        <div class="mx-auto grid max-w-shell gap-8 px-6 py-9 lg:grid-cols-[1fr_1fr_320px] lg:px-10">
+          <div>
+            <p class="mb-4 text-2xs uppercase tracking-[0.2em] text-gold-400">{{ locale.tr(cat.name) }}</p>
+            <ul class="grid grid-cols-2 gap-x-6 gap-y-2.5">
+              <li *ngFor="let s of cat.subcategories">
+                <a
+                  [routerLink]="['/listing', cat.slug]"
+                  [queryParams]="{ sub: s.slug }"
+                  class="group flex items-baseline justify-between gap-2 text-sm text-ink-soft transition-colors duration-150 ease-premium hover:text-olive-700"
+                  (click)="openMenu = null"
+                >
+                  <span>{{ locale.tr(s.name) }}</span>
+                  <span class="text-xs text-sand-300 transition-colors duration-150 ease-premium group-hover:text-gold-400">{{ s.count | countLoc }}</span>
+                </a>
+              </li>
+            </ul>
+            <a
+              [routerLink]="['/listing', cat.slug]"
+              class="mt-6 inline-flex items-center gap-1.5 border-b border-olive-800/20 pb-1 text-[13px] font-medium text-olive-700 transition-colors duration-200 ease-premium hover:border-gold-400 hover:text-gold-400"
+              (click)="openMenu = null"
+            >
+              {{ locale.ui('shopAll') }} — {{ locale.tr(cat.name) }}
+              <app-icon name="arrow-up-right" [size]="14" class="rtl:-scale-x-100"></app-icon>
+            </a>
+          </div>
+
+          <div>
+            <p class="mb-4 text-2xs uppercase tracking-[0.2em] text-gold-400">{{ locale.ui('bestSellers') }}</p>
+            <ul class="space-y-3">
+              <li *ngFor="let p of menuProducts(cat.slug)">
+                <a [routerLink]="['/product', p.slug]" class="group flex items-center gap-3" (click)="openMenu = null">
+                  <span class="h-14 w-14 shrink-0 overflow-hidden rounded bg-sand-100">
+                    <img [src]="p.image" alt="" class="h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block truncate text-[13px] font-medium text-olive-800">{{ locale.tr(p.name) }}</span>
+                    <span class="price block text-xs font-bold">{{ p.price | sar }}</span>
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <a
+            [routerLink]="['/category', cat.slug]"
+            class="group relative hidden min-h-[220px] overflow-hidden rounded-lg lg:block"
+            (click)="openMenu = null"
+          >
+            <img [src]="cat.image" alt="" class="h-full w-full object-cover transition-transform duration-[600ms] ease-premium group-hover:scale-[1.05]" />
+            <span class="absolute inset-0 bg-olive-900/45"></span>
+            <span class="absolute inset-x-5 bottom-5 text-sand-50">
+              <span class="block font-display text-xl leading-tight">{{ locale.tr(cat.tagline) }}</span>
+              <span class="mt-1.5 block text-xs uppercase tracking-[0.18em] text-gold-200">{{ locale.ui('explore') }}</span>
+            </span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </header>
+  </div>
+
+  <main id="main" class="min-w-0 flex-1" [class.pb-24]="!bareLayout && !focusLayout" [class.lg:pb-0]="!bareLayout">
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer *ngIf="!bareLayout && !focusLayout" class="grain relative mt-20 bg-olive-800 pb-24 text-sand-100 lg:pb-0">
+    <div class="mx-auto max-w-shell px-4 lg:px-10">
+      <div class="grid gap-10 border-b border-sand-100/10 py-14 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr]">
+        <div>
+          <app-logo tone="light" size="md"></app-logo>
+          <p class="mt-5 max-w-xs text-[13px] leading-relaxed text-sand-100/70">{{ locale.isAr() ? 'متجر الزيتون والمخللات — من بستان الجوف إلى مائدة بيتك، باختيار دقيق لكل دفعة.' : 'An olive and pickle house — from the Al-Jouf grove to your table, every batch chosen with care.' }}</p>
+        </div>
+        <div>
+          <h3 class="mb-4 text-2xs uppercase tracking-[0.2em] text-gold-300">{{ locale.ui('allCategories') }}</h3>
+          <a *ngFor="let c of categories" [routerLink]="['/category', c.slug]" class="mb-2.5 block text-[13px] text-sand-100/75 hover:text-gold-300">{{ locale.tr(c.name) }}</a>
+        </div>
+        <div *ngFor="let col of footerCols">
+          <h3 class="mb-4 text-2xs uppercase tracking-[0.2em] text-gold-300">{{ locale.tr(col.title) }}</h3>
+          <a *ngFor="let l of col.links" [routerLink]="l.to" class="mb-2.5 block text-[13px] text-sand-100/75 hover:text-gold-300">{{ locale.tr(l.label) }}</a>
+        </div>
+      </div>
+      <div class="grid gap-8 border-b border-sand-100/10 py-12 lg:grid-cols-[1.2fr_1fr]">
+        <div>
+          <h2 class="font-display text-3xl text-sand-50">{{ locale.ui('newsletter') }}</h2>
+          <p class="mt-2 text-[13px] text-sand-100/70">{{ locale.ui('newsletterHint') }}</p>
+          <form class="mt-5 flex h-12 max-w-md overflow-hidden rounded-xl bg-olive-900/50 ring-1 ring-sand-100/20 focus-within:ring-gold-400/70" (submit)="subscribe($event)">
+            <input type="email" required [(ngModel)]="email" name="nl" class="h-full min-w-0 flex-1 bg-transparent px-4 text-sm text-sand-50 outline-none placeholder:text-sand-100/45" [placeholder]="locale.ui('emailPlaceholder')" />
+            <button class="h-full shrink-0 bg-gold-400 px-5 text-sm font-semibold text-olive-900 transition-colors duration-200 ease-premium hover:bg-gold-300" type="submit">{{ locale.ui('subscribe') }}</button>
+          </form>
+          <p *ngIf="subscribed" class="mt-3 text-[13px] text-gold-300">{{ locale.isAr() ? 'تم تسجيلك. أهلاً بك في الدائرة.' : 'You’re in. Welcome to the circle.' }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2 self-end">
+          <span *ngFor="let m of payments" class="rounded border border-sand-100/15 bg-olive-900/40 px-3 py-2 text-[11px] font-medium text-sand-100/80">{{ m }}</span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-3 py-6 text-xs text-sand-100/55 sm:flex-row sm:justify-between">
+        <p>{{ locale.isAr() ? '© ٢٠٢٦ المنبت. جميع الحقوق محفوظة.' : '© 2026 Almanbat. All rights reserved.' }}</p>
+        <div class="flex gap-5">
+          <a routerLink="/faq">{{ locale.isAr() ? 'سياسة الخصوصية' : 'Privacy' }}</a>
+          <a routerLink="/faq">{{ locale.isAr() ? 'الشروط' : 'Terms' }}</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <nav *ngIf="!bareLayout && !focusLayout" class="mobile-dock lg:hidden" [attr.aria-label]="locale.ui('menu')">
+    <a routerLink="/" routerLinkActive="is-on" [routerLinkActiveOptions]="{ exact: true }" class="mobile-dock__item">
+      <app-icon name="home" [size]="22"></app-icon>
+      {{ locale.isAr() ? 'الرئيسية' : 'Home' }}
+    </a>
+    <a routerLink="/listing/all" routerLinkActive="is-on" class="mobile-dock__item">
+      <app-icon name="grid" [size]="22"></app-icon>
+      {{ locale.ui('shopAll') }}
+    </a>
+    <button type="button" class="mobile-dock__item" [class.is-on]="store.searchOpen()" (click)="store.searchOpen.set(true)">
+      <app-icon name="search" [size]="22"></app-icon>
+      {{ locale.ui('search') }}
+    </button>
+    <a routerLink="/wishlist" routerLinkActive="is-on" class="mobile-dock__item">
+      <app-icon name="heart" [size]="22"></app-icon>
+      {{ locale.ui('wishlist') }}
+      <span *ngIf="store.wishlist().length" class="mobile-dock__badge">{{ store.wishlist().length }}</span>
+    </a>
+    <button type="button" class="mobile-dock__item" [class.is-on]="store.cartOpen()" (click)="store.cartOpen.set(true)">
+      <app-icon name="cart" [size]="22"></app-icon>
+      {{ locale.ui('cart') }}
+      <span *ngIf="store.cartCount()" class="mobile-dock__badge">{{ store.cartCount() }}</span>
+    </button>
+  </nav>
+</div>
+
+<div *ngIf="store.menuOpen()" class="menu-sheet-scrim lg:hidden" (click)="store.menuOpen.set(false)"></div>
+<aside *ngIf="store.menuOpen()" class="menu-sheet lg:hidden" [attr.aria-label]="locale.ui('menu')">
+  <header class="shrink-0 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-8">
+    <div class="flex items-center justify-between gap-3 rounded-2xl bg-white px-2.5 py-1.5 shadow-sm ring-1 ring-olive-800/10">
+      <div class="flex min-w-0 items-center" (click)="store.menuOpen.set(false)">
+        <app-logo size="md"></app-logo>
+      </div>
+      <button
+        type="button"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-olive-800 text-sand-50 transition-colors duration-200 ease-premium hover:bg-olive-700 hover:text-gold-300"
+        [attr.aria-label]="locale.isAr() ? 'إغلاق' : 'Close'"
+        (click)="store.menuOpen.set(false)"
+      >
+        <app-icon name="close" [size]="15"></app-icon>
+      </button>
+    </div>
+  </header>
+
+  <div class="no-rail min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8">
+    <ul class="grid gap-2.5 md:grid-cols-2 md:gap-3">
+      <li *ngFor="let c of categories; let last = last" class="menu-tile" [ngClass]="menuCatSpan(last)">
+        <a
+          [routerLink]="['/listing', c.slug]"
+          class="group relative isolate flex h-[5.5rem] overflow-hidden rounded-2xl"
+          [ngClass]="menuCatHeight(last)"
+          (click)="store.menuOpen.set(false)"
+        >
+          <img [src]="c.image" alt="" class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" />
+          <span class="absolute inset-0 bg-gradient-to-t from-olive-900/90 via-olive-900/45 to-olive-900/10"></span>
+          <span class="relative z-10 flex w-full items-end justify-between gap-3 p-4">
+            <span class="min-w-0">
+              <span class="block font-displayAr text-xl leading-none text-sand-50">{{ locale.tr(c.name) }}</span>
+              <span class="mt-1.5 block truncate text-[11px] text-sand-100/75">{{ locale.tr(c.tagline) }}</span>
+            </span>
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-olive-900">
+              <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
+            </span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="mt-5 grid grid-cols-2 gap-2.5 md:grid-cols-3">
+      <a routerLink="/offers" class="rounded-xl bg-olive-800 px-4 py-3.5 text-sand-50" (click)="store.menuOpen.set(false)">
+        <span class="block text-[11px] uppercase tracking-[0.14em] text-gold-300">{{ locale.isAr() ? 'الآن' : 'Now' }}</span>
+        <span class="mt-1 block text-sm font-semibold">{{ locale.ui('offers') }}</span>
+      </a>
+      <a routerLink="/new" class="rounded-xl border border-olive-800/15 bg-white px-4 py-3.5 text-olive-800" (click)="store.menuOpen.set(false)">
+        <span class="block text-[11px] uppercase tracking-[0.14em] text-gold-400">{{ locale.isAr() ? 'جديد' : 'New' }}</span>
+        <span class="mt-1 block text-sm font-semibold">{{ locale.ui('newArrivals') }}</span>
+      </a>
+      <a routerLink="/listing/all" class="hidden items-center justify-center rounded-xl bg-gold-400 px-4 py-3.5 text-sm font-semibold text-olive-900 md:flex" (click)="store.menuOpen.set(false)">
+        {{ locale.ui('shopAll') }}
+      </a>
+    </div>
+  </div>
+
+  <footer class="shrink-0 border-t border-olive-800/10 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 md:px-8">
+    <a routerLink="/listing/all" class="shimmer-edge mb-3 flex h-12 items-center justify-center rounded-xl bg-gold-400 text-sm font-semibold text-olive-900 md:hidden" (click)="store.menuOpen.set(false)">
+      {{ locale.ui('shopAll') }}
+    </a>
+    <div class="grid grid-cols-4 gap-1">
+      <a routerLink="/account" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="store.menuOpen.set(false)">
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="user" [size]="18"></app-icon></span>
+        {{ locale.ui('account') }}
+      </a>
+      <a routerLink="/wishlist" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="store.menuOpen.set(false)">
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="heart" [size]="18"></app-icon></span>
+        {{ locale.ui('wishlist') }}
+      </a>
+      <a routerLink="/compare" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="store.menuOpen.set(false)">
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="scale" [size]="18"></app-icon></span>
+        {{ locale.ui('compare') }}
+      </a>
+      <button type="button" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="locale.toggle()">
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="globe" [size]="18"></app-icon></span>
+        {{ locale.ui('language') }}
+      </button>
+    </div>
+  </footer>
+</aside>
+
+<div *ngIf="store.searchOpen()" class="search-scrim" (click)="store.searchOpen.set(false)"></div>
+<div *ngIf="store.searchOpen()" class="search-sheet" role="dialog" [attr.aria-label]="locale.ui('search')">
+  <form class="search-sheet__bar" (submit)="$event.preventDefault(); goSearch()">
+    <app-icon name="search" [size]="18" class="text-gold-400"></app-icon>
+    <input
+      class="search-sheet__input"
+      type="search"
+      name="q"
+      autofocus
+      [(ngModel)]="query"
+      [placeholder]="locale.ui('searchPlaceholder')"
+      [attr.aria-label]="locale.ui('search')"
+    />
+    <button type="button" class="search-sheet__icon-btn" (click)="store.searchOpen.set(false)" [attr.aria-label]="locale.ui('close')">
+      <app-icon name="close" [size]="16"></app-icon>
+    </button>
+  </form>
+
+  <div class="search-sheet__body no-rail">
+    <a
+      *ngFor="let p of searchHits()"
+      [routerLink]="['/product', p.slug]"
+      class="search-sheet__hit"
+      (click)="store.searchOpen.set(false)"
+    >
+      <img [src]="p.image" class="search-sheet__thumb" [alt]="locale.tr(p.name)" />
+      <span class="search-sheet__name">{{ locale.tr(p.name) }}</span>
+      <strong class="search-sheet__price">{{ p.price | sar }}</strong>
+    </a>
+    <p *ngIf="query.trim() && !searchHits().length" class="search-sheet__empty">
+      {{ locale.ui('noResults') }}
+    </p>
+  </div>
+</div>
+
+<app-cart-drawer></app-cart-drawer>
+
+<div class="fixed bottom-20 start-4 z-[100] w-80 space-y-2 lg:bottom-6">
+  <div *ngFor="let t of store.toasts()" class="rounded-xl bg-olive-800 p-3 text-sm text-sand-50 shadow-lg">
+    <strong>{{ t.title }}</strong>
+    <p *ngIf="t.description" class="text-sand-100/80">{{ t.description }}</p>
+  </div>
+</div>

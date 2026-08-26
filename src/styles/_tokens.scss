@@ -1,0 +1,86 @@
+:root {
+  /* Official brand palette */
+  --color-primary-olive: #3f5d2a;
+  --color-deep-olive: #2e3310;
+  --color-olive-gold: #a88937;
+  --color-warm-brown: #7c511a;
+  --color-soft-ivory: #eee6c9;
+
+  /* Semantic tokens */
+  --color-primary: var(--color-primary-olive);
+  --color-primary-hover: #334c22;
+  --color-secondary: var(--color-olive-gold);
+  --color-background: #faf6e8;
+  --color-surface: var(--color-soft-ivory);
+  --color-surface-raised: #f7f1dc;
+  --color-surface-highest: #ffffff;
+  --color-on-primary: #ffffff;
+  --color-on-deep: var(--color-soft-ivory);
+  --color-text: #1c1f14;
+  --color-text-muted: #5c604c;
+  --color-border: #d9d1b3;
+  --color-border-strong: #c4b992;
+  --color-focus: #a88937;
+  --color-disabled: #cfc7ab;
+  --color-disabled-text: #8a866f;
+
+  --color-success: #3d6b32;
+  --color-success-bg: #e7f0df;
+  --color-warning: #8a6a1f;
+  --color-warning-bg: #f4ead0;
+  --color-danger: #8b3a2a;
+  --color-danger-bg: #f4e4de;
+
+  --shadow-olive: 0 8px 28px rgba(46, 51, 16, 0.08);
+  --shadow-olive-hover: 0 14px 36px rgba(46, 51, 16, 0.14);
+  --shadow-header: 0 2px 12px rgba(46, 51, 16, 0.18);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 80px;
+
+  --container: 1280px;
+  --gutter: 24px;
+  --header-h: 88px;
+  --announce-h: 36px;
+
+  --font: "Tajawal", "Calibri", "Segoe UI", sans-serif;
+  --ease: 180ms ease;
+  --z-header: 100;
+  --z-overlay: 200;
+  --z-drawer: 300;
+  --z-toast: 400;
+  --z-modal: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ease: 0.01ms linear;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .ticker-group {
+    animation-duration: 42s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

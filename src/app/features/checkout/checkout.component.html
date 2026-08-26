@@ -1,0 +1,96 @@
+<div class="container page" *ngIf="cart.count(); else empty">
+  <ol class="steps">
+    <li *ngFor="let s of steps; let i = index" [class.on]="draft.step === i + 1" [class.done]="draft.step > i + 1">
+      <span>{{ i + 1 }}</span> {{ s }}
+    </li>
+  </ol>
+  <div class="grid">
+    <form class="card-surface form" (submit)="$event.preventDefault()">
+      <section *ngIf="draft.step === 1">
+        <h1>بيانات العميل</h1>
+        <label class="check"><input type="checkbox" [(ngModel)]="draft.guest" name="guest" /> إتمام الشراء كضيف</label>
+        <div class="field"><label>الاسم</label><input name="n" [(ngModel)]="draft.customerName" /><span class="field-error" *ngIf="errors['name']">{{ errors['name'] }}</span></div>
+        <div class="field"><label>الهاتف</label><input name="m" [(ngModel)]="draft.mobile" /><span class="field-error" *ngIf="errors['mobile']">{{ errors['mobile'] }}</span></div>
+        <div class="field"><label>البريد (اختياري)</label><input name="e" [(ngModel)]="draft.email" /><span class="field-error" *ngIf="errors['email']">{{ errors['email'] }}</span></div>
+      </section>
+      <section *ngIf="draft.step === 2">
+        <h1>عنوان التوصيل</h1>
+        <div class="field"><label>الاسم</label><input name="fn" [(ngModel)]="draft.address.fullName" /><span class="field-error" *ngIf="errors['fullName']">{{ errors['fullName'] }}</span></div>
+        <div class="field"><label>الموبايل</label><input name="am" [(ngModel)]="draft.address.mobile" /><span class="field-error" *ngIf="errors['mobile']">{{ errors['mobile'] }}</span></div>
+        <div class="field"><label>المحافظة</label>
+          <select name="g" [(ngModel)]="draft.address.governorate">
+            <option value="">اختَر</option>
+            <option *ngFor="let g of govs" [value]="g">{{ g }}</option>
+          </select>
+          <span class="field-error" *ngIf="errors['governorate']">{{ errors['governorate'] }}</span>
+        </div>
+        <div class="field"><label>المدينة</label><input name="city" [(ngModel)]="draft.address.city" /><span class="field-error" *ngIf="errors['city']">{{ errors['city'] }}</span></div>
+        <div class="field"><label>المنطقة</label><input name="area" [(ngModel)]="draft.address.area" /><span class="field-error" *ngIf="errors['area']">{{ errors['area'] }}</span></div>
+        <div class="field"><label>الشارع</label><input name="st" [(ngModel)]="draft.address.street" /><span class="field-error" *ngIf="errors['street']">{{ errors['street'] }}</span></div>
+        <div class="field"><label>المبنى</label><input name="b" [(ngModel)]="draft.address.building" /><span class="field-error" *ngIf="errors['building']">{{ errors['building'] }}</span></div>
+        <div class="field"><label>الشقة</label><input name="ap" [(ngModel)]="draft.address.apartment" /><span class="field-error" *ngIf="errors['apartment']">{{ errors['apartment'] }}</span></div>
+        <div class="field"><label>ملاحظات التوصيل</label><textarea name="notes" [(ngModel)]="draft.address.notes"></textarea></div>
+      </section>
+      <section *ngIf="draft.step === 3">
+        <h1>طريقة التوصيل</h1>
+        <label class="pay" *ngFor="let d of deliveries">
+          <input type="radio" name="del" [value]="d.id" [(ngModel)]="draft.deliveryMethodId" />
+          <div>
+            <strong>{{ d.nameAr }}</strong>
+            <p>{{ d.estimate }} — {{ d.cost | egp }}</p>
+          </div>
+        </label>
+      </section>
+      <section *ngIf="draft.step === 4">
+        <h1>طريقة الدفع</h1>
+        <label class="pay" *ngFor="let p of payments">
+          <input type="radio" name="pay" [value]="p.id" [(ngModel)]="draft.paymentMethodId" />
+          <div>
+            <strong>{{ p.nameAr }}</strong>
+            <p>{{ p.description }}</p>
+          </div>
+        </label>
+        <div *ngIf="draft.paymentMethodId === 'card' && draft.cardPlaceholder" class="card-fields">
+          <div class="field"><label>رقم البطاقة</label><input name="cn" [(ngModel)]="draft.cardPlaceholder.number" placeholder="•••• •••• •••• ••••" /></div>
+          <span class="field-error" *ngIf="errors['card']">{{ errors['card'] }}</span>
+        </div>
+        <div *ngIf="draft.paymentMethodId === 'wallet'" class="field">
+          <label>رقم المحفظة</label>
+          <input name="w" [(ngModel)]="draft.walletPlaceholder" />
+        </div>
+      </section>
+      <section *ngIf="draft.step === 5 || draft.step === 6">
+        <h1>{{ draft.step === 6 ? 'تأكيد الطلب' : 'مراجعة الطلب' }}</h1>
+        <p>{{ draft.customerName }} — {{ draft.mobile }}</p>
+        <p>{{ draft.address.street }}، {{ draft.address.city }}، {{ draft.address.governorate }}</p>
+        <p>{{ deliveryLabel() }} · {{ paymentLabel() }}</p>
+        <p class="muted" *ngIf="failed">تعذر إرسال الطلب. يمكنك إعادة المحاولة.</p>
+      </section>
+      <div class="nav">
+        <button class="btn btn-ghost" type="button" (click)="back()" [disabled]="draft.step === 1">رجوع</button>
+        <button class="btn btn-primary" type="button" *ngIf="draft.step < 6" (click)="next()">التالي</button>
+        <button class="btn btn-gold" type="button" *ngIf="draft.step === 6" (click)="submit()" [disabled]="loading">
+          {{ loading ? 'جارٍ التأكيد…' : failed ? 'إعادة المحاولة' : 'تأكيد الطلب' }}
+        </button>
+      </div>
+    </form>
+    <aside class="sum card-surface">
+      <h2>ملخص الطلب</h2>
+      <div *ngFor="let l of cart.lineItems()" class="line">
+        <span>{{ l.name }} × {{ l.item.quantity }}</span>
+        <span>{{ l.price * l.item.quantity | egp }}</span>
+      </div>
+      <p>المجموع <span>{{ cart.subtotal() | egp }}</span></p>
+      <p>الخصم <span>{{ cart.discount() | egp }}</span></p>
+      <p>الشحن <span>{{ shipping | egp }}</span></p>
+      <p class="total">الإجمالي <strong>{{ total | egp }}</strong></p>
+    </aside>
+  </div>
+</div>
+<ng-template #empty>
+  <div class="container page">
+    <h1>لا يمكن إتمام الشراء</h1>
+    <p>السلة فاضية حالياً.</p>
+    <a class="btn btn-primary" routerLink="/shop">ابدأ التسوق</a>
+  </div>
+</ng-template>

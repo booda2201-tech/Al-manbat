@@ -1,0 +1,43 @@
+.page { padding: 32px 0 64px; }
+.steps {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+}
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.steps span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-raised);
+}
+.steps .on, .steps .done { color: var(--color-primary); font-weight: 700; }
+.steps .on span, .steps .done span { background: var(--color-primary); color: #fff; }
+.grid { display: grid; gap: 20px; }
+.form, .sum { padding: 24px; }
+.form { display: grid; gap: 12px; }
+.pay {
+  display: flex;
+  gap: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.nav { display: flex; justify-content: space-between; margin-top: 16px; }
+.sum p, .line { display: flex; justify-content: space-between; margin-bottom: 8px; }
+@media (min-width: 900px) {
+  .grid { grid-template-columns: 1.5fr 0.8fr; }
+}

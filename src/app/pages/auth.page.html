@@ -1,0 +1,113 @@
+<section class="relative isolate min-h-dvh overflow-hidden">
+  <div class="absolute inset-0">
+    <img [src]="images.hero" alt="" class="h-full w-full object-cover" />
+    <div class="absolute inset-0 bg-olive-900/20 mix-blend-multiply"></div>
+    <div class="absolute inset-0 h-full w-full md:w-2/3" [ngClass]="scrimClass()"></div>
+  </div>
+
+  <div class="absolute end-6 top-6 z-20">
+    <button type="button" class="inline-flex items-center gap-2 rounded-full border border-olive-800/15 bg-sand-100/85 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-olive-800 shadow-sm backdrop-blur-md transition-colors duration-200 ease-premium hover:border-gold-400 hover:text-gold-400" (click)="locale.toggle()">
+      <app-icon name="globe" [size]="14"></app-icon>
+      EN / AR
+    </button>
+  </div>
+
+  <div class="relative z-10 mx-auto flex min-h-dvh w-full max-w-shell items-center justify-start px-4 py-8 lg:px-16">
+    <div class="auth-glass flex w-full max-h-[92vh] flex-col overflow-hidden rounded-xl shadow-[0_24px_64px_rgba(41,69,21,0.15)] sm:max-w-[440px]">
+      <div class="flex flex-col items-center px-7 pb-2 pt-8 text-center sm:px-9">
+        <a routerLink="/" class="auth-mark" [attr.aria-label]="locale.isAr() ? 'المنبت' : 'Almanbat'">
+          <img src="assets/brand/logo-mark.png" alt="" />
+        </a>
+        <p class="mt-5 flex items-center gap-2 text-[11px] text-ink-muted">
+          <span class="font-semibold uppercase tracking-[0.12em]">{{ signup ? 'Join us' : 'Welcome back' }}</span>
+          <span class="h-1 w-1 rounded-full bg-olive-800/25"></span>
+          <span class="font-ar">{{ signup ? 'أهلاً بك' : 'أهلاً بك مجدداً' }}</span>
+        </p>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-7 pb-8 pt-5 sm:px-9">
+        <form class="space-y-5" (submit)="submit($event)">
+          <div *ngIf="signup" class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-1.5">
+              <label class="auth-label" for="first-name">
+                <span>{{ locale.isAr() ? 'الاسم الأول' : 'First name' }}</span>
+                <span>{{ locale.isAr() ? 'First name' : 'الاسم الأول' }}</span>
+              </label>
+              <input id="first-name" required [(ngModel)]="firstName" name="firstName" class="auth-input" [placeholder]="locale.isAr() ? 'نورة' : 'Noura'" autocomplete="given-name" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="auth-label" for="last-name">
+                <span>{{ locale.isAr() ? 'اسم العائلة' : 'Last name' }}</span>
+                <span>{{ locale.isAr() ? 'Last name' : 'اسم العائلة' }}</span>
+              </label>
+              <input id="last-name" required [(ngModel)]="lastName" name="lastName" class="auth-input" [placeholder]="locale.isAr() ? 'العلي' : 'Al-Ali'" autocomplete="family-name" />
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="auth-label" for="email">
+              <span>{{ locale.isAr() ? 'البريد الإلكتروني' : 'Email address' }}</span>
+              <span>{{ locale.isAr() ? 'Email' : 'البريد الإلكتروني' }}</span>
+            </label>
+            <div class="auth-field">
+              <app-icon name="mail" [size]="18"></app-icon>
+              <input id="email" required type="email" [(ngModel)]="email" name="email" class="auth-input" placeholder="name@example.com" autocomplete="email" inputmode="email" />
+            </div>
+          </div>
+
+          <div *ngIf="signup" class="space-y-1.5">
+            <label class="auth-label" for="phone">
+              <span>{{ locale.isAr() ? 'الجوال' : 'Mobile' }}</span>
+              <span>{{ locale.isAr() ? 'Mobile' : 'الجوال' }}</span>
+            </label>
+            <div class="auth-field">
+              <app-icon name="phone" [size]="18"></app-icon>
+              <input id="phone" required type="tel" [(ngModel)]="phone" name="phone" class="auth-input" placeholder="+966 5X XXX XXXX" autocomplete="tel" />
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between gap-3">
+              <label class="auth-label mb-0" for="password">
+                <span>{{ locale.isAr() ? 'كلمة المرور' : 'Password' }}</span>
+                <span>{{ locale.isAr() ? 'Password' : 'كلمة المرور' }}</span>
+              </label>
+              <button *ngIf="!signup" type="button" class="shrink-0 text-[11px] font-semibold text-olive-700 transition-colors duration-200 ease-premium hover:text-gold-400" (click)="forgot()">
+                {{ locale.isAr() ? 'نسيتها؟' : 'Forgot?' }}
+              </button>
+            </div>
+            <div class="auth-field">
+              <app-icon name="lock" [size]="18"></app-icon>
+              <input id="password" required [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password" name="password" class="auth-input auth-input-end" placeholder="••••••••" autocomplete="current-password" />
+              <button type="button" class="auth-eye" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? (locale.isAr() ? 'إخفاء' : 'Hide') : (locale.isAr() ? 'إظهار' : 'Show')">
+                <app-icon [name]="showPassword ? 'eye-off' : 'eye'" [size]="16"></app-icon>
+              </button>
+            </div>
+          </div>
+
+          <p *ngIf="error" class="text-sm text-state-danger">{{ error }}</p>
+
+          <div class="space-y-3 pt-3">
+            <button type="submit" class="shimmer-edge flex h-[52px] w-full items-center justify-center rounded-lg bg-gold-400 text-[15px] font-semibold text-olive-900 shadow-gold transition-colors duration-300 ease-premium hover:bg-gold-300">
+              {{ signup ? (locale.isAr() ? 'إنشاء حساب' : 'Create account') : (locale.isAr() ? 'تسجيل الدخول' : 'Sign in') }}
+            </button>
+            <a [routerLink]="signup ? '/login' : '/signup'" class="flex h-[52px] w-full items-center justify-center rounded-lg border border-olive-800/20 text-[15px] font-semibold text-olive-800 transition-colors duration-300 ease-premium hover:border-olive-800/40 hover:bg-olive-50/50">
+              {{ signup ? (locale.isAr() ? 'لديك حساب؟ سجّل الدخول' : 'Have an account? Sign in') : (locale.isAr() ? 'إنشاء حساب' : 'Create account') }}
+            </a>
+          </div>
+        </form>
+
+        <div class="mt-7 flex items-center justify-center gap-6 border-t border-olive-800/10 pt-5 text-ink-muted">
+          <span class="inline-flex items-center gap-1.5 opacity-70">
+            <app-icon name="shield" [size]="16"></app-icon>
+            <span class="text-[10px] font-semibold uppercase tracking-[0.1em]">{{ locale.isAr() ? 'دخول آمن' : 'Secure login' }}</span>
+          </span>
+          <span class="inline-flex items-center gap-1.5 opacity-70">
+            <app-icon name="lock" [size]="16"></app-icon>
+            <span class="text-[10px] font-semibold uppercase tracking-[0.1em]">256-bit SSL</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

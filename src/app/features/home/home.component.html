@@ -1,0 +1,91 @@
+<section class="hero">
+  <img class="hero-img" [src]="hero" alt="تشكيل مرتب من زيت الزيتون ومنتجات عناية وجهاز مطبخ حديث على سطح دافئ" />
+  <div class="hero-shade"></div>
+  <div class="hero-copy container">
+    <img class="hero-logo" src="assets/brand/logo.png" alt="المنبت سر الخير" />
+    <h1>كل الخير في مكان واحد</h1>
+    <p>اختيارات موثوقة بجودة عالية، من احتياجات يومك إلى تفاصيل رفاهيتك.</p>
+    <div class="cta">
+      <a class="btn btn-primary" routerLink="/shop">تسوق الآن</a>
+      <a class="btn btn-outline light" href="#cats">اكتشف الأقسام</a>
+    </div>
+  </div>
+</section>
+
+<section class="trust container">
+  <article><app-icon name="shield"></app-icon><div><h3>منتجات موثوقة</h3><p>وصف واضح ومصادر مختارة</p></div></article>
+  <article><app-icon name="leaf"></app-icon><div><h3>جودة مختارة</h3><p>تشكيلة مرتبة لا مزدحمة</p></div></article>
+  <article><app-icon name="lock"></app-icon><div><h3>دفع آمن</h3><p>الدفع عند الاستلام ومتابعة الطلب</p></div></article>
+  <article><app-icon name="truck"></app-icon><div><h3>توصيل سريع</h3><p>إلى باب البيت بتقدير واضح</p></div></article>
+</section>
+
+<section class="section container" id="cats">
+  <header class="sec-head">
+    <h2 class="headline">تسوق حسب القسم</h2>
+    <div class="botanical-rule"></div>
+  </header>
+  <div class="cats">
+    <a class="cat" *ngFor="let c of cats" [routerLink]="['/category', c.slug]">
+      <img [src]="c.image" [alt]="c.nameAr" />
+      <span>{{ c.nameAr }}</span>
+    </a>
+  </div>
+</section>
+
+<section class="section container">
+  <header class="sec-head">
+    <h2 class="headline">اختيارات المنبت</h2>
+    <p class="muted">منتجات مميزة مرتّبة بعناية داخل تجربة واحدة.</p>
+  </header>
+  <div class="product-grid">
+    <app-product-card *ngFor="let p of featured" [product]="p"></app-product-card>
+  </div>
+</section>
+
+<section class="section container">
+  <header class="sec-head row">
+    <div>
+      <h2 class="headline">الأكثر مبيعاً</h2>
+    </div>
+    <div class="car-nav">
+      <button type="button" class="icon-nav" (click)="shift(-1)" aria-label="السابق">‹</button>
+      <button type="button" class="icon-nav" (click)="shift(1)" aria-label="التالي">›</button>
+    </div>
+  </header>
+  <div class="product-grid">
+    <app-product-card *ngFor="let p of visibleBest()" [product]="p"></app-product-card>
+  </div>
+</section>
+
+<section class="promo">
+  <div class="container">
+    <h2 class="headline">عروض تستحق الاكتشاف</h2>
+    <p>خصومات هادئة على مختارات غذائية وعناية وأجهزة.</p>
+    <a class="btn btn-gold" routerLink="/category/offers">شاهد العروض</a>
+  </div>
+</section>
+
+<section class="section container editorial">
+  <h2 class="headline">لأنك تستحق الأفضل</h2>
+  <div class="three">
+    <article>
+      <h3>من المصدر إلى بيتك</h3>
+      <p>نربط أصل المنتج بتجربة شراء واضحة، من المؤن اليومية إلى ما يخدم بيتك.</p>
+    </article>
+    <article>
+      <h3>اختيارات بعناية</h3>
+      <p>التشكيلة محدودة عمداً؛ الجودة والترتيب أهم من الكثرة.</p>
+    </article>
+    <article>
+      <h3>تجربة شراء أسهل</h3>
+      <p>بحث، سلة، ودفع بخطوات قصيرة باللغة العربية ومن اليمين لليسار.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section container" *ngIf="recent.length">
+  <h2 class="headline">قد يعجبك أيضاً</h2>
+  <div class="product-grid">
+    <app-product-card *ngFor="let p of recent" [product]="p"></app-product-card>
+  </div>
+</section>

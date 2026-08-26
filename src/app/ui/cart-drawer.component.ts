@@ -1,0 +1,88 @@
+import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, computed, effect } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { productById } from '../data/products';
+import { LocaleService } from '../services/locale.service';
+import { FREE_SHIPPING_THRESHOLD, StoreService } from '../services/store.service';
+import { formatPrice } from '../utils/format';
+import { SarPipe } from '../utils/sar.pipe';
+import { QtyComponent } from '../commerce/commerce.component';
+import { IconComponent } from './icon.component';
+
+@Component({
+  selector: 'app-cart-drawer',
+  standalone: true,
+  imports: [CommonModule, RouterLink, IconComponent, QtyComponent, SarPipe],
+  templateUrl: './cart-drawer.component.html',
+})
+export class CartDrawerComponent implements OnDestroy {
+  rows = computed(() =>
+    this.store
+      .lines()
+      .map((l) => ({ ...l, product: productById(l.productId)! }))
+      .filter((l) => l.product)
+  );
+
+  constructor(
+    public locale: LocaleService,
+    public store: StoreService,
+    private cdr: ChangeDetectorRef
+  ) {
+    effect(() => {
+      document.body.style.overflow = this.store.cartOpen() ? 'hidden' : '';
+      this.store.lines();
+      this.cdr.markForCheck();
+    });
+  }
+
+  ngOnDestroy(): void {
+    document.body.style.overflow = '';
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.store.cartOpen()) this.close();
+  }
+
+  close(): void {
+    this.store.cartOpen.set(false);
+  }
+
+  setQty(productId: string, qty: number): void {
+    this.store.setQty(productId, qty);
+  }
+
+  remove(productId: string): void {
+    this.store.removeLine(productId);
+  }
+
+  save(productId: string): void {
+    this.store.saveForLater(productId);
+  }
+
+  trackById(_: number, row: { productId: string }): string {
+    return row.productId;
+  }
+
+  remainingShip(): number {
+    return Math.max(0, FREE_SHIPPING_THRESHOLD - this.store.subtotal());
+  }
+
+  shipProgress(): number {
+    return Math.min(100, (this.store.subtotal() / FREE_SHIPPING_THRESHOLD) * 100);
+  }
+
+  shipHint(): string {
+    const rem = this.remainingShip();
+    if (!rem) return this.locale.ui('freeShippingUnlocked');
+    return this.locale.ui('freeShippingProgress').replace('{x}', formatPrice(rem, this.locale.locale()));
+  }
+
+  shipValueClass(): string {
+    return this.store.shipping() === 0 ? 'font-medium text-state-success' : 'text-olive-800';
+  }
+
+  stockMax(stock: number): number {
+    return Math.max(1, stock);
+  }
+}

@@ -1,0 +1,85 @@
+<div class="container shop">
+  <app-breadcrumbs [items]="crumbs"></app-breadcrumbs>
+  <header class="head">
+    <div>
+      <h1 class="headline">{{ title }}</h1>
+      <p class="muted">{{ description }}</p>
+    </div>
+    <div class="meta">
+      <span>{{ total }} منتج</span>
+      <label>
+        <span class="sr-only">الترتيب</span>
+        <select [(ngModel)]="sort" (change)="apply()">
+          <option *ngFor="let k of sortKeys" [value]="k">{{ sortLabels[k] }}</option>
+        </select>
+      </label>
+      <button class="btn btn-outline btn-sm mobile" type="button" (click)="ui.openFilters()">
+        <app-icon name="filter" [size]="16"></app-icon> الفلاتر
+      </button>
+    </div>
+  </header>
+
+  <div class="chips" *ngIf="chips.length">
+    <button class="chip" *ngFor="let c of chips" type="button" (click)="removeChip(c.kind, c.value)">
+      {{ c.label }} ×
+    </button>
+  </div>
+
+  <div class="layout">
+    <aside class="filters" [class.open]="ui.filtersOpen()">
+      <div class="filters-head mobile">
+        <strong>الفلاتر</strong>
+        <button type="button" (click)="ui.filtersOpen.set(false)">إغلاق</button>
+      </div>
+      <h3>السعر</h3>
+      <div class="range">
+        <input type="number" [(ngModel)]="minPrice" [placeholder]="'من'" />
+        <input type="number" [(ngModel)]="maxPrice" [placeholder]="'إلى'" />
+      </div>
+      <h3>العلامة</h3>
+      <label class="check" *ngFor="let b of brands">
+        <input type="checkbox" [checked]="selectedBrands.includes(b.id)" (change)="toggleBrand(b.id, $any($event.target).checked)" />
+        {{ b.nameAr }}
+      </label>
+      <h3>التقييم</h3>
+      <label class="check" *ngFor="let r of [4, 3]">
+        <input type="radio" name="rating" [checked]="minRating === r" (change)="minRating = r" />
+        {{ r }} نجوم فأكثر
+      </label>
+      <h3>التوفر والعروض</h3>
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="offerOnly" /> عروض فقط
+      </label>
+      <label class="check">
+        <input type="radio" name="avail" [checked]="availability === 'in_stock'" (change)="availability = 'in_stock'" />
+        متوفر
+      </label>
+      <div class="filter-actions">
+        <button class="btn btn-primary" type="button" (click)="apply()">تطبيق الفلاتر</button>
+        <button class="btn btn-outline" type="button" (click)="clear()">مسح الكل</button>
+      </div>
+    </aside>
+
+    <div class="results">
+      <div class="product-grid" *ngIf="loading">
+        <app-product-skeleton *ngFor="let i of [1, 2, 3, 4, 5, 6]"></app-product-skeleton>
+      </div>
+      <div class="error" *ngIf="error">
+        <p>تعذر تحميل المنتجات.</p>
+        <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
+      </div>
+      <app-empty *ngIf="!loading && !error && !items.length" title="لا توجد نتائج" message="عدّل الفلاتر أو جرّب كلمة بحث أخرى.">
+        <button class="btn btn-primary" type="button" (click)="clear()">مسح الفلاتر</button>
+      </app-empty>
+      <div class="product-grid" *ngIf="!loading && items.length">
+        <app-product-card *ngFor="let p of items" [product]="p"></app-product-card>
+      </div>
+      <nav class="pager" *ngIf="pages.length > 1" aria-label="ترقيم الصفحات">
+        <button type="button" [disabled]="page === 1" (click)="goPage(page - 1)">السابق</button>
+        <button type="button" *ngFor="let p of pages" [class.on]="p === page" (click)="goPage(p)">{{ p }}</button>
+        <button type="button" [disabled]="page === pages.length" (click)="goPage(page + 1)">التالي</button>
+      </nav>
+    </div>
+  </div>
+</div>
+<div class="overlay" *ngIf="ui.filtersOpen()" (click)="ui.filtersOpen.set(false)"></div>

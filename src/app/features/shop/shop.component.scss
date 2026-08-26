@@ -1,0 +1,131 @@
+.shop {
+  padding-block: 32px 64px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+select {
+  background: var(--color-surface-highest);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.layout {
+  display: grid;
+  gap: 24px;
+}
+
+.filters {
+  background: var(--color-surface);
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.filters h3 {
+  font-size: 13px;
+  margin: 16px 0 8px;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.range {
+  display: flex;
+  gap: 8px;
+}
+
+.range input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.filter-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pager {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.pager button {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+}
+
+.pager .on {
+  background: var(--color-deep-olive);
+  color: var(--color-soft-ivory);
+  border-color: transparent;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.mobile {
+  display: inline-flex;
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: 260px 1fr;
+  }
+  .head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .mobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .filters {
+    position: fixed;
+    inset-inline-start: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-height: 80vh;
+    overflow: auto;
+    z-index: var(--z-drawer);
+    transform: translateY(110%);
+    transition: transform 0.25s ease;
+    border-radius: 20px 20px 0 0;
+  }
+  .filters.open {
+    transform: none;
+  }
+}
