@@ -279,7 +279,7 @@
     <app-icon [name]="locale.isAr() ? 'chevron-right' : 'chevron-left'" [size]="20"></app-icon>
   </button>
   <img
-    [src]="product.gallery[galleryIndex] || product.image"
+    [src]="product.gallery[lightboxIndex] || product.image"
     [alt]="locale.tr(product.name)"
     class="pdp-lightbox__img"
     (click)="stopLightbox($event)"
@@ -293,5 +293,5 @@
   >
     <app-icon [name]="locale.isAr() ? 'chevron-left' : 'chevron-right'" [size]="20"></app-icon>
   </button>
-  <p *ngIf="product.gallery.length > 1" class="pdp-lightbox__count">{{ galleryIndex + 1 }} / {{ product.gallery.length }}</p>
+  <p *ngIf="product.gallery.length > 1" class="pdp-lightbox__count">{{ lightboxIndex + 1 }} / {{ product.gallery.length }}</p>
 </div>

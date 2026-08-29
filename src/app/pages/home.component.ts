@@ -91,6 +91,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     return cat.subcategories.reduce((s, x) => s + x.count, 0);
   }
 
+  catTileSpan(last: boolean): string {
+    return last && this.categories.length % 2 === 1 ? 'md:col-span-2' : '';
+  }
+
+  catTileHeight(last: boolean): string {
+    return last && this.categories.length % 2 === 1 ? 'md:h-52' : 'md:h-44';
+  }
+
   spotlight(slug: CategorySlug) {
     const category = categoryBySlug(slug)!;
     return { category, items: byCategory(slug).slice(0, 3) };

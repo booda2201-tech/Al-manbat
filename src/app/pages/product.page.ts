@@ -50,6 +50,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   tab: 'description' | 'specs' | 'reviews' = 'description';
   added = false;
   galleryIndex = 0;
+  lightboxIndex = 0;
   hoverZoom = false;
   lightbox = false;
   origin = '50% 50%';
@@ -86,6 +87,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
       this.qty = 1;
       this.tab = 'description';
       this.galleryIndex = 0;
+      this.lightboxIndex = 0;
       this.hoverZoom = false;
       this.closeLightbox();
       this.reviews = [...seedReviews];
@@ -242,12 +244,17 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     this.hoverZoom = false;
     this.galleryPaused = true;
     this.stopGalleryLoop();
+    this.galleryTween?.kill();
+    this.swapping = false;
+    this.resetGalleryFrame();
+    this.lightboxIndex = this.galleryIndex;
     this.lightbox = true;
     document.body.style.overflow = 'hidden';
   }
 
   closeLightbox(): void {
     this.lightbox = false;
+    this.galleryIndex = this.lightboxIndex;
     this.galleryPaused = false;
     document.body.style.overflow = '';
     this.armGalleryLoop();
@@ -259,13 +266,26 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   stepLightbox(ev: Event, dir: number): void {
     ev.stopPropagation();
-    this.stepGallery(dir);
+    this.shiftLightbox(dir);
   }
 
   stepGallery(dir: number): void {
     const list = this.product?.gallery ?? [];
     if (list.length < 2) return;
     this.swapGallery((this.galleryIndex + dir + list.length) % list.length);
+  }
+
+  private shiftLightbox(dir: number): void {
+    const list = this.product?.gallery ?? [];
+    if (list.length < 2) return;
+    this.lightboxIndex = (this.lightboxIndex + dir + list.length) % list.length;
+  }
+
+  private resetGalleryFrame(): void {
+    const frame = this.galleryFrame?.nativeElement;
+    if (!frame) return;
+    const radius = getComputedStyle(frame).borderTopLeftRadius || '18px';
+    gsap.set(frame, { clipPath: `inset(0% 0% 0% 0% round ${radius})`, scale: 1 });
   }
 
   private reduceMotion(): boolean {
@@ -302,6 +322,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   private swapGallery(i: number): void {
+    if (this.lightbox) return;
     if (i === this.galleryIndex || this.swapping) return;
     this.hoverZoom = false;
     this.origin = '50% 50%';
@@ -375,12 +396,12 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   @HostListener('document:keydown.arrowleft')
   onArrowLeft(): void {
-    if (this.lightbox) this.stepGallery(this.locale.isAr() ? 1 : -1);
+    if (this.lightbox) this.shiftLightbox(this.locale.isAr() ? 1 : -1);
   }
 
   @HostListener('document:keydown.arrowright')
   onArrowRight(): void {
-    if (this.lightbox) this.stepGallery(this.locale.isAr() ? -1 : 1);
+    if (this.lightbox) this.shiftLightbox(this.locale.isAr() ? -1 : 1);
   }
 
   get reviewCount(): number {

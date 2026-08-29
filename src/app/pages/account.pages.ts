@@ -30,9 +30,9 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
   orders = orders;
   addressList: Address[] = addresses.map((a) => ({ ...a }));
   reorderIds = ['oil-reserve', 'pkl-cucumber'];
-  firstName = 'نورة';
+  firstName = 'فهد';
   lastName = 'العتيبي';
-  email = 'noura@example.com';
+  email = 'fahd@example.com';
   phone = '+966 55 014 2288';
   currentPassword = '';
   nextPassword = '';

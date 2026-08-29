@@ -240,12 +240,9 @@
 <aside *ngIf="store.menuOpen()" class="menu-sheet lg:hidden" [attr.aria-label]="locale.ui('menu')">
   <header class="menu-sheet__head">
     <div class="menu-sheet__mark" (click)="store.menuOpen.set(false)">
-      <app-logo size="md"></app-logo>
+      <app-logo size="sm"></app-logo>
     </div>
-    <div class="menu-sheet__title">
-      <p>{{ locale.isAr() ? 'المنبت' : 'Almanbat' }}</p>
-      <h2>{{ locale.ui('menu') }}</h2>
-    </div>
+    <h2 class="menu-sheet__title">{{ locale.ui('menu') }}</h2>
     <button
       type="button"
       class="menu-sheet__close"
@@ -293,6 +290,25 @@
         {{ locale.ui('shopAll') }}
       </a>
     </div>
+
+    <nav class="menu-utility" [attr.aria-label]="locale.isAr() ? 'حساب ومساعدة' : 'Account and help'">
+      <a routerLink="/support" class="menu-utility__item" (click)="store.menuOpen.set(false)">
+        <app-icon name="headset" [size]="16"></app-icon>
+        {{ locale.ui('support') }}
+      </a>
+      <a routerLink="/track" class="menu-utility__item" (click)="store.menuOpen.set(false)">
+        <app-icon name="package" [size]="16"></app-icon>
+        {{ locale.ui('trackOrder') }}
+      </a>
+      <a routerLink="/login" class="menu-utility__item" (click)="store.menuOpen.set(false)">
+        <app-icon name="user" [size]="16"></app-icon>
+        {{ locale.ui('signIn') }}
+      </a>
+      <button type="button" class="menu-utility__item" (click)="locale.toggle()">
+        <app-icon name="globe" [size]="16"></app-icon>
+        {{ locale.ui('language') }}
+      </button>
+    </nav>
   </div>
 
   <footer class="shrink-0 border-t border-olive-800/10 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 md:px-8">

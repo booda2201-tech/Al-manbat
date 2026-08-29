@@ -46,7 +46,7 @@ export class CheckoutPageComponent implements OnDestroy {
     { id: 'cod', label: { ar: 'الدفع عند الاستلام', en: 'Cash on delivery' } },
   ];
   constructor(public locale: LocaleService, public store: StoreService, private router: Router) {
-    this.firstName = this.locale.isAr() ? 'نورة' : 'Noura';
+    this.firstName = this.locale.isAr() ? 'فهد' : 'Fahd';
     this.lastName = this.locale.isAr() ? 'العتيبي' : 'Al-Otaibi';
     this.city = this.locale.isAr() ? 'الرياض' : 'Riyadh';
     this.address = this.locale.isAr() ? 'حي الياسمين، شارع الأمير سلطان' : 'Al Yasmin, Prince Sultan St';

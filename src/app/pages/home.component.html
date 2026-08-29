@@ -126,15 +126,41 @@
 
 <section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-24">
   <app-section-header [title]="locale.ui('featuredCategories')" [subtitle]="locale.isAr() ? 'من العصرة إلى المونة. ابدأ من الزيت، أو الزيتون، أو المخلل.' : 'From the press to the pantry. Start with oil, olives, or pickles.'"></app-section-header>
-  <div class="grid gap-4 lg:grid-cols-3 lg:grid-rows-2">
-    <a [routerLink]="['/category', lead.slug]" appScrollOpen class="group relative flex h-full min-h-[300px] flex-col justify-end overflow-hidden rounded-xl p-8 lg:col-span-2 lg:row-span-2 lg:min-h-[520px] lg:p-10">
+
+  <ul class="grid gap-2.5 md:grid-cols-2 md:gap-3 lg:hidden">
+    <li *ngFor="let c of categories; let last = last" [ngClass]="catTileSpan(last)">
+      <a
+        [routerLink]="['/category', c.slug]"
+        appScrollOpen
+        class="group relative isolate flex h-36 overflow-hidden rounded-2xl"
+        [ngClass]="catTileHeight(last)"
+      >
+        <span class="scroll-open__media absolute inset-0">
+          <img [src]="c.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.05]" />
+        </span>
+        <span class="absolute inset-0 bg-gradient-to-t from-olive-900/90 via-olive-900/45 to-olive-900/10"></span>
+        <span class="relative z-10 flex w-full items-end justify-between gap-3 p-4 md:p-5">
+          <span class="min-w-0">
+            <span class="block font-displayAr text-xl leading-[1.45] text-sand-50 md:text-2xl">{{ locale.tr(c.name) }}</span>
+            <span class="mt-1 block truncate text-[11px] leading-normal text-sand-100/75 md:text-xs">{{ locale.tr(c.tagline) }}</span>
+          </span>
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-olive-900 md:h-10 md:w-10">
+            <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
+          </span>
+        </span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="hidden gap-4 lg:grid lg:grid-cols-3 lg:grid-rows-2">
+    <a [routerLink]="['/category', lead.slug]" appScrollOpen class="group relative flex h-full min-h-[520px] flex-col justify-end overflow-hidden rounded-xl p-10 lg:col-span-2 lg:row-span-2">
       <span class="scroll-open__media absolute inset-0">
         <img [src]="lead.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.04]" />
       </span>
       <span class="absolute inset-0 bg-olive-900/55 transition-colors duration-500 ease-premium group-hover:bg-olive-900/45"></span>
       <span class="relative">
         <span class="text-2xs uppercase tracking-[0.24em] text-gold-300">{{ catCount(lead) | countLoc }} {{ locale.isAr() ? 'منتج' : 'products' }}</span>
-        <span class="mt-3 block font-displayAr text-4xl leading-tight text-sand-50 lg:text-5xl">{{ locale.tr(lead.name) }}</span>
+        <span class="mt-3 block font-displayAr text-5xl leading-tight text-sand-50">{{ locale.tr(lead.name) }}</span>
         <span class="mt-3 block max-w-md text-sm leading-relaxed text-sand-100/80">{{ locale.tr(lead.tagline) }}</span>
         <span class="mt-6 inline-flex items-center gap-2 text-[13px] font-medium text-gold-300">
           {{ locale.ui('explore') }}

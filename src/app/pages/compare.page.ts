@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   ProductRailComponent,
@@ -33,16 +33,26 @@ import { CountPipe, SarPipe } from '../utils/sar.pipe';
   ],
   templateUrl: './compare.page.html',
 })
-export class ComparePageComponent {
+export class ComparePageComponent implements OnInit, OnDestroy {
   pickerOpen = signal(false);
   pickerQuery = signal('');
   diffOnly = signal(false);
+  pairMode = signal(false);
+  slotA = signal(0);
+  slotB = signal(1);
+  private mq?: MediaQueryList;
 
   items = computed(() =>
     this.store.compare().map(productById).filter((p): p is Product => Boolean(p))
   );
 
-  columns = computed(() => this.items());
+  columns = computed(() => {
+    const items = this.items();
+    if (!this.pairMode() || items.length <= 2) return items;
+    const a = items[this.slotA()];
+    const b = items[this.slotB()];
+    return [a, b].filter((p): p is Product => Boolean(p));
+  });
 
   specLabels = computed(() => {
     const loc = this.locale.locale();
@@ -81,7 +91,61 @@ export class ComparePageComponent {
       .slice(0, 12);
   });
 
-  constructor(public locale: LocaleService, public store: StoreService) {}
+  constructor(public locale: LocaleService, public store: StoreService) {
+    effect(() => {
+      const n = this.items().length;
+      if (n < 2) return;
+      let a = this.slotA();
+      let b = this.slotB();
+      if (a > n - 1) a = 0;
+      if (b > n - 1) b = a === 0 ? 1 : 0;
+      if (a === b) b = a === 0 ? 1 : 0;
+      if (a !== this.slotA()) this.slotA.set(a);
+      if (b !== this.slotB()) this.slotB.set(b);
+    });
+  }
+
+  ngOnInit(): void {
+    this.mq = window.matchMedia('(max-width: 767px)');
+    this.pairMode.set(this.mq.matches);
+    this.mq.addEventListener('change', this.onPairMode);
+  }
+
+  ngOnDestroy(): void {
+    this.mq?.removeEventListener('change', this.onPairMode);
+  }
+
+  isPaired(index: number): boolean {
+    return index === this.slotA() || index === this.slotB();
+  }
+
+  selectPair(index: number): void {
+    if (index === this.slotA()) return;
+    if (index === this.slotB()) {
+      const a = this.slotA();
+      this.slotA.set(this.slotB());
+      this.slotB.set(a);
+      return;
+    }
+    this.slotB.set(index);
+  }
+
+  cycleSlot(slot: 'a' | 'b', dir: number): void {
+    const n = this.items().length;
+    if (n < 3) return;
+    const other = slot === 'a' ? this.slotB() : this.slotA();
+    let next = slot === 'a' ? this.slotA() : this.slotB();
+    for (let i = 0; i < n; i++) {
+      next = (next + dir + n) % n;
+      if (next !== other) break;
+    }
+    if (slot === 'a') this.slotA.set(next);
+    else this.slotB.set(next);
+  }
+
+  private onPairMode = (ev: MediaQueryListEvent): void => {
+    this.pairMode.set(ev.matches);
+  };
 
   get trail() {
     return [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.ui('compare') }];
