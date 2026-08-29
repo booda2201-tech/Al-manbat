@@ -28,6 +28,7 @@ export class StoreService {
   readonly promo = signal<string | null>(null);
   readonly toasts = signal<Toast[]>([]);
   readonly lastAdded = signal<Product | null>(null);
+  private cartOpenAfterNav = false;
 
   readonly cartCount = computed(() => this.lines().reduce((s, l) => s + l.qty, 0));
   readonly subtotal = computed(() =>
@@ -90,8 +91,17 @@ export class StoreService {
 
   moveToCart(productId: string): void {
     this.savedForLater.set(this.savedForLater().filter((id) => id !== productId));
-    this.addToCart(productId, 1);
-    this.cartOpen.set(false);
+    this.addToCart(productId, 1, true);
+  }
+
+  requestCartOpen(): void {
+    this.cartOpenAfterNav = true;
+  }
+
+  consumeCartOpenRequest(): boolean {
+    const next = this.cartOpenAfterNav;
+    this.cartOpenAfterNav = false;
+    return next;
   }
 
   toggleWishlist(productId: string): void {

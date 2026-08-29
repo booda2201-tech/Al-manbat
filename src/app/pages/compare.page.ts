@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
-  PriceBlockComponent,
   ProductRailComponent,
   RatingComponent,
   SectionHeaderComponent,
@@ -27,7 +26,6 @@ import { CountPipe, SarPipe } from '../utils/sar.pipe';
     CrumbsComponent,
     RatingComponent,
     StockComponent,
-    PriceBlockComponent,
     ProductRailComponent,
     SectionHeaderComponent,
     SarPipe,
@@ -51,6 +49,25 @@ export class ComparePageComponent {
     const labels = Array.from(new Set(this.items().flatMap((p) => p.specs.map((s) => s.label[loc]))));
     if (!this.diffOnly()) return labels;
     return labels.filter((label) => this.valuesDiffer(this.items().map((p) => this.specValue(p, label) ?? '')));
+  });
+
+  cheapest = computed(() => {
+    const items = this.items();
+    if (items.length < 2) return null;
+    return items.find((p) => this.isBestPrice(p)) ?? null;
+  });
+
+  highestRated = computed(() => {
+    const items = this.items();
+    if (items.length < 2) return null;
+    return items.find((p) => this.isBestRating(p)) ?? null;
+  });
+
+  verdictPick = computed(() => {
+    const cheap = this.cheapest();
+    const rated = this.highestRated();
+    if (cheap && rated && cheap.id === rated.id) return cheap;
+    return null;
   });
 
   suggestions = computed(() => this.pool().slice(0, 8));
@@ -81,33 +98,23 @@ export class ComparePageComponent {
     return cat ? this.locale.tr(cat.name) : '';
   }
 
-  badgeTone(b: Product['badges'][number]): string {
-    const map: Record<string, string> = {
-      new: 'bg-olive-600 text-sand-50',
-      bestseller: 'bg-olive-800 text-sand-100',
-      deal: 'bg-gold-400 text-olive-900',
-      organic: 'bg-olive-600 text-sand-50',
-      exclusive: 'bg-clay-400 text-sand-50',
-    };
-    return map[b] ?? 'bg-olive-600 text-sand-50';
-  }
-
-  badgeLabel(b: Product['badges'][number]): string {
-    const map: Record<string, { ar: string; en: string }> = {
-      new: { ar: 'جديد', en: 'New' },
-      bestseller: { ar: 'الأكثر مبيعاً', en: 'Best seller' },
-      deal: { ar: 'عرض', en: 'Deal' },
-      organic: { ar: 'عضوي', en: 'Organic' },
-      exclusive: { ar: 'حصري', en: 'Exclusive' },
-    };
-    return map[b]?.[this.locale.locale()] ?? b;
-  }
-
   isBestPrice(product: Product): boolean {
     const items = this.items();
     if (items.length < 2) return false;
     const min = Math.min(...items.map((p) => p.price));
     return product.price === min && this.valuesDiffer(items.map((p) => String(p.price)));
+  }
+
+  isLead(product: Product): boolean {
+    const pick = this.verdictPick();
+    if (pick) return pick.id === product.id;
+    return this.isBestPrice(product);
+  }
+
+  shortName(product: Product): string {
+    const name = this.locale.tr(product.name);
+    const cut = name.split(/\s[—–-]\s/)[0]?.trim() ?? name;
+    return cut.length > 28 ? `${cut.slice(0, 28)}…` : cut;
   }
 
   isBestRating(product: Product): boolean {

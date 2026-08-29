@@ -1,14 +1,10 @@
 <div class="checkout-page">
   <header class="checkout-top">
-    <a routerLink="/cart" class="checkout-top__back">
+    <a routerLink="/" class="checkout-top__back" (click)="backToCart()">
       <app-icon [name]="locale.isAr() ? 'arrow-right' : 'arrow-left'" [size]="18"></app-icon>
       <span class="sr-only">{{ locale.ui('cartTitle') }}</span>
     </a>
     <app-logo size="sm"></app-logo>
-    <span class="checkout-top__secure">
-      <app-icon name="lock" [size]="13"></app-icon>
-      {{ locale.isAr() ? 'آمن' : 'Secure' }}
-    </span>
   </header>
 
   <div class="checkout-page__inner">
@@ -210,7 +206,7 @@
         </section>
 
         <div class="mt-8 hidden items-center justify-between gap-3 lg:flex">
-          <a *ngIf="step === 0" routerLink="/cart" class="inline-flex items-center gap-2 text-sm text-ink-muted transition-colors duration-150 ease-premium hover:text-olive-700">
+          <a *ngIf="step === 0" routerLink="/" class="inline-flex items-center gap-2 text-sm text-ink-muted transition-colors duration-150 ease-premium hover:text-olive-700" (click)="backToCart()">
             <app-icon [name]="locale.isAr() ? 'arrow-right' : 'arrow-left'" [size]="16"></app-icon>
             {{ locale.ui('cartTitle') }}
           </a>
@@ -279,7 +275,7 @@
     <button *ngIf="step > 0" type="button" class="checkout-dock__back" (click)="back()">
       {{ locale.ui('back') }}
     </button>
-    <a *ngIf="step === 0" routerLink="/cart" class="checkout-dock__back">{{ locale.ui('back') }}</a>
+    <a *ngIf="step === 0" routerLink="/" class="checkout-dock__back" (click)="backToCart()">{{ locale.ui('back') }}</a>
     <button type="button" class="checkout-dock__sum" [attr.aria-expanded]="summaryOpen" (click)="toggleSummary()">
       <span class="checkout-dock__sum-kicker">{{ itemsCountLabel }}</span>
       <span class="checkout-dock__sum-row">

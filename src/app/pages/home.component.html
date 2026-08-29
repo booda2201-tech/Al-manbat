@@ -255,7 +255,7 @@
       </div>
       <div class="min-w-0" [ngClass]="spot.flip ? 'lg:order-1' : ''">
         <div class="lg:hidden">
-          <app-product-rail [products]="spotlight(spot.slug).items"></app-product-rail>
+          <app-product-rail [products]="spotlight(spot.slug).items" [onDark]="spot.dark"></app-product-rail>
         </div>
         <div class="hidden gap-5 lg:grid lg:grid-cols-3">
           <div *ngFor="let p of spotlight(spot.slug).items" [ngClass]="spot.dark ? 'rounded-lg bg-sand-50 p-4' : ''">
@@ -267,7 +267,7 @@
   </div>
 </section>
 
-<section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-20">
+<section class="mx-auto max-w-shell px-4 pb-4 pt-8 lg:px-10 lg:pb-8 lg:pt-16">
   <app-section-header [title]="locale.ui('newArrivals')" [subtitle]="locale.isAr() ? 'إضافات هذا الأسبوع، بعد مرورها على معايير الاختيار.' : 'This week’s additions, after passing our curation standard.'" linkTo="/new" [linkLabel]="locale.ui('viewAll')"></app-section-header>
   <app-product-rail [products]="newArrivals"></app-product-rail>
 </section>

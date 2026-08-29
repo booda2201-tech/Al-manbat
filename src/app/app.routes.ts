@@ -5,7 +5,7 @@ export const routes: Routes = [
   { path: 'category/:slug', loadComponent: () => import('./pages/catalog.pages').then((m) => m.CategoryComponent) },
   { path: 'listing/:slug', loadComponent: () => import('./pages/catalog.pages').then((m) => m.ListingComponent) },
   { path: 'product/:slug', loadComponent: () => import('./pages/product.page').then((m) => m.ProductPageComponent) },
-  { path: 'cart', loadComponent: () => import('./pages/checkout.pages').then((m) => m.CartPageComponent) },
+  { path: 'cart', redirectTo: '', pathMatch: 'full' },
   { path: 'checkout', loadComponent: () => import('./pages/checkout.pages').then((m) => m.CheckoutPageComponent) },
   { path: 'order/confirmed', loadComponent: () => import('./pages/checkout.pages').then((m) => m.OrderConfirmedComponent) },
   { path: 'account', loadComponent: () => import('./pages/account.pages').then((m) => m.AccountPageComponent) },

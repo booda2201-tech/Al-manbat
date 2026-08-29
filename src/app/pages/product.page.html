@@ -1,27 +1,29 @@
 <div *ngIf="product" class="pdp-page">
-  <div class="mx-auto max-w-shell px-4 pt-5 md:px-6 md:pt-6 lg:px-10 lg:pt-7">
+  <div class="pdp-crumbs mx-auto max-w-shell px-4 pt-5 md:px-6 md:pt-6 lg:px-10 lg:pt-7">
     <app-crumbs [trail]="trail"></app-crumbs>
   </div>
 
   <section class="mx-auto max-w-shell px-4 py-5 md:px-6 md:py-7 lg:px-10 lg:py-10">
     <div class="pdp-split">
-      <div class="pdp-gallery">
+      <div class="pdp-gallery" #galleryRoot [class.is-ready]="galleryReady">
         <button
           type="button"
           class="pdp-gallery__stage"
           (mouseenter)="onGalleryEnter()"
-          (mouseleave)="hoverZoom = false"
+          (mouseleave)="onGalleryLeave()"
           (mousemove)="onGalleryMove($event)"
           (click)="openLightbox()"
           [attr.aria-label]="locale.isAr() ? 'تكبير الصورة' : 'Zoom image'"
         >
-          <img
-            [src]="product.gallery[galleryIndex] || product.image"
-            [alt]="locale.tr(product.name)"
-            class="absolute inset-0 h-full w-full object-cover transition-transform duration-[400ms] ease-premium"
-            [ngClass]="hoverZoom ? 'scale-[1.7]' : 'scale-100'"
-            [style.transform-origin]="origin"
-          />
+          <span class="pdp-gallery__frame" #galleryFrame>
+            <img
+              [src]="product.gallery[galleryIndex] || product.image"
+              [alt]="locale.tr(product.name)"
+              class="pdp-gallery__image"
+              [class.is-zoom]="hoverZoom"
+              [style.transform-origin]="origin"
+            />
+          </span>
           <span class="pointer-events-none absolute bottom-3 start-3 inline-flex items-center gap-1.5 rounded-md bg-sand-50/95 px-2.5 py-1.5 text-xs text-ink-soft shadow-sm">
             <app-icon name="expand" [size]="14"></app-icon>
             <span>{{ locale.isAr() ? 'تكبير' : 'Zoom' }}</span>
@@ -173,53 +175,50 @@
         </table>
       </div>
 
-      <div *ngIf="tab === 'reviews'" class="grid gap-8 md:grid-cols-[240px_1fr] md:gap-10 lg:grid-cols-[300px_1fr] lg:gap-16">
-        <div class="min-w-0">
-          <div class="flex items-baseline gap-3">
-            <span class="font-display text-5xl text-olive-800 md:text-6xl">{{ product.rating.toFixed(1) }}</span>
+      <div *ngIf="tab === 'reviews'" class="pdp-reviews">
+        <aside class="pdp-reviews__summary">
+          <div class="pdp-reviews__score">
+            <span class="pdp-reviews__score-num font-display">{{ product.rating.toFixed(1) }}</span>
             <div>
               <app-rating [rating]="product.rating" size="md"></app-rating>
-              <p class="mt-1 text-xs text-ink-muted">{{ reviewCount | countLoc }} {{ locale.ui('reviews') }}</p>
+              <p class="pdp-reviews__score-count">{{ reviewCount | countLoc }} {{ locale.ui('reviews') }}</p>
             </div>
           </div>
-          <ul class="mt-6 space-y-2">
-            <li *ngFor="let row of breakdown" class="flex items-center gap-3">
-              <span class="w-6 text-xs tabular-nums text-ink-muted">{{ row.stars }}★</span>
-              <span class="h-1.5 flex-1 overflow-hidden rounded-full bg-sand-200">
-                <span class="block h-full rounded-full bg-gold-400" [style.width.%]="row.percent"></span>
+          <ul class="pdp-reviews__bars">
+            <li *ngFor="let row of breakdown" class="pdp-reviews__bar">
+              <span>{{ row.stars }}★</span>
+              <span class="pdp-reviews__bar-track">
+                <span class="pdp-reviews__bar-fill" [style.width.%]="row.percent"></span>
               </span>
-              <span class="w-8 text-end text-xs tabular-nums text-ink-muted">{{ row.percent }}%</span>
+              <span>{{ row.percent }}%</span>
             </li>
           </ul>
-          <button type="button" class="mt-7 inline-flex h-11 w-full items-center justify-center rounded-xl border border-olive-800/25 bg-transparent px-5 text-sm font-medium text-olive-800 transition-colors duration-200 ease-premium hover:border-olive-800/60 hover:bg-olive-50" (click)="openReview()">{{ locale.ui('writeReview') }}</button>
-        </div>
-        <ul class="min-w-0 divide-y divide-olive-800/10">
-          <li *ngFor="let r of reviews; let first = first" class="py-6" [class.pt-0]="first">
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <app-rating [rating]="r.rating"></app-rating>
-              <span class="text-sm font-semibold text-olive-800">{{ locale.tr(r.title) }}</span>
-              <span *ngIf="isOwnReview(r.id)" class="rounded-xs bg-gold-100 px-2 py-0.5 text-2xs font-semibold text-gold-600">{{ locale.ui('yourReview') }}</span>
+          <button type="button" class="pdp-reviews__write" (click)="openReview()">{{ locale.ui('writeReview') }}</button>
+        </aside>
+        <ul class="pdp-reviews__list">
+          <li *ngFor="let r of reviews" class="pdp-review">
+            <div class="pdp-review__top">
+              <span class="pdp-review__avatar" aria-hidden="true">{{ reviewInitial(r) }}</span>
+              <div class="pdp-review__who">
+                <p class="pdp-review__author">{{ locale.tr(r.author) }}</p>
+                <p class="pdp-review__date">{{ reviewDate(r.date) }}</p>
+              </div>
+              <span *ngIf="r.verified" class="pdp-review__verified">
+                <app-icon name="check-circle" [size]="13"></app-icon>
+                {{ locale.ui('verifiedPurchase') }}
+              </span>
+              <span *ngIf="isOwnReview(r.id)" class="pdp-review__yours">{{ locale.ui('yourReview') }}</span>
             </div>
-            <p class="mt-2.5 text-sm leading-relaxed text-ink-soft">{{ locale.tr(r.body) }}</p>
-            <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
-              <span class="font-medium text-ink-soft">{{ locale.tr(r.author) }}</span>
-              <span>·</span>
-              <span>{{ r.date }}</span>
-              <ng-container *ngIf="r.verified">
-                <span>·</span>
-                <span class="inline-flex items-center gap-1 text-state-success">
-                  <app-icon name="check-circle" [size]="14"></app-icon>
-                  {{ locale.ui('verifiedPurchase') }}
-                </span>
-              </ng-container>
-            </div>
+            <app-rating [rating]="r.rating" size="sm"></app-rating>
+            <h3 class="pdp-review__title">{{ locale.tr(r.title) }}</h3>
+            <p class="pdp-review__body">{{ locale.tr(r.body) }}</p>
           </li>
         </ul>
       </div>
     </div>
   </section>
 
-  <section class="mx-auto max-w-shell px-4 pb-8 md:px-6 md:pb-16 lg:px-10">
+  <section class="mx-auto max-w-shell px-4 pb-5 md:px-6 md:pb-8 lg:px-10">
     <app-section-header [title]="locale.ui('faq')"></app-section-header>
     <div class="max-w-3xl divide-y divide-olive-800/10 border-y border-olive-800/10">
       <div *ngFor="let f of faqs; let i = index">
@@ -236,21 +235,23 @@
     </div>
   </section>
 
-  <section class="mx-auto max-w-shell px-4 pb-8 md:px-6 md:pb-20 lg:px-10">
+  <section class="mx-auto max-w-shell px-4 pb-4 md:px-6 md:pb-6 lg:px-10">
     <app-section-header [title]="locale.ui('relatedProducts')" [linkTo]="'/listing/' + product.category" [linkLabel]="locale.ui('viewAll')"></app-section-header>
     <app-product-rail [products]="related"></app-product-rail>
   </section>
 
-  <div class="fixed inset-x-0 bottom-[57px] z-30 border-t border-olive-800/10 bg-sand-50/97 px-4 py-3 backdrop-blur md:hidden">
-    <div class="flex items-center gap-3">
-      <div class="min-w-0 flex-1">
-        <p class="truncate text-xs text-ink-muted">{{ locale.tr(product.brand) }}</p>
-        <app-price-block [price]="product.price" [compareAt]="product.compareAt" size="sm"></app-price-block>
+  <div class="product-buybar-slot">
+    <div class="product-buybar">
+      <div class="flex items-center gap-3">
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-xs text-ink-muted">{{ locale.tr(product.brand) }}</p>
+          <app-price-block [price]="product.price" [compareAt]="product.compareAt" size="sm"></app-price-block>
+        </div>
+        <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive-600 px-5 text-sm font-medium text-sand-50 shadow-sm disabled:bg-olive-200 disabled:text-olive-500" [disabled]="soldOut" (click)="add()">
+          <app-icon name="cart" [size]="16"></app-icon>
+          {{ soldOut ? locale.ui('outOfStock') : locale.ui('addToCart') }}
+        </button>
       </div>
-      <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive-600 px-5 text-sm font-medium text-sand-50 shadow-sm disabled:bg-olive-200 disabled:text-olive-500" [disabled]="soldOut" (click)="add()">
-        <app-icon name="cart" [size]="16"></app-icon>
-        {{ soldOut ? locale.ui('outOfStock') : locale.ui('addToCart') }}
-      </button>
     </div>
   </div>
 </div>

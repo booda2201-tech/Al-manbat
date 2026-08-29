@@ -13,15 +13,21 @@ export interface Crumb {
   standalone: true,
   imports: [CommonModule, RouterLink, IconComponent],
   template: `
-    <nav class="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted" aria-label="breadcrumb">
-      <span *ngFor="let c of trail; let last = last" class="flex items-center gap-1.5">
-        <a *ngIf="c.to && !last" [routerLink]="c.to" class="transition-colors duration-150 ease-premium hover:text-olive-700">{{ c.label }}</a>
-        <span *ngIf="!c.to || last" class="text-ink-soft">{{ c.label }}</span>
-        <app-icon *ngIf="!last" name="chevron-right" [size]="12" class="text-sand-300 rtl:rotate-180"></app-icon>
-      </span>
+    <nav class="crumbs" aria-label="breadcrumb">
+      <ol class="crumbs__list">
+        <li *ngFor="let c of trail; let last = last; trackBy: trackCrumb" class="crumbs__item">
+          <a *ngIf="c.to && !last" [routerLink]="c.to" class="crumbs__link">{{ c.label }}</a>
+          <span *ngIf="!c.to || last" class="crumbs__current" [attr.aria-current]="last ? 'page' : null">{{ c.label }}</span>
+          <app-icon *ngIf="!last" name="chevron-right" [size]="12" class="crumbs__sep"></app-icon>
+        </li>
+      </ol>
     </nav>
   `,
 })
 export class CrumbsComponent {
   @Input() trail: Crumb[] = [];
+
+  trackCrumb(_: number, crumb: Crumb): string {
+    return `${crumb.to ?? ''}::${crumb.label}`;
+  }
 }

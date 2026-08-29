@@ -2,7 +2,7 @@
 <div class="flex min-h-screen w-full min-w-0 flex-col bg-sand-50" [attr.dir]="locale.dir()" [class.font-ar]="locale.isAr()">
   <div
     *ngIf="!bareLayout && !focusLayout"
-    class="z-50 max-lg:absolute max-lg:inset-x-0 max-lg:top-0 lg:sticky lg:top-0"
+    class="site-chrome z-50 max-lg:absolute max-lg:inset-x-0 max-lg:top-0 lg:sticky lg:top-0"
   >
   <div class="grain relative bg-olive-800 text-sand-100">
     <div class="mx-auto flex h-10 max-w-shell items-center gap-4 px-4 text-[11px] lg:px-10 lg:text-xs">
@@ -162,15 +162,13 @@
 
   <main
     id="main"
-    class="min-w-0 flex-1"
-    [class.pb-24]="!bareLayout && !focusLayout"
-    [class.lg:pb-0]="!bareLayout"
+    class="site-main min-w-0 flex-1"
     [class.max-lg:pt-[7rem]]="!bareLayout && !focusLayout && !heroBleed"
   >
     <router-outlet></router-outlet>
   </main>
 
-  <footer *ngIf="!bareLayout && !focusLayout" class="grain relative mt-8 bg-olive-800 pb-24 text-sand-100 lg:mt-20 lg:pb-0">
+  <footer *ngIf="!bareLayout && !focusLayout" class="site-footer grain relative bg-olive-800 text-sand-100">
     <div class="mx-auto max-w-shell px-4 lg:px-10">
       <div class="grid gap-8 border-b border-sand-100/10 py-9 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-10 lg:py-14">
         <div>
@@ -211,47 +209,51 @@
   </footer>
 
   <nav *ngIf="!bareLayout && !focusLayout" class="mobile-dock lg:hidden" [attr.aria-label]="locale.ui('menu')">
-    <a routerLink="/" routerLinkActive="is-on" [routerLinkActiveOptions]="{ exact: true }" class="mobile-dock__item">
-      <app-icon name="home" [size]="22"></app-icon>
-      {{ locale.isAr() ? 'الرئيسية' : 'Home' }}
-    </a>
-    <a routerLink="/listing/all" routerLinkActive="is-on" class="mobile-dock__item">
-      <app-icon name="grid" [size]="22"></app-icon>
-      {{ locale.ui('shopAll') }}
-    </a>
-    <button type="button" class="mobile-dock__item" [class.is-on]="store.searchOpen()" (click)="store.searchOpen.set(true)">
-      <app-icon name="search" [size]="22"></app-icon>
-      {{ locale.ui('search') }}
-    </button>
-    <a routerLink="/wishlist" routerLinkActive="is-on" class="mobile-dock__item">
-      <app-icon name="heart" [size]="22"></app-icon>
-      {{ locale.ui('wishlist') }}
-      <span *ngIf="store.wishlist().length" class="mobile-dock__badge">{{ store.wishlist().length }}</span>
-    </a>
-    <button type="button" class="mobile-dock__item" [class.is-on]="store.cartOpen()" (click)="store.cartOpen.set(true)">
-      <app-icon name="cart" [size]="22"></app-icon>
-      {{ locale.ui('cart') }}
-      <span *ngIf="store.cartCount()" class="mobile-dock__badge">{{ store.cartCount() }}</span>
-    </button>
+    <div class="mobile-dock__bar">
+      <a routerLink="/" routerLinkActive="is-on" [routerLinkActiveOptions]="{ exact: true }" class="mobile-dock__item">
+        <span class="mobile-dock__ico"><app-icon name="home" [size]="20"></app-icon></span>
+        {{ locale.isAr() ? 'الرئيسية' : 'Home' }}
+      </a>
+      <a routerLink="/listing/all" routerLinkActive="is-on" class="mobile-dock__item">
+        <span class="mobile-dock__ico"><app-icon name="grid" [size]="20"></app-icon></span>
+        {{ locale.ui('shopAll') }}
+      </a>
+      <button type="button" class="mobile-dock__item mobile-dock__item--search" [class.is-on]="store.searchOpen()" (click)="store.searchOpen.set(true)">
+        <span class="mobile-dock__fab"><app-icon name="search" [size]="22"></app-icon></span>
+        {{ locale.ui('search') }}
+      </button>
+      <a routerLink="/wishlist" routerLinkActive="is-on" class="mobile-dock__item" #wishAct="routerLinkActive">
+        <span class="mobile-dock__ico"><app-icon name="heart" [size]="20" [filled]="wishAct.isActive"></app-icon></span>
+        {{ locale.ui('wishlist') }}
+        <span *ngIf="store.wishlist().length" class="mobile-dock__badge">{{ store.wishlist().length }}</span>
+      </a>
+      <button type="button" class="mobile-dock__item" [class.is-on]="store.cartOpen()" (click)="store.cartOpen.set(true)">
+        <span class="mobile-dock__ico"><app-icon name="cart" [size]="20"></app-icon></span>
+        {{ locale.ui('cart') }}
+        <span *ngIf="store.cartCount()" class="mobile-dock__badge">{{ store.cartCount() }}</span>
+      </button>
+    </div>
   </nav>
 </div>
 
 <div *ngIf="store.menuOpen()" class="menu-sheet-scrim lg:hidden" (click)="store.menuOpen.set(false)"></div>
 <aside *ngIf="store.menuOpen()" class="menu-sheet lg:hidden" [attr.aria-label]="locale.ui('menu')">
-  <header class="shrink-0 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-8">
-    <div class="flex items-center justify-between gap-3 rounded-2xl bg-white px-2.5 py-1.5 shadow-sm ring-1 ring-olive-800/10">
-      <div class="flex min-w-0 items-center" (click)="store.menuOpen.set(false)">
-        <app-logo size="md"></app-logo>
-      </div>
-      <button
-        type="button"
-        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-olive-800 text-sand-50 transition-colors duration-200 ease-premium hover:bg-olive-700 hover:text-gold-300"
-        [attr.aria-label]="locale.isAr() ? 'إغلاق' : 'Close'"
-        (click)="store.menuOpen.set(false)"
-      >
-        <app-icon name="close" [size]="15"></app-icon>
-      </button>
+  <header class="menu-sheet__head">
+    <div class="menu-sheet__mark" (click)="store.menuOpen.set(false)">
+      <app-logo size="md"></app-logo>
     </div>
+    <div class="menu-sheet__title">
+      <p>{{ locale.isAr() ? 'المنبت' : 'Almanbat' }}</p>
+      <h2>{{ locale.ui('menu') }}</h2>
+    </div>
+    <button
+      type="button"
+      class="menu-sheet__close"
+      [attr.aria-label]="locale.isAr() ? 'إغلاق' : 'Close'"
+      (click)="store.menuOpen.set(false)"
+    >
+      <app-icon name="close" [size]="16"></app-icon>
+    </button>
   </header>
 
   <div class="no-rail min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8">
@@ -267,8 +269,8 @@
           <span class="absolute inset-0 bg-gradient-to-t from-olive-900/90 via-olive-900/45 to-olive-900/10"></span>
           <span class="relative z-10 flex w-full items-end justify-between gap-3 p-4">
             <span class="min-w-0">
-              <span class="block font-displayAr text-xl leading-none text-sand-50">{{ locale.tr(c.name) }}</span>
-              <span class="mt-1.5 block truncate text-[11px] text-sand-100/75">{{ locale.tr(c.tagline) }}</span>
+              <span class="block font-displayAr text-xl leading-[1.45] text-sand-50">{{ locale.tr(c.name) }}</span>
+              <span class="mt-1 block truncate text-[11px] leading-normal text-sand-100/75">{{ locale.tr(c.tagline) }}</span>
             </span>
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-olive-900">
               <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
@@ -279,13 +281,13 @@
     </ul>
 
     <div class="mt-5 grid grid-cols-2 gap-2.5 md:grid-cols-3">
-      <a routerLink="/offers" class="rounded-xl bg-olive-800 px-4 py-3.5 text-sand-50" (click)="store.menuOpen.set(false)">
-        <span class="block text-[11px] uppercase tracking-[0.14em] text-gold-300">{{ locale.isAr() ? 'الآن' : 'Now' }}</span>
-        <span class="mt-1 block text-sm font-semibold">{{ locale.ui('offers') }}</span>
+      <a routerLink="/offers" class="menu-chip menu-chip--dark" (click)="store.menuOpen.set(false)">
+        <span class="menu-chip__kicker">{{ locale.isAr() ? 'الآن' : 'Now' }}</span>
+        <span class="menu-chip__label">{{ locale.ui('offers') }}</span>
       </a>
-      <a routerLink="/new" class="rounded-xl border border-olive-800/15 bg-white px-4 py-3.5 text-olive-800" (click)="store.menuOpen.set(false)">
-        <span class="block text-[11px] uppercase tracking-[0.14em] text-gold-400">{{ locale.isAr() ? 'جديد' : 'New' }}</span>
-        <span class="mt-1 block text-sm font-semibold">{{ locale.ui('newArrivals') }}</span>
+      <a routerLink="/new" class="menu-chip" (click)="store.menuOpen.set(false)">
+        <span class="menu-chip__kicker menu-chip__kicker--gold">{{ locale.isAr() ? 'جديد' : 'New' }}</span>
+        <span class="menu-chip__label">{{ locale.ui('newArrivals') }}</span>
       </a>
       <a routerLink="/listing/all" class="hidden items-center justify-center rounded-xl bg-gold-400 px-4 py-3.5 text-sm font-semibold text-olive-900 md:flex" (click)="store.menuOpen.set(false)">
         {{ locale.ui('shopAll') }}
@@ -323,7 +325,9 @@
 <div *ngIf="store.searchOpen()" class="search-scrim" (click)="store.searchOpen.set(false)"></div>
 <div *ngIf="store.searchOpen()" class="search-sheet" role="dialog" [attr.aria-label]="locale.ui('search')">
   <form class="search-sheet__bar" (submit)="$event.preventDefault(); goSearch()">
-    <app-icon name="search" [size]="18" class="text-gold-400"></app-icon>
+    <span class="search-sheet__search" aria-hidden="true">
+      <app-icon name="search" [size]="16"></app-icon>
+    </span>
     <input
       class="search-sheet__input"
       type="search"
@@ -338,6 +342,8 @@
     </button>
   </form>
 
+  <p class="search-sheet__hint">{{ query.trim() ? locale.ui('search') : locale.ui('searchSuggest') }}</p>
+
   <div class="search-sheet__body no-rail">
     <a
       *ngFor="let p of searchHits()"
@@ -346,13 +352,21 @@
       (click)="store.searchOpen.set(false)"
     >
       <img [src]="p.image" class="search-sheet__thumb" [alt]="locale.tr(p.name)" />
-      <span class="search-sheet__name">{{ locale.tr(p.name) }}</span>
-      <strong class="search-sheet__price">{{ p.price | sar }}</strong>
+      <span class="search-sheet__copy">
+        <span class="search-sheet__brand">{{ locale.tr(p.brand) }}</span>
+        <span class="search-sheet__name">{{ locale.tr(p.name) }}</span>
+        <strong class="search-sheet__price">{{ p.price | sar }}</strong>
+      </span>
     </a>
     <p *ngIf="query.trim() && !searchHits().length" class="search-sheet__empty">
       {{ locale.ui('noResults') }}
     </p>
   </div>
+
+  <button type="button" class="search-sheet__more" (click)="goSearch()">
+    {{ locale.ui('searchSeeAll') }}
+    <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="14"></app-icon>
+  </button>
 </div>
 
 <app-cart-drawer></app-cart-drawer>

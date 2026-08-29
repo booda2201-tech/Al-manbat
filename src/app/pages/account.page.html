@@ -1,4 +1,4 @@
-<div class="account-page mx-auto w-full min-w-0 max-w-shell px-4 pb-28 pt-5 lg:px-10 lg:py-9">
+<div class="account-page mx-auto w-full min-w-0 max-w-shell px-4 pb-6 pt-5 lg:px-10 lg:py-9">
   <div class="hidden lg:block">
     <app-crumbs [trail]="trail"></app-crumbs>
   </div>
@@ -7,10 +7,10 @@
     <div class="relative z-10">
       <div class="flex items-center gap-3.5">
         <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gold-400 font-display text-xl text-olive-900 shadow-[0_0_0_4px_rgba(168,137,55,0.35)] lg:h-16 lg:w-16 lg:text-2xl">{{ initial }}</span>
-        <div class="min-w-0 flex-1">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-gold-300">{{ locale.isAr() ? 'دائرة المنبت' : 'Almanbat circle' }}</p>
-          <h1 class="mt-0.5 font-displayAr text-[22px] leading-snug lg:text-[34px] lg:leading-[1.5]">{{ greeting }}</h1>
-          <p class="mt-0.5 truncate text-[12px] text-sand-100/70">{{ email }}<span class="hidden sm:inline"> · {{ locale.isAr() ? 'عضوة منذ ٢٠٢٣' : 'Member since 2023' }}</span></p>
+        <div class="account-hero__copy">
+          <p class="account-hero__kicker">{{ locale.isAr() ? 'دائرة المنبت' : 'Almanbat circle' }}</p>
+          <h1 class="account-hero__title font-displayAr">{{ greeting }}</h1>
+          <p class="account-hero__email">{{ email }}<span class="hidden sm:inline"> · {{ locale.isAr() ? 'عضوة منذ ٢٠٢٣' : 'Member since 2023' }}</span></p>
         </div>
       </div>
       <div class="mt-4 flex gap-2">
@@ -26,8 +26,19 @@
     </div>
   </section>
 
-  <div class="mt-5 grid min-w-0 gap-6 lg:mt-8 lg:grid-cols-[240px_1fr] lg:gap-10">
-    <nav class="account-nav h-fit min-w-0 lg:sticky lg:top-32" [attr.aria-label]="locale.ui('account')">
+  <div class="account-layout mt-5 min-w-0 lg:mt-8 lg:grid lg:grid-cols-[240px_1fr] lg:gap-10">
+    <div
+      class="account-nav-slot"
+      [class.is-pinned]="navPinned"
+      [style.--account-nav-h.px]="navHeight"
+    >
+      <div #navSentinel class="account-nav-sentinel" aria-hidden="true"></div>
+      <nav
+        #accountNav
+        class="account-nav h-fit min-w-0 lg:sticky lg:top-32"
+        [class.is-pinned]="navPinned"
+        [attr.aria-label]="locale.ui('account')"
+      >
       <ul #navList class="account-nav-list rail no-rail flex gap-2 overflow-x-auto pb-0.5 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
         <li *ngFor="let n of nav" class="shrink-0 lg:w-full">
           <a [routerLink]="['/account', n.id]" [ngClass]="navClass(n.id)">
@@ -42,9 +53,10 @@
           </button>
         </li>
       </ul>
-    </nav>
+      </nav>
+    </div>
 
-    <div class="min-w-0">
+    <div class="account-main mt-5 min-w-0 lg:mt-0">
       <section *ngIf="isTab('overview')">
         <div class="grid grid-cols-3 gap-2 sm:gap-4">
           <article *ngFor="let stat of stats; let i = index" class="min-w-0 rounded-xl border p-3 sm:p-5" [ngClass]="statCardClass(i)">

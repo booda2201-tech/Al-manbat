@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { categories } from './data/categories';
 import { copy } from './data/copy';
@@ -83,12 +83,17 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.syncLayout(this.router.url);
+    this.router.events.subscribe((e) => {
+      if (e instanceof NavigationStart && e.url.split('?')[0] === '/cart') {
+        this.store.requestCartOpen();
+      }
+    });
     this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => {
       this.syncLayout(e.urlAfterRedirects);
       this.openMenu = null;
       this.store.menuOpen.set(false);
       this.store.searchOpen.set(false);
-      this.store.cartOpen.set(false);
+      this.store.cartOpen.set(this.store.consumeCartOpenRequest());
       window.scrollTo({ top: 0 });
     });
   }

@@ -73,7 +73,7 @@ import { applyFilters, emptyFilters, sortProducts, type FilterState } from '../c
             <p class="font-medium text-olive-800">{{ locale.ui('noResults') }}</p>
             <button type="button" class="mt-4 text-sm text-olive-700" (click)="reset()">{{ locale.ui('clearAll') }}</button>
           </div>
-          <div *ngIf="!loading && visible.length" class="grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-3 xl:grid-cols-4">
+          <div *ngIf="!loading && visible.length" class="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-5 md:gap-y-9 xl:grid-cols-4">
             <app-product-card *ngFor="let p of visible" [product]="p"></app-product-card>
           </div>
         </div>
@@ -265,12 +265,12 @@ export class ListingComponent implements OnInit, OnDestroy {
       </section>
       <section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-16">
         <app-section-header [title]="locale.isAr() ? 'منتجات مميزة' : 'Featured products'" [linkTo]="'/listing/' + category.slug" [linkLabel]="locale.ui('viewAll')"></app-section-header>
-        <div class="grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-3 xl:grid-cols-4">
+        <div class="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-5 md:gap-y-9 xl:grid-cols-4">
           <app-product-card *ngFor="let p of featured" [product]="p"></app-product-card>
         </div>
       </section>
       <section class="border-y border-olive-800/10 bg-sand-100/50 py-8 lg:py-12"><div class="mx-auto max-w-shell px-4 lg:px-10"><app-trust-strip></app-trust-strip></div></section>
-      <section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-16">
+      <section class="mx-auto max-w-shell px-4 pb-5 pt-8 lg:px-10 lg:pb-8 lg:pt-16">
         <app-section-header [title]="locale.isAr() ? 'تابع التسوق' : 'Continue exploring'"></app-section-header>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <a *ngFor="let s of siblings" [routerLink]="['/category', s.slug]" class="group relative flex h-40 items-end overflow-hidden rounded-lg p-5">
@@ -427,7 +427,7 @@ export class SearchComponent implements OnInit {
             <p class="font-medium text-olive-800">{{ locale.ui('noResults') }}</p>
             <button type="button" class="mt-4 text-sm text-olive-700" (click)="reset()">{{ locale.ui('clearAll') }}</button>
           </div>
-          <div *ngIf="visible.length" class="grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-3 xl:grid-cols-4">
+          <div *ngIf="visible.length" class="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-5 md:gap-y-9 xl:grid-cols-4">
             <app-product-card *ngFor="let p of visible" [product]="p"></app-product-card>
           </div>
         </div>

@@ -18,8 +18,8 @@
       </header>
 
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-        <ng-container *ngIf="rows().length; else emptyCart">
-          <div class="border-b border-olive-800/10 bg-white px-5 py-4">
+        <ng-container *ngIf="rows().length || saved().length; else emptyCart">
+          <div *ngIf="rows().length" class="border-b border-olive-800/10 bg-white px-5 py-4">
             <p class="text-[13px] text-ink-soft">{{ shipHint() }}</p>
             <div class="mt-2 h-1 w-full overflow-hidden rounded-full bg-sand-200">
               <div
@@ -75,6 +75,22 @@
               </div>
             </li>
           </ul>
+
+          <div *ngIf="saved().length" class="border-t border-olive-800/10 px-5 py-4">
+            <h3 class="text-xs font-semibold uppercase tracking-[0.14em] text-olive-800">{{ locale.ui('savedForLater') }}</h3>
+            <ul class="mt-3 space-y-2.5">
+              <li *ngFor="let p of saved()" class="flex items-center gap-3">
+                <img [src]="p.image" class="h-14 w-14 shrink-0 rounded-md object-cover" alt="" draggable="false" />
+                <div class="min-w-0 flex-1">
+                  <p class="line-clamp-2 text-[13px] font-medium text-olive-800">{{ locale.tr(p.name) }}</p>
+                  <p class="price mt-0.5 text-sm font-bold">{{ p.price | sar }}</p>
+                </div>
+                <button type="button" class="h-9 shrink-0 rounded-md border border-olive-800/15 px-2.5 text-xs font-medium text-olive-800" (click)="store.moveToCart(p.id)">
+                  {{ locale.ui('moveToCart') }}
+                </button>
+              </li>
+            </ul>
+          </div>
         </ng-container>
       </div>
 
@@ -100,13 +116,6 @@
             (click)="close()"
           >
             {{ locale.ui('checkout') }}
-          </a>
-          <a
-            routerLink="/cart"
-            class="text-center text-[13px] text-ink-muted underline-offset-4 transition-colors duration-150 ease-premium hover:text-olive-700 hover:underline"
-            (click)="close()"
-          >
-            {{ locale.ui('cartTitle') }}
           </a>
         </div>
       </footer>

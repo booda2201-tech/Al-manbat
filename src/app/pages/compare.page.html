@@ -29,6 +29,7 @@
     <div *ngIf="list.length">
       <div class="mt-3 flex flex-col gap-3 md:mt-5 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4">
         <div>
+          <p class="compare-kicker">{{ locale.ui('compareKicker') }}</p>
           <h1 class="font-displayAr text-[26px] leading-tight text-olive-800 md:text-4xl lg:text-[46px]">{{ locale.ui('compare') }}</h1>
           <p class="mt-1 text-sm text-ink-muted md:mt-2">{{ list.length | countLoc }} {{ locale.isAr() ? 'من أصل ٤ منتجات' : 'of 4 products' }}</p>
         </div>
@@ -59,59 +60,74 @@
 
       <div class="compare-scroll mt-4 md:mt-8">
         <div class="compare-stack" [ngStyle]="{ '--n': columns().length }">
-          <div class="compare-head">
-            <div class="compare-head-spacer" aria-hidden="true"></div>
-            <div *ngFor="let p of columns()" class="compare-col">
-              <article class="compare-card">
-                <a [routerLink]="['/product', p.slug]" class="compare-card__media">
-                  <img [src]="p.image" [alt]="locale.tr(p.name)" />
-                  <span class="compare-card__badges">
-                    <span *ngFor="let b of p.badges.slice(0, 2)" class="inline-flex items-center rounded-xs px-2 py-1 text-2xs font-semibold uppercase" [ngClass]="badgeTone(b)">
-                      {{ badgeLabel(b) }}
-                    </span>
-                  </span>
-                </a>
-                <button
-                  type="button"
-                  class="compare-card__remove"
-                  [attr.aria-label]="locale.ui('remove')"
-                  (click)="store.toggleCompare(p.id)"
-                >
-                  <app-icon name="close" [size]="14"></app-icon>
-                </button>
-                <div class="compare-card__body">
-                  <a [routerLink]="['/product', p.slug]" class="compare-card__name">
-                    {{ locale.tr(p.name) }}
-                  </a>
-                  <p class="compare-card__price">{{ p.price | sar }}</p>
-                  <button
-                    type="button"
-                    class="compare-card__cart"
-                    [disabled]="p.stock === 0"
-                    (click)="addToCart(p.id)"
-                  >
-                    <app-icon name="cart" [size]="14"></app-icon>
-                    <span class="compare-card__cart-short">{{ p.stock === 0 ? locale.ui('outOfStock') : (locale.isAr() ? 'أضف' : 'Add') }}</span>
-                    <span class="compare-card__cart-full">{{ p.stock === 0 ? locale.ui('outOfStock') : locale.ui('addToCart') }}</span>
-                  </button>
+          <div class="compare-board">
+            <div class="compare-stage">
+              <div class="compare-head">
+                <div class="compare-head-spacer" aria-hidden="true"></div>
+                <div *ngFor="let p of columns()" class="compare-col" [class.is-lead]="isLead(p)">
+                  <article class="compare-card">
+                    <a [routerLink]="['/product', p.slug]" class="compare-card__media">
+                      <img [src]="p.image" [alt]="locale.tr(p.name)" />
+                    </a>
+                    <button
+                      type="button"
+                      class="compare-card__remove"
+                      [attr.aria-label]="locale.ui('remove')"
+                      (click)="store.toggleCompare(p.id)"
+                    >
+                      <app-icon name="close" [size]="14"></app-icon>
+                    </button>
+                    <div class="compare-card__body">
+                      <p class="compare-card__brand">{{ locale.tr(p.brand) }}</p>
+                      <a [routerLink]="['/product', p.slug]" class="compare-card__name">
+                        {{ locale.tr(p.name) }}
+                      </a>
+                      <p class="compare-card__price">{{ p.price | sar }}</p>
+                      <button
+                        type="button"
+                        class="compare-card__cart"
+                        [disabled]="p.stock === 0"
+                        (click)="addToCart(p.id)"
+                      >
+                        <app-icon name="cart" [size]="14"></app-icon>
+                        <span class="compare-card__cart-short">{{ p.stock === 0 ? locale.ui('outOfStock') : (locale.isAr() ? 'أضف' : 'Add') }}</span>
+                        <span class="compare-card__cart-full">{{ p.stock === 0 ? locale.ui('outOfStock') : locale.ui('addToCart') }}</span>
+                      </button>
+                    </div>
+                  </article>
                 </div>
-              </article>
+              </div>
             </div>
-          </div>
 
-          <div class="compare-sheet">
+            <div *ngIf="list.length > 1" class="compare-verdict">
+              <ng-container *ngIf="verdictPick() as pick; else splitVerdict">
+                <span class="compare-verdict__kicker">{{ locale.ui('comparePick') }}</span>
+                <span class="compare-verdict__value">{{ shortName(pick) }}</span>
+              </ng-container>
+              <ng-template #splitVerdict>
+                <span *ngIf="cheapest() as cheap" class="compare-verdict__item">
+                  <span class="compare-verdict__kicker">{{ locale.ui('bestPrice') }}</span>
+                  <span class="compare-verdict__value">{{ shortName(cheap) }}</span>
+                </span>
+                <span *ngIf="cheapest() && highestRated()" class="compare-verdict__rule" aria-hidden="true"></span>
+                <span *ngIf="highestRated() as rated" class="compare-verdict__item">
+                  <span class="compare-verdict__kicker">{{ locale.ui('topRated') }}</span>
+                  <span class="compare-verdict__value">{{ shortName(rated) }}</span>
+                </span>
+              </ng-template>
+            </div>
+
+            <div class="compare-sheet">
             <div *ngIf="showPriceRow()" class="compare-row">
               <div class="compare-axis">{{ locale.ui('price') }}</div>
               <div *ngFor="let p of columns()" class="compare-cell" [class.is-best]="isBestPrice(p)">
-                <app-price-block [price]="p.price" [compareAt]="p.compareAt" size="sm" [stack]="true"></app-price-block>
-                <p *ngIf="isBestPrice(p)" class="compare-flag mt-2">{{ locale.ui('bestPrice') }}</p>
+                <span class="compare-cell__value">{{ p.price | sar }}</span>
               </div>
             </div>
             <div *ngIf="showRatingRow()" class="compare-row">
               <div class="compare-axis">{{ locale.ui('rating') }}</div>
               <div *ngFor="let p of columns()" class="compare-cell" [class.is-best]="isBestRating(p)">
                 <app-rating [rating]="p.rating" size="sm"></app-rating>
-                <p *ngIf="isBestRating(p)" class="compare-flag mt-2">{{ locale.ui('topRated') }}</p>
               </div>
             </div>
             <div *ngIf="showStockRow()" class="compare-row">
@@ -123,27 +139,26 @@
             <div *ngIf="showShipRow()" class="compare-row">
               <div class="compare-axis">{{ locale.ui('shipping') }}</div>
               <div *ngFor="let p of columns()" class="compare-cell">
-                <span class="text-sm font-normal normal-case tracking-normal leading-relaxed text-olive-800">
-                  {{ p.freeShipping ? locale.ui('freeShipping') : (25 | sar) }} · {{ p.deliveryDays | countLoc }} {{ locale.ui('daysDelivery') }}
+                <span class="compare-cell__value">
+                  {{ p.freeShipping ? locale.ui('freeShipping') : (25 | sar) }}
+                  · {{ p.deliveryDays | countLoc }} {{ locale.ui('daysDelivery') }}
                 </span>
               </div>
             </div>
             <div *ngFor="let label of specLabels()" class="compare-row">
               <div class="compare-axis">{{ label }}</div>
               <div *ngFor="let p of columns()" class="compare-cell" [ngClass]="specCellClass(p, label)">
-                <span class="text-sm font-inherit normal-case tracking-normal">{{ specValue(p, label) || '—' }}</span>
+                <span class="compare-cell__value">{{ specValue(p, label) || '—' }}</span>
               </div>
             </div>
             <div class="compare-row">
               <div class="compare-axis">{{ locale.ui('highlights') }}</div>
               <div *ngFor="let p of columns()" class="compare-cell">
-                <ul class="space-y-2">
-                  <li *ngFor="let h of p.highlights.slice(0, 3)" class="flex gap-2 text-[13px] font-normal normal-case tracking-normal leading-snug text-olive-800">
-                    <app-icon name="check" [size]="14" class="mt-0.5 shrink-0 text-gold-400"></app-icon>
-                    {{ locale.tr(h) }}
-                  </li>
+                <ul class="compare-highlights">
+                  <li *ngFor="let h of p.highlights.slice(0, 3)">{{ locale.tr(h) }}</li>
                 </ul>
               </div>
+            </div>
             </div>
           </div>
         </div>

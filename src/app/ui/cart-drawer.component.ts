@@ -22,6 +22,9 @@ export class CartDrawerComponent {
       .map((l) => ({ ...l, product: productById(l.productId)! }))
       .filter((l) => l.product)
   );
+  saved = computed(() =>
+    this.store.savedForLater().map(productById).filter((p): p is NonNullable<typeof p> => !!p)
+  );
 
   constructor(
     public locale: LocaleService,
@@ -30,6 +33,7 @@ export class CartDrawerComponent {
   ) {
     effect(() => {
       this.store.lines();
+      this.store.savedForLater();
       this.cdr.markForCheck();
     });
   }

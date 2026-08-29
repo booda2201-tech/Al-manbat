@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { addresses, orders } from '../data/content';
@@ -19,9 +19,14 @@ import { CrumbsComponent } from '../commerce/crumbs.component';
   imports: [CommonModule, FormsModule, RouterLink, IconComponent, CrumbsComponent, SarPipe, ReviewFormComponent],
   templateUrl: './account.page.html',
 })
-export class AccountPageComponent implements OnInit {
+export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('navList') navList?: ElementRef<HTMLElement>;
+  @ViewChild('navSentinel') navSentinel?: ElementRef<HTMLElement>;
+  @ViewChild('accountNav') accountNav?: ElementRef<HTMLElement>;
+  navPinned = false;
+  navHeight = 56;
   tab = 'overview';
+  private navPinObs?: IntersectionObserver;
   orders = orders;
   addressList: Address[] = addresses.map((a) => ({ ...a }));
   reorderIds = ['oil-reserve', 'pkl-cucumber'];
@@ -68,7 +73,8 @@ export class AccountPageComponent implements OnInit {
     public locale: LocaleService,
     public store: StoreService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -76,6 +82,38 @@ export class AccountPageComponent implements OnInit {
       this.tab = p.get('tab') || 'overview';
       this.scrollActiveNav();
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.bindNavPin();
+  }
+
+  ngOnDestroy(): void {
+    this.navPinObs?.disconnect();
+  }
+
+  private bindNavPin(): void {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const sentinel = this.navSentinel?.nativeElement;
+    if (!sentinel) return;
+    this.navPinObs?.disconnect();
+    this.navPinObs = new IntersectionObserver(
+      ([entry]) => {
+        this.zone.run(() => {
+          if (window.matchMedia('(min-width: 1024px)').matches) {
+            this.navPinned = false;
+            return;
+          }
+          const pin = !entry.isIntersecting;
+          if (pin && this.accountNav) {
+            this.navHeight = Math.round(this.accountNav.nativeElement.getBoundingClientRect().height);
+          }
+          this.navPinned = pin;
+        });
+      },
+      { root: null, threshold: 0, rootMargin: '-7rem 0px 0px 0px' }
+    );
+    this.navPinObs.observe(sentinel);
   }
 
   private scrollActiveNav(): void {
@@ -427,7 +465,7 @@ export class AccountPageComponent implements OnInit {
   standalone: true,
   imports: [CommonModule, RouterLink, ProductCardComponent, ProductRailComponent, SectionHeaderComponent, CrumbsComponent, CountPipe, SarPipe, IconComponent],
   template: `
-    <div class="wishlist-page mx-auto max-w-shell px-4 pb-5 pt-2 md:py-9 lg:px-10" [class.has-dock]="items().length > 0">
+    <div class="wishlist-page mx-auto max-w-shell px-4 pb-4 pt-2 md:py-7 lg:px-10" [class.has-dock]="items().length > 0">
       <app-crumbs [trail]="trail"></app-crumbs>
       <div class="mt-2.5 flex items-end justify-between gap-4 md:mt-5">
         <div>

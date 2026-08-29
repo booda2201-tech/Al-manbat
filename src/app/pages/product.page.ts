@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewChecked, Component, effect, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { gsap } from 'gsap';
 import type { Product, Review } from '../types';
 import { faqs, ratingBreakdown, reviews as seedReviews } from '../data/content';
 import { categoryBySlug } from '../data/categories';
@@ -41,7 +42,9 @@ import { CountPipe, SarPipe } from '../utils/sar.pipe';
   ],
   templateUrl: './product.page.html',
 })
-export class ProductPageComponent implements OnInit, OnDestroy {
+export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy {
+  @ViewChild('galleryRoot') galleryRoot?: ElementRef<HTMLElement>;
+  @ViewChild('galleryFrame') galleryFrame?: ElementRef<HTMLElement>;
   product: Product | null = null;
   qty = 1;
   tab: 'description' | 'specs' | 'reviews' = 'description';
@@ -56,13 +59,26 @@ export class ProductPageComponent implements OnInit, OnDestroy {
   breakdown = ratingBreakdown;
   openFaq: number | null = null;
   reviewOpen = false;
+  galleryReady = false;
+  trail: { label: string; to?: string }[] = [];
+  private galleryEnteredFor: string | null = null;
+  private galleryTween?: gsap.core.Timeline;
+  private swapping = false;
+  private galleryTimer?: number;
+  private galleryPaused = false;
 
   constructor(
     public locale: LocaleService,
     public store: StoreService,
     private route: ActivatedRoute,
-    private router: Router
-  ) {}
+    private router: Router,
+    private zone: NgZone
+  ) {
+    effect(() => {
+      this.locale.locale();
+      if (this.product) this.buildTrail();
+    });
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -75,11 +91,27 @@ export class ProductPageComponent implements OnInit, OnDestroy {
       this.reviews = [...seedReviews];
       this.extraReviews = 0;
       this.reviewOpen = false;
+      this.galleryEnteredFor = null;
+      this.galleryReady = false;
+      this.swapping = false;
+      this.stopGalleryLoop();
+      this.galleryTween?.kill();
       if (!this.product) this.router.navigateByUrl('/');
+      else this.buildTrail();
     });
   }
 
+  ngAfterViewChecked(): void {
+    const id = this.product?.id ?? null;
+    if (id && this.galleryFrame && this.galleryEnteredFor !== id) {
+      this.galleryEnteredFor = id;
+      requestAnimationFrame(() => this.zone.run(() => this.enterGallery()));
+    }
+  }
+
   ngOnDestroy(): void {
+    this.stopGalleryLoop();
+    this.galleryTween?.kill();
     this.closeLightbox();
   }
 
@@ -104,10 +136,13 @@ export class ProductPageComponent implements OnInit, OnDestroy {
   get bundleTotal(): number {
     return this.bundle.reduce((s, p) => s + p.price, 0);
   }
-  get trail() {
-    if (!this.product) return [];
+  private buildTrail(): void {
+    if (!this.product) {
+      this.trail = [];
+      return;
+    }
     const cat = categoryBySlug(this.product.category);
-    return [
+    this.trail = [
       { label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' },
       ...(cat
         ? [
@@ -182,7 +217,14 @@ export class ProductPageComponent implements OnInit, OnDestroy {
   }
 
   onGalleryEnter(): void {
+    this.galleryPaused = true;
     if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) this.hoverZoom = true;
+  }
+
+  onGalleryLeave(): void {
+    this.hoverZoom = false;
+    this.galleryPaused = false;
+    this.armGalleryLoop();
   }
 
   onGalleryMove(ev: MouseEvent): void {
@@ -192,20 +234,23 @@ export class ProductPageComponent implements OnInit, OnDestroy {
   }
 
   selectThumb(i: number): void {
-    this.galleryIndex = i;
-    this.hoverZoom = false;
-    this.origin = '50% 50%';
+    this.stopGalleryLoop();
+    this.swapGallery(i);
   }
 
   openLightbox(): void {
     this.hoverZoom = false;
+    this.galleryPaused = true;
+    this.stopGalleryLoop();
     this.lightbox = true;
     document.body.style.overflow = 'hidden';
   }
 
   closeLightbox(): void {
     this.lightbox = false;
+    this.galleryPaused = false;
     document.body.style.overflow = '';
+    this.armGalleryLoop();
   }
 
   stopLightbox(ev: Event): void {
@@ -220,7 +265,107 @@ export class ProductPageComponent implements OnInit, OnDestroy {
   stepGallery(dir: number): void {
     const list = this.product?.gallery ?? [];
     if (list.length < 2) return;
-    this.galleryIndex = (this.galleryIndex + dir + list.length) % list.length;
+    this.swapGallery((this.galleryIndex + dir + list.length) % list.length);
+  }
+
+  private reduceMotion(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  private enterGallery(): void {
+    const frame = this.galleryFrame?.nativeElement;
+    const root = this.galleryRoot?.nativeElement;
+    if (!frame || !root) return;
+    this.galleryTween?.kill();
+    const thumbs = root.querySelectorAll('.pdp-gallery__thumb');
+    const radius = getComputedStyle(frame).borderTopLeftRadius || '18px';
+    if (this.reduceMotion()) {
+      this.galleryReady = true;
+      gsap.set(frame, { clipPath: `inset(0% 0% 0% 0% round ${radius})`, scale: 1, clearProps: 'clipPath,transform' });
+      gsap.set(thumbs, { clearProps: 'opacity,transform' });
+      this.armGalleryLoop();
+      return;
+    }
+    const fromClip = `inset(24% 18% 24% 18% round ${radius})`;
+    const toClip = `inset(0% 0% 0% 0% round ${radius})`;
+    gsap.set(frame, { clipPath: fromClip, scale: 1.28 });
+    gsap.set(thumbs, { y: 32, opacity: 0 });
+    this.galleryReady = true;
+    this.galleryTween = gsap.timeline({
+      defaults: { ease: 'power3.out' },
+      onComplete: () => this.armGalleryLoop(),
+    });
+    this.galleryTween.to(frame, { clipPath: toClip, scale: 1, duration: 1.2 }, 0);
+    if (thumbs.length) {
+      this.galleryTween.to(thumbs, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1 }, 0.45);
+    }
+  }
+
+  private swapGallery(i: number): void {
+    if (i === this.galleryIndex || this.swapping) return;
+    this.hoverZoom = false;
+    this.origin = '50% 50%';
+    const frame = this.galleryFrame?.nativeElement;
+    if (!frame || this.reduceMotion()) {
+      this.galleryIndex = i;
+      this.armGalleryLoop();
+      return;
+    }
+    this.swapping = true;
+    this.galleryTween?.kill();
+    const radius = getComputedStyle(frame).borderTopLeftRadius || '18px';
+    const hide = this.locale.isAr()
+      ? `inset(0% 0% 0% 100% round ${radius})`
+      : `inset(0% 100% 0% 0% round ${radius})`;
+    const open = `inset(0% 0% 0% 0% round ${radius})`;
+    this.galleryTween = gsap.timeline({
+      defaults: { ease: 'power3.inOut' },
+      onComplete: () => {
+        this.swapping = false;
+        this.armGalleryLoop();
+      },
+    });
+    this.galleryTween
+      .to(frame, { clipPath: hide, scale: 1.08, duration: 0.38, ease: 'power3.in' })
+      .add(() => {
+        this.zone.run(() => {
+          this.galleryIndex = i;
+        });
+      })
+      .fromTo(
+        frame,
+        { clipPath: hide, scale: 1.22 },
+        { clipPath: open, scale: 1, duration: 0.72, ease: 'power3.out' }
+      );
+  }
+
+  private armGalleryLoop(): void {
+    this.stopGalleryLoop();
+    if (typeof window === 'undefined') return;
+    if (this.lightbox || this.galleryPaused) return;
+    if ((this.product?.gallery.length ?? 0) < 2) return;
+    this.galleryTimer = window.setTimeout(() => {
+      this.galleryTimer = undefined;
+      if (this.lightbox || this.galleryPaused || !this.product) return;
+      const list = this.product.gallery;
+      if (list.length < 2) return;
+      this.zone.run(() => {
+        this.swapGallery((this.galleryIndex + 1) % list.length);
+      });
+    }, 3800);
+  }
+
+  private stopGalleryLoop(): void {
+    if (this.galleryTimer != null) {
+      window.clearTimeout(this.galleryTimer);
+      this.galleryTimer = undefined;
+    }
+  }
+
+  @HostListener('document:visibilitychange')
+  onVisibility(): void {
+    if (document.hidden) this.stopGalleryLoop();
+    else this.armGalleryLoop();
   }
 
   @HostListener('document:keydown.escape')
@@ -277,6 +422,24 @@ export class ProductPageComponent implements OnInit, OnDestroy {
 
   isOwnReview(id: string): boolean {
     return id.indexOf('u-') === 0;
+  }
+
+  reviewInitial(review: Review): string {
+    return this.locale.tr(review.author).trim().charAt(0) || 'م';
+  }
+
+  reviewDate(date: string): string {
+    const parts = date.split('-').map(Number);
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+    if (!year || !month || !day) return date;
+    if (this.locale.isAr()) {
+      const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      return `${day} ${months[month - 1]} ${year}`;
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${day} ${months[month - 1]} ${year}`;
   }
 
   add(): void {

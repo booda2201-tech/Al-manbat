@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, ViewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import type { Product } from '../types';
 import { trustPoints } from '../data/content';
 import { discountPercent } from '../utils/format';
@@ -15,24 +15,28 @@ import { CountPipe } from '../utils/sar.pipe';
   standalone: true,
   imports: [CommonModule, IconComponent, CountPipe],
   template: `
-    <span class="inline-flex items-center gap-1.5">
-      <span class="inline-flex" aria-hidden="true">
-        <app-icon *ngFor="let i of stars" name="star" [size]="size === 'sm' ? 14 : 16"
-          [filled]="i <= rounded" [ngClass]="starTone(i)"></app-icon>
+    <span class="inline-flex max-w-full flex-nowrap items-center gap-1">
+      <span class="text-[11px] font-medium tabular-nums text-ink-soft">{{ rating.toFixed(1) }}</span>
+      <span class="inline-flex shrink-0" aria-hidden="true">
+        <app-icon *ngFor="let i of stars" name="star" [size]="starPx" [filled]="i <= rounded" [ngClass]="starTone(i)"></app-icon>
       </span>
-      <span class="text-xs font-medium text-ink-soft">{{ rating.toFixed(1) }}</span>
-      <span *ngIf="reviews !== undefined" class="text-xs text-ink-muted">({{ reviews | countLoc }} {{ locale.ui('reviews') }})</span>
+      <span *ngIf="reviews !== undefined" class="product-card__reviews text-[11px] text-ink-muted">({{ reviews | countLoc }} {{ locale.ui('reviews') }})</span>
     </span>
   `,
 })
 export class RatingComponent {
   @Input() rating = 0;
   @Input() reviews?: number;
-  @Input() size: 'sm' | 'md' = 'sm';
+  @Input() size: 'xs' | 'sm' | 'md' = 'sm';
   stars = [1, 2, 3, 4, 5];
   constructor(public locale: LocaleService) {}
   get rounded(): number {
     return Math.round(this.rating);
+  }
+  get starPx(): number {
+    if (this.size === 'xs') return 11;
+    if (this.size === 'md') return 16;
+    return 13;
   }
 
   starTone(i: number): string {
@@ -105,52 +109,62 @@ export class QtyComponent {
   standalone: true,
   imports: [CommonModule, RouterLink, IconComponent, RatingComponent, PriceBlockComponent, CountPipe],
   template: `
-    <article class="product-card group relative flex h-full flex-col overflow-hidden rounded-xl border border-olive-800/10 bg-white" *ngIf="product">
+    <article
+      class="product-card group relative flex h-full flex-col overflow-hidden rounded-xl border border-olive-800/10 bg-white"
+      [ngClass]="layout === 'rail' ? 'product-card--rail' : 'product-card--grid'"
+      *ngIf="product"
+      (click)="openProduct($event)"
+    >
       <div class="relative overflow-hidden bg-sand-100">
         <a [routerLink]="['/product', product.slug]" class="block" tabindex="-1" aria-hidden="true">
-          <div class="aspect-[4/5] w-full overflow-hidden">
+          <div class="product-card__media overflow-hidden">
             <img [src]="product.image" alt="" draggable="false" class="h-full w-full object-cover transition-transform duration-[600ms] ease-premium group-hover:scale-[1.06]" [class.opacity-60]="soldOut" />
           </div>
         </a>
-        <div class="absolute start-3 top-3 flex flex-col gap-1.5">
-          <span *ngFor="let b of product.badges.slice(0,2)" class="inline-flex items-center gap-1 rounded-xs px-2 py-1 text-2xs font-semibold uppercase" [ngClass]="badgeTone(b)">
+        <div class="product-card__badges absolute start-3 top-3 flex flex-col gap-1">
+          <span *ngFor="let b of product.badges.slice(0,2)" class="product-card__badge inline-flex items-center rounded-xs px-1.5 py-0.5 text-[10px] font-semibold" [ngClass]="badgeTone(b)">
             {{ badgeLabel(b) }}
           </span>
         </div>
-        <div class="absolute end-3 top-3 flex gap-2">
-          <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-[background-color,color,transform] duration-200 ease-premium" [ngClass]="wishBtnClass()" (click)="toggleWish()" [attr.aria-label]="locale.ui('wishlist')" [attr.aria-pressed]="wished">
-            <app-icon name="heart" [size]="16" [filled]="wished" [class.wish-heart-on]="wished"></app-icon>
+        <div class="product-card__actions absolute end-2 top-2 flex flex-col gap-1">
+          <button type="button" class="product-card__icon flex items-center justify-center rounded-full" [ngClass]="wishBtnClass()" (click)="toggleWish($event)" [attr.aria-label]="locale.ui('wishlist')" [attr.aria-pressed]="wished">
+            <app-icon name="heart" [size]="14" [filled]="wished" [class.wish-heart-on]="wished"></app-icon>
           </button>
-          <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-[background-color,color,opacity,transform] duration-200 ease-premium md:opacity-0 md:group-hover:opacity-100" [ngClass]="comparing ? 'bg-olive-700 text-sand-50 md:opacity-100' : 'bg-white/90 text-olive-700 hover:bg-white'" (click)="toggleCompare()" [attr.aria-label]="locale.ui('compare')" [attr.aria-pressed]="comparing">
-            <app-icon name="scale" [size]="16"></app-icon>
+          <button type="button" class="product-card__icon product-card__compare flex items-center justify-center rounded-full" [ngClass]="compareBtnClass()" (click)="toggleCompare($event)" [attr.aria-label]="locale.ui('compare')" [attr.aria-pressed]="comparing">
+            <app-icon name="scale" [size]="14"></app-icon>
           </button>
         </div>
         <div *ngIf="soldOut" class="absolute inset-x-3 bottom-3 rounded bg-olive-800/90 py-2.5 text-center text-xs font-medium text-sand-100">{{ locale.ui('outOfStock') }}</div>
-        <div *ngIf="!soldOut" class="quick-add absolute inset-x-3 bottom-3 translate-y-2 opacity-0 transition-[opacity,transform] duration-300 ease-premium group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
-          <button type="button" (click)="add()" class="relative flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded bg-olive-800 text-[13px] font-medium text-sand-50 shadow-lg transition-colors duration-200 ease-premium hover:bg-olive-900">
+        <div *ngIf="!soldOut" class="quick-add absolute inset-x-3 bottom-3 translate-y-2 opacity-0 transition-[opacity,transform] duration-300 ease-premium">
+          <button type="button" (click)="add($event)" class="relative flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded bg-olive-800 text-[13px] font-medium text-sand-50 shadow-lg transition-colors duration-200 ease-premium hover:bg-olive-900">
             <app-icon [name]="justAdded ? 'check' : 'cart'" [size]="16"></app-icon>
             {{ justAdded ? locale.ui('addedToCart') : locale.ui('quickAdd') }}
           </button>
         </div>
       </div>
-      <div class="flex flex-1 flex-col px-3.5 pb-4 pt-3">
-        <p class="text-2xs uppercase tracking-[0.16em] text-gold-400">{{ locale.tr(product.brand) }}</p>
-        <h3 class="mt-1.5 text-sm font-medium leading-snug text-olive-800">
-          <a [routerLink]="['/product', product.slug]" class="line-clamp-2 transition-colors duration-200 ease-premium hover:text-olive-600">{{ locale.tr(product.name) }}</a>
+      <div class="product-card__body">
+        <div class="product-card__head">
+          <p class="product-card__brand">{{ locale.tr(product.brand) }}</p>
+          <app-rating class="product-card__rating" [rating]="product.rating" size="xs"></app-rating>
+        </div>
+        <h3 class="product-card__name">
+          <a [routerLink]="['/product', product.slug]">{{ locale.tr(product.name) }}</a>
         </h3>
-        <div class="mt-2"><app-rating [rating]="product.rating" [reviews]="product.reviews"></app-rating></div>
-        <div class="mt-auto pt-3">
-          <app-price-block [price]="product.price" [compareAt]="product.compareAt"></app-price-block>
-          <div class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span class="inline-flex items-center gap-1.5 text-xs font-medium" [ngClass]="stockTextClass">
-              <span class="h-1.5 w-1.5 rounded-full" [ngClass]="stockDotClass"></span>
+        <div class="product-card__foot">
+          <app-price-block [price]="product.price" [compareAt]="product.compareAt" size="sm"></app-price-block>
+          <p class="product-card__meta">
+            <span class="product-card__stock" [ngClass]="stockTextClass">
+              <span class="product-card__dot" [ngClass]="stockDotClass"></span>
               {{ stockLabel }}
             </span>
-            <span class="inline-flex items-center gap-1.5 text-xs text-ink-muted">
-              <app-icon name="truck" [size]="14"></app-icon>
-              {{ product.freeShipping ? locale.ui('freeShipping') : locale.ui('shipping') }} · {{ product.deliveryDays | countLoc }} {{ locale.ui('daysDelivery') }}
+            <span class="product-card__ship">
+              <app-icon name="truck" [size]="12"></app-icon>
+              {{ product.freeShipping ? locale.ui('freeShipping') : locale.ui('shipping') }}
+              ·
+              {{ product.deliveryDays | countLoc }}
+              {{ locale.ui('daysDelivery') }}
             </span>
-          </div>
+          </p>
         </div>
       </div>
     </article>
@@ -158,9 +172,10 @@ export class QtyComponent {
 })
 export class ProductCardComponent {
   @Input() product!: Product;
+  @Input() layout: 'grid' | 'rail' = 'grid';
   justAdded = false;
   private addedTimer?: number;
-  constructor(public locale: LocaleService, public store: StoreService) {}
+  constructor(public locale: LocaleService, public store: StoreService, private router: Router) {}
   get soldOut(): boolean {
     return this.product.stock === 0;
   }
@@ -172,8 +187,13 @@ export class ProductCardComponent {
   }
   wishBtnClass(): string {
     return this.wished
-      ? 'bg-white/90 text-clay-400'
-      : 'bg-white/90 text-olive-700 hover:bg-white hover:scale-105';
+      ? 'is-on bg-white/90 text-clay-400'
+      : 'bg-white/90 text-olive-700 hover:bg-white';
+  }
+  compareBtnClass(): string {
+    return this.comparing
+      ? 'is-on bg-olive-700 text-sand-50'
+      : 'bg-white/90 text-olive-700 hover:bg-white';
   }
   get stockTextClass(): string {
     if (this.product.stock === 0) return 'text-ink-muted';
@@ -210,7 +230,14 @@ export class ProductCardComponent {
     };
     return map[b]?.[this.locale.locale()] ?? b;
   }
-  toggleWish(): void {
+  openProduct(ev: Event): void {
+    const node = ev.target as HTMLElement | null;
+    if (node?.closest('button, a')) return;
+    this.router.navigate(['/product', this.product.slug]);
+  }
+  toggleWish(ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
     const on = !this.wished;
     this.store.toggleWishlist(this.product.id);
     this.store.pushToast({
@@ -219,10 +246,28 @@ export class ProductCardComponent {
       description: this.locale.tr(this.product.name),
     });
   }
-  toggleCompare(): void {
+  toggleCompare(ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const wasOn = this.comparing;
+    if (!wasOn && this.store.compare().length >= 4) {
+      this.store.pushToast({
+        tone: 'warning',
+        title: this.locale.isAr() ? 'المقارنة ممتلئة' : 'Compare is full',
+        description: this.locale.isAr() ? 'يمكن مقارنة ٤ منتجات فقط' : 'You can compare up to 4 products',
+      });
+      return;
+    }
     this.store.toggleCompare(this.product.id);
+    this.store.pushToast({
+      tone: 'success',
+      title: !wasOn ? (this.locale.isAr() ? 'أُضيف للمقارنة' : 'Added to compare') : this.locale.isAr() ? 'أُزيل من المقارنة' : 'Removed from compare',
+      description: this.locale.tr(this.product.name),
+    });
   }
-  add(): void {
+  add(ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
     this.store.addToCart(this.product.id);
     this.justAdded = true;
     this.store.pushToast({ tone: 'success', title: this.locale.ui('addedToCart'), description: this.locale.tr(this.product.name) });
@@ -262,7 +307,7 @@ export class SectionHeaderComponent {
   imports: [CommonModule, ProductCardComponent, IconComponent],
   host: { class: 'product-rail-host' },
   template: `
-    <div class="product-rail-wrap">
+    <div class="product-rail-wrap" [class.product-rail-wrap--on-dark]="onDark">
       <div
         #rail
         class="rail product-rail"
@@ -274,7 +319,7 @@ export class SectionHeaderComponent {
         (lostpointercapture)="onPointerUp($event)"
       >
         <div *ngFor="let p of products" class="product-rail__item">
-          <app-product-card [product]="p"></app-product-card>
+          <app-product-card [product]="p" layout="rail"></app-product-card>
         </div>
       </div>
       <div *ngIf="products.length > 1" class="product-rail__dots">
@@ -306,6 +351,7 @@ export class SectionHeaderComponent {
 })
 export class ProductRailComponent implements AfterViewInit, OnDestroy {
   @Input() products: Product[] = [];
+  @Input() onDark = false;
   @ViewChild('rail') rail?: ElementRef<HTMLElement>;
   progress = 0;
   active = 0;
@@ -357,15 +403,14 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
   }
 
   onPointerDown(ev: PointerEvent): void {
-    if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
+    if (ev.pointerType === 'touch' || ev.button !== 0) return;
+    if (this.isControl(ev.target)) return;
     const el = this.rail?.nativeElement;
     if (!el || el.scrollWidth <= el.clientWidth + 1) return;
     this.dragging = true;
     this.dragged = false;
     this.startX = ev.clientX;
     this.startScroll = el.scrollLeft;
-    el.classList.add('is-drag');
-    el.setPointerCapture(ev.pointerId);
   }
 
   onPointerMove(ev: PointerEvent): void {
@@ -373,7 +418,16 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
     const el = this.rail?.nativeElement;
     if (!el) return;
     const dx = ev.clientX - this.startX;
-    if (Math.abs(dx) > 6) this.dragged = true;
+    if (Math.abs(dx) <= 16) return;
+    if (!this.dragged) {
+      this.dragged = true;
+      el.classList.add('is-drag');
+      try {
+        el.setPointerCapture(ev.pointerId);
+      } catch {
+        /* capture not available */
+      }
+    }
     this.setScroll(el, this.startScroll - dx, false);
   }
 
@@ -394,6 +448,9 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
       const card = el.children.item(this.active) as HTMLElement | null;
       if (card) this.alignCard(el, card, true);
     }
+    window.setTimeout(() => {
+      this.dragged = false;
+    }, 0);
   }
 
   @HostListener('window:resize')
@@ -442,7 +499,11 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
     if (!this.dragged) return;
     ev.preventDefault();
     ev.stopPropagation();
-    this.dragged = false;
+  }
+
+  private isControl(target: EventTarget | null): boolean {
+    const el = target instanceof Element ? target : null;
+    return !!el?.closest('button, a, input, textarea, select, [role="button"]');
   }
 
   private isRtl(el: HTMLElement): boolean {
