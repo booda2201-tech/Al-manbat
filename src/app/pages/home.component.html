@@ -8,13 +8,18 @@
     (mouseleave)="resumeHero()"
   >
     <div class="absolute inset-0">
-      <img
-        *ngFor="let ad of ads; trackBy: trackAd; let i = index"
-        [src]="ad.image"
-        alt=""
-        [ngClass]="heroImgClass(i === heroIndex)"
-        [style.animation-play-state]="heroPlayState()"
-      />
+      <ng-container *ngFor="let ad of ads; trackBy: trackAd; let i = index">
+        <img
+          *ngIf="heroShows(i)"
+          [src]="ad.image"
+          alt=""
+          [attr.fetchpriority]="i === heroIndex ? 'high' : 'low'"
+          [attr.loading]="i === heroIndex ? 'eager' : 'lazy'"
+          decoding="async"
+          [ngClass]="heroImgClass(i === heroIndex)"
+          [style.animation-play-state]="heroPlayState()"
+        />
+      </ng-container>
     </div>
     <div class="hero-grain pointer-events-none absolute inset-0"></div>
     <div class="hero-scrim-mobile pointer-events-none absolute inset-0 lg:hidden"></div>
@@ -131,7 +136,7 @@
     <li *ngFor="let c of categories(); let last = last; trackBy: trackCat" class="menu-tile" [class.is-wide]="last && catsOdd()">
       <a [routerLink]="['/category', c.slug]" appScrollOpen class="menu-cat">
         <span class="scroll-open__media">
-          <img [src]="c.image" alt="" />
+          <img [src]="c.image" alt="" loading="lazy" decoding="async" />
         </span>
         <span class="menu-cat__scrim" aria-hidden="true"></span>
         <span class="menu-cat__copy">

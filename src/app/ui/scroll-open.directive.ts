@@ -1,9 +1,6 @@
-import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, Input, NgZone, OnDestroy } from '@angular/core';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
-ScrollTrigger.config({ ignoreMobileResize: true });
+import { scheduleScrollRefresh } from './gsap-setup';
 
 export type ScrollOpenMode = 'card' | 'panel';
 
@@ -21,13 +18,20 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
 
   private mm?: ReturnType<typeof gsap.matchMedia>;
 
-  constructor(private readonly host: ElementRef<HTMLElement>) {}
+  constructor(
+    private readonly host: ElementRef<HTMLElement>,
+    private readonly zone: NgZone
+  ) {}
 
   get panel(): boolean {
     return this.appScrollOpen === 'panel';
   }
 
   ngAfterViewInit(): void {
+    this.zone.runOutsideAngular(() => this.bind());
+  }
+
+  private bind(): void {
     const el = this.host.nativeElement;
     const media =
       (el.querySelector('.scroll-open__media') as HTMLElement | null) ??
@@ -50,16 +54,17 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
           : `inset(${compact ? 12 : 18}% ${compact ? 7 : 10}% ${compact ? 12 : 18}% ${compact ? 7 : 10}% round ${radius})`;
       const toClip = `inset(0% 0% 0% 0% round ${radius})`;
 
-      gsap.set(el, { clipPath: fromClip });
-      if (media) gsap.set(media, { scale: compact ? 1.14 : 1.22, transformOrigin: '50% 50%' });
+      gsap.set(el, { clipPath: fromClip, force3D: true });
+      if (media) gsap.set(media, { scale: compact ? 1.14 : 1.22, transformOrigin: '50% 50%', force3D: true });
 
       const tl = gsap.timeline({
-        defaults: { ease: 'none' },
+        defaults: { ease: 'none', force3D: true },
         scrollTrigger: {
           trigger: el,
           start: mode === 'panel' ? 'top 92%' : 'top 96%',
           end: mode === 'panel' ? (compact ? 'top 36%' : 'top 26%') : compact ? 'top 52%' : 'top 46%',
-          scrub: mode === 'panel' ? (compact ? 0.85 : 1.05) : compact ? 0.65 : 0.8,
+          scrub: mode === 'panel' ? (compact ? 0.45 : 1.05) : compact ? 0.35 : 0.8,
+          fastScrollEnd: compact,
           invalidateOnRefresh: true,
         },
       });
@@ -69,7 +74,7 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
 
       el.querySelectorAll('img').forEach((img) => {
         if (!img.complete) {
-          img.addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
+          img.addEventListener('load', () => scheduleScrollRefresh(), { once: true });
         }
       });
     });

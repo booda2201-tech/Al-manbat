@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit, computed } from '@angular/core';
+import { Component, HostListener, NgZone, OnDestroy, OnInit, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { HeroAd, Category } from '../types';
 import { brandPillars } from '../data/content';
@@ -49,7 +49,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   private heroRemaining = HERO_AD_MS;
   private reduceMotion = false;
 
-  constructor(public locale: LocaleService, public catalog: CatalogService) {}
+  constructor(
+    public locale: LocaleService,
+    public catalog: CatalogService,
+    private zone: NgZone
+  ) {}
 
   readonly categories = computed(() => this.catalog.categories());
   readonly catsFew = computed(() => this.categories().length <= 5);
@@ -87,6 +91,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   get heroCount(): string {
     return String(this.ads.length).padStart(2, '0');
+  }
+
+  heroShows(index: number): boolean {
+    const n = this.ads.length;
+    if (!n) return false;
+    const prev = (this.heroIndex - 1 + n) % n;
+    const next = (this.heroIndex + 1) % n;
+    return index === this.heroIndex || index === next || index === prev;
   }
 
   catCount(cat: Category): number {
@@ -202,10 +214,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.startHeroClock();
     this.tick();
-    this.timer = window.setInterval(() => {
-      this.left = Math.max(0, this.left - 1);
-      this.tick();
-    }, 1000);
+    this.zone.runOutsideAngular(() => {
+      this.timer = window.setInterval(() => {
+        this.left = Math.max(0, this.left - 1);
+        this.zone.run(() => this.tick());
+      }, 1000);
+    });
   }
 
   ngOnDestroy(): void {

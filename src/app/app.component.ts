@@ -126,7 +126,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.store.searchOpen.set(false);
       this.store.cartOpen.set(this.store.consumeCartOpenRequest());
       if (!stayOnAdmin) {
-        window.scrollTo({ top: 0 });
+        window.scrollTo(0, 0);
       }
     });
   }

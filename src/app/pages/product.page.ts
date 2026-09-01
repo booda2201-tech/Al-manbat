@@ -113,7 +113,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     const id = this.product?.id ?? null;
     if (id && this.galleryFrame && this.galleryEnteredFor !== id) {
       this.galleryEnteredFor = id;
-      requestAnimationFrame(() => this.zone.run(() => this.enterGallery()));
+      requestAnimationFrame(() => this.zone.runOutsideAngular(() => this.enterGallery()));
     }
   }
 
@@ -306,7 +306,9 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     const thumbs = root.querySelectorAll('.pdp-gallery__thumb');
     const radius = getComputedStyle(frame).borderTopLeftRadius || '18px';
     if (this.reduceMotion()) {
-      this.galleryReady = true;
+      this.zone.run(() => {
+        this.galleryReady = true;
+      });
       gsap.set(frame, { clipPath: `inset(0% 0% 0% 0% round ${radius})`, scale: 1, clearProps: 'clipPath,transform' });
       gsap.set(thumbs, { clearProps: 'opacity,transform' });
       this.armGalleryLoop();
@@ -314,9 +316,11 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     }
     const fromClip = `inset(24% 18% 24% 18% round ${radius})`;
     const toClip = `inset(0% 0% 0% 0% round ${radius})`;
-    gsap.set(frame, { clipPath: fromClip, scale: 1.28 });
+    gsap.set(frame, { clipPath: fromClip, scale: 1.28, force3D: true });
     gsap.set(thumbs, { y: 32, opacity: 0 });
-    this.galleryReady = true;
+    this.zone.run(() => {
+      this.galleryReady = true;
+    });
     this.galleryTween = gsap.timeline({
       defaults: { ease: 'power3.out' },
       onComplete: () => {

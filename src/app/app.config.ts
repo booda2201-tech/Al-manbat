@@ -1,6 +1,6 @@
 import { APP_INITIALIZER, ApplicationConfig } from '@angular/core';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
-import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -20,7 +20,7 @@ export const appConfig: ApplicationConfig = {
       routes,
       withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' })
     ),
-    provideAnimations(),
+    provideNoopAnimations(),
     {
       provide: APP_INITIALIZER,
       useFactory: bootstrapShop,

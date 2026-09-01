@@ -118,7 +118,7 @@ export class QtyComponent {
       <div class="relative overflow-hidden bg-sand-100">
         <a [routerLink]="['/product', product.slug]" class="block" tabindex="-1" aria-hidden="true">
           <div class="product-card__media overflow-hidden">
-            <img [src]="product.image" alt="" draggable="false" class="h-full w-full bg-sand-50 object-contain transition-transform duration-[600ms] ease-premium group-hover:scale-[1.06]" [class.opacity-60]="soldOut" />
+            <img [src]="product.image" alt="" draggable="false" loading="lazy" decoding="async" class="h-full w-full bg-sand-50 object-contain transition-transform duration-[600ms] ease-premium group-hover:scale-[1.06]" [class.opacity-60]="soldOut" />
           </div>
         </a>
         <div class="product-card__badges absolute start-3 top-3 flex flex-col gap-1">

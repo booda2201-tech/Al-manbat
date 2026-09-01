@@ -303,7 +303,7 @@
           class="menu-cat"
           (click)="store.menuOpen.set(false)"
         >
-          <img [src]="c.image" alt="" />
+          <img [src]="c.image" alt="" loading="lazy" decoding="async" />
           <span class="menu-cat__scrim" aria-hidden="true"></span>
           <span class="menu-cat__copy">
             <span class="menu-cat__name">{{ locale.tr(c.name) }}</span>
