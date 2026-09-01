@@ -70,6 +70,8 @@ export const copy: Record<string, Bilingual> = {
   // Product
   addToCart: { ar: 'أضف إلى السلة', en: 'Add to cart' },
   addedToCart: { ar: 'تمت الإضافة إلى السلة', en: 'Added to cart' },
+  guestCartTitle: { ar: 'لست مسجّل الدخول', en: 'You’re not signed in' },
+  guestCartHint: { ar: 'لازم تسجّل دخول عشان تضيف للسلة وتكمّل التسوق.', en: 'Sign in to add items and continue shopping.' },
   buyNow: { ar: 'اشترِ الآن', en: 'Buy now' },
   quickAdd: { ar: 'إضافة سريعة', en: 'Quick add' },
   quickView: { ar: 'نظرة سريعة', en: 'Quick view' },

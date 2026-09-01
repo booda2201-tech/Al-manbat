@@ -120,7 +120,9 @@ export class AuthPageComponent implements OnInit {
           ? 'أهلاً بعودتك'
           : 'Welcome back',
     });
-    this.router.navigateByUrl(this.redirectTo());
+    if (!this.store.fulfillCartAfterLogin()) {
+      this.router.navigateByUrl(this.redirectTo());
+    }
   }
 
   private redirectTo(): string {

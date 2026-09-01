@@ -686,7 +686,7 @@ export class WishlistPageComponent {
   }
   addOne(p: Product): void {
     if (p.stock === 0) return;
-    this.store.addToCart(p.id, 1, false);
+    if (!this.store.addToCart(p.id, 1, false)) return;
     this.addedId = p.id;
     this.store.pushToast({ tone: 'success', title: this.locale.ui('addedToCart'), description: this.locale.tr(p.name) });
     window.clearTimeout(this.addedTimer);
@@ -704,7 +704,9 @@ export class WishlistPageComponent {
   }
   addAll(): void {
     const list = this.items().filter((p) => p.stock > 0);
-    list.forEach((p) => this.store.addToCart(p.id, 1, false));
-    if (list.length) this.store.cartOpen.set(true);
+    if (!list.length) return;
+    if (!this.store.addToCart(list[0].id, 1, false)) return;
+    list.slice(1).forEach((p) => this.store.addToCart(p.id, 1, false));
+    this.store.openCart();
   }
 }

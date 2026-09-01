@@ -71,7 +71,7 @@
           <app-icon name="heart" [size]="22"></app-icon>
           <span *ngIf="store.wishlist().length" class="header-icon-badge">{{ store.wishlist().length }}</span>
         </a>
-        <button type="button" class="header-icon hidden lg:inline-flex" (click)="store.cartOpen.set(true)" [attr.aria-label]="locale.ui('cart')">
+        <button type="button" class="header-icon hidden lg:inline-flex" (click)="store.openCart()" [attr.aria-label]="locale.ui('cart')">
           <app-icon name="cart" [size]="22"></app-icon>
           <span *ngIf="store.cartCount()" class="header-icon-badge">{{ store.cartCount() }}</span>
         </button>
@@ -268,7 +268,7 @@
         {{ locale.ui('wishlist') }}
         <span *ngIf="store.wishlist().length" class="mobile-dock__badge">{{ store.wishlist().length }}</span>
       </a>
-      <button type="button" class="mobile-dock__item" [class.is-on]="store.cartOpen()" (click)="store.cartOpen.set(true)">
+      <button type="button" class="mobile-dock__item" [class.is-on]="store.cartOpen()" (click)="store.openCart()">
         <span class="mobile-dock__ico"><app-icon name="cart" [size]="20"></app-icon></span>
         {{ locale.ui('cart') }}
         <span *ngIf="store.cartCount()" class="mobile-dock__badge">{{ store.cartCount() }}</span>

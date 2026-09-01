@@ -18,7 +18,8 @@
       </header>
 
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-        <ng-container *ngIf="rows().length || saved().length; else emptyCart">
+        <ng-container *ngIf="session.isLoggedIn(); else guestCart">
+          <ng-container *ngIf="rows().length || saved().length; else emptyCart">
           <div *ngIf="rows().length" class="border-b border-olive-800/10 bg-white px-5 py-4">
             <p class="text-[13px] text-ink-soft">{{ shipHint() }}</p>
             <div class="mt-2 h-1 w-full overflow-hidden rounded-full bg-sand-200">
@@ -92,9 +93,10 @@
             </ul>
           </div>
         </ng-container>
+        </ng-container>
       </div>
 
-      <footer *ngIf="rows().length" class="border-t border-olive-800/10 bg-white px-5 py-4">
+      <footer *ngIf="session.isLoggedIn() && rows().length" class="border-t border-olive-800/10 bg-white px-5 py-4">
         <div class="flex flex-col gap-3">
           <div class="flex items-center justify-between text-sm">
             <span class="text-ink-soft">{{ locale.ui('subtotal') }}</span>
@@ -122,6 +124,23 @@
     </aside>
   </div>
 </ng-container>
+
+<ng-template #guestCart>
+  <div class="flex flex-col items-center px-8 py-16 text-center">
+    <span class="flex h-14 w-14 items-center justify-center rounded-full bg-olive-800 text-gold-300">
+      <app-icon name="lock" [size]="22"></app-icon>
+    </span>
+    <p class="mt-5 font-displayAr text-xl text-olive-800">{{ locale.ui('guestCartTitle') }}</p>
+    <p class="mt-2 max-w-[16rem] text-sm leading-relaxed text-ink-muted">{{ locale.ui('guestCartHint') }}</p>
+    <button
+      type="button"
+      class="mt-6 inline-flex h-12 w-full max-w-[16rem] items-center justify-center rounded-md bg-olive-800 px-5 text-sm font-medium text-sand-50 transition-colors duration-200 ease-premium hover:bg-olive-900"
+      (click)="goToLogin()"
+    >
+      {{ locale.ui('signIn') }}
+    </button>
+  </div>
+</ng-template>
 
 <ng-template #emptyCart>
   <div class="flex flex-col items-center px-8 py-16 text-center">

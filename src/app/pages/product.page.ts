@@ -510,7 +510,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   add(): void {
     if (!this.product || this.soldOut) return;
-    this.store.addToCart(this.product.id, this.qty);
+    if (!this.store.addToCart(this.product.id, this.qty)) return;
     this.store.pushToast({ tone: 'success', title: this.locale.ui('addedToCart'), description: this.locale.tr(this.product.name) });
     this.added = true;
     window.setTimeout(() => (this.added = false), 1600);
@@ -518,12 +518,18 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   buyNow(): void {
     if (!this.product || this.soldOut) return;
-    this.store.addToCart(this.product.id, this.qty);
+    if (!this.store.addToCart(this.product.id, this.qty, false)) {
+      this.store.requestCheckoutAfterLogin();
+      return;
+    }
     this.store.cartOpen.set(false);
     this.router.navigateByUrl('/checkout');
   }
 
   addBundle(): void {
-    this.bundle.forEach((p) => this.store.addToCart(p.id));
+    if (!this.bundle.length) return;
+    if (!this.store.addToCart(this.bundle[0].id, 1, false)) return;
+    this.bundle.slice(1).forEach((p) => this.store.addToCart(p.id, 1, false));
+    this.store.openCart();
   }
 }

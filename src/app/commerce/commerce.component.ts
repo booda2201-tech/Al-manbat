@@ -268,7 +268,7 @@ export class ProductCardComponent {
   add(ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
-    this.store.addToCart(this.product.id);
+    if (!this.store.addToCart(this.product.id)) return;
     this.justAdded = true;
     this.store.pushToast({ tone: 'success', title: this.locale.ui('addedToCart'), description: this.locale.tr(this.product.name) });
     window.clearTimeout(this.addedTimer);

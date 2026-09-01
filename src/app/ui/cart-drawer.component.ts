@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, computed, effect } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { LocaleService } from '../services/locale.service';
+import { SessionService } from '../services/session.service';
 import { FREE_SHIPPING_THRESHOLD, StoreService } from '../services/store.service';
 import { formatPrice } from '../utils/format';
 import { SarPipe } from '../utils/sar.pipe';
@@ -28,6 +29,8 @@ export class CartDrawerComponent {
   constructor(
     public locale: LocaleService,
     public store: StoreService,
+    public session: SessionService,
+    private router: Router,
     private cdr: ChangeDetectorRef
   ) {
     effect(() => {
@@ -44,6 +47,13 @@ export class CartDrawerComponent {
 
   close(): void {
     this.store.cartOpen.set(false);
+  }
+
+  goToLogin(): void {
+    this.store.rememberCartAfterLogin();
+    const here = this.router.url;
+    this.close();
+    void this.router.navigate(['/login'], { queryParams: { redirect: here } });
   }
 
   setQty(productId: string, qty: number): void {

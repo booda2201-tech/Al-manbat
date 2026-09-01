@@ -91,7 +91,7 @@
             <button type="submit" [disabled]="busy" class="shimmer-edge flex h-[52px] w-full items-center justify-center rounded-lg bg-gold-400 text-[15px] font-semibold text-olive-900 shadow-gold transition-colors duration-300 ease-premium hover:bg-gold-300 disabled:opacity-60">
               {{ busy ? (locale.isAr() ? 'جاري الإرسال…' : 'Sending…') : (signup ? (locale.isAr() ? 'إنشاء حساب' : 'Create account') : (locale.isAr() ? 'تسجيل الدخول' : 'Sign in')) }}
             </button>
-            <a [routerLink]="signup ? '/login' : '/signup'" class="flex h-[52px] w-full items-center justify-center rounded-lg border border-olive-800/20 text-[15px] font-semibold text-olive-800 transition-colors duration-300 ease-premium hover:border-olive-800/40 hover:bg-olive-50/50">
+            <a [routerLink]="signup ? '/login' : '/signup'" queryParamsHandling="preserve" class="flex h-[52px] w-full items-center justify-center rounded-lg border border-olive-800/20 text-[15px] font-semibold text-olive-800 transition-colors duration-300 ease-premium hover:border-olive-800/40 hover:bg-olive-50/50">
               {{ signup ? (locale.isAr() ? 'لديك حساب؟ سجّل الدخول' : 'Have an account? Sign in') : (locale.isAr() ? 'إنشاء حساب' : 'Create account') }}
             </a>
           </div>

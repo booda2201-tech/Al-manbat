@@ -1,4 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import type { CartLine, Product } from '../types';
 import { CatalogService } from './catalog.service';
@@ -29,6 +30,9 @@ export class StoreService {
   readonly toasts = signal<Toast[]>([]);
   readonly lastAdded = signal<Product | null>(null);
   private cartOpenAfterNav = false;
+  private pendingAdd: { productId: string; qty: number } | null = null;
+  private wantCartOpen = false;
+  private wantCheckout = false;
 
   readonly cartCount = computed(() => this.lines().reduce((s, l) => s + l.qty, 0));
   readonly subtotal = computed(() =>
@@ -52,20 +56,39 @@ export class StoreService {
   constructor(
     private catalog: CatalogService,
     private session: SessionService,
-    private shop: ShopApiService
+    private shop: ShopApiService,
+    private router: Router
   ) {}
 
   hydrateFromApi(): void {
-    if (!this.session.isLoggedIn() || this.session.isAdmin()) return;
-    this.shop.getCart().subscribe((lines) => {
-      if (lines.length) this.lines.set(lines);
+    if (!this.session.isLoggedIn() || this.session.isAdmin()) {
+      this.applyPendingAdd();
+      return;
+    }
+    this.shop.getCart().subscribe({
+      next: (lines) => {
+        if (lines.length) this.lines.set(lines);
+        this.applyPendingAdd();
+      },
+      error: () => this.applyPendingAdd(),
     });
     this.shop.getWishlist().subscribe((ids) => {
       if (ids.length) this.wishlist.set(ids);
     });
   }
 
-  addToCart(productId: string, qty = 1, openCart = true): void {
+  openCart(): boolean {
+    this.cartOpen.set(true);
+    return true;
+  }
+
+  addToCart(productId: string, qty = 1, openCart = true): boolean {
+    if (!this.session.isLoggedIn()) {
+      this.pendingAdd = { productId, qty };
+      this.wantCartOpen = true;
+      this.cartOpen.set(true);
+      return false;
+    }
     this.lines.update((lines) => {
       const i = lines.findIndex((l) => l.productId === productId);
       if (i === -1) return [...lines, { productId, qty }];
@@ -73,7 +96,8 @@ export class StoreService {
     });
     this.lastAdded.set(this.catalog.byId(productId) ?? null);
     if (openCart) this.cartOpen.set(true);
-    if (this.session.isLoggedIn() && !this.session.isAdmin()) this.shop.addToCart(productId, qty).subscribe();
+    if (!this.session.isAdmin()) this.shop.addToCart(productId, qty).subscribe();
+    return true;
   }
 
   setQty(productId: string, qty: number): void {
@@ -127,10 +151,38 @@ export class StoreService {
     this.cartOpenAfterNav = true;
   }
 
+  requestCheckoutAfterLogin(): void {
+    this.wantCheckout = true;
+  }
+
   consumeCartOpenRequest(): boolean {
     const next = this.cartOpenAfterNav;
     this.cartOpenAfterNav = false;
     return next;
+  }
+
+  rememberCartAfterLogin(): void {
+    this.wantCartOpen = true;
+  }
+
+  fulfillCartAfterLogin(): boolean {
+    const open = this.wantCartOpen;
+    const checkout = this.wantCheckout;
+    this.wantCartOpen = false;
+    this.wantCheckout = false;
+    if (checkout) {
+      void this.router.navigateByUrl('/checkout');
+      return true;
+    }
+    if (open) this.requestCartOpen();
+    return false;
+  }
+
+  private applyPendingAdd(): void {
+    const pending = this.pendingAdd;
+    if (!pending) return;
+    this.pendingAdd = null;
+    this.addToCart(pending.productId, pending.qty, false);
   }
 
   toggleWishlist(productId: string): void {
