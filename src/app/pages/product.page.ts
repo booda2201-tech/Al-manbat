@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { AfterViewChecked, Component, effect, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { gsap } from 'gsap';
+import '../ui/gsap-setup';
 import type { Product, Review } from '../types';
 import { faqs } from '../data/content';
 import { LocaleService } from '../services/locale.service';
@@ -63,6 +64,12 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   reviewSaving = false;
   galleryReady = false;
   trail: { label: string; to?: string }[] = [];
+  related: Product[] = [];
+  bundle: Product[] = [];
+  bundleTotal = 0;
+  promises: Array<{ icon: string; stat: string; title: string; detail: string }> = [];
+  private galleryWatch?: IntersectionObserver;
+  private galleryInView = true;
   private galleryEnteredFor: string | null = null;
   private galleryTween?: gsap.core.Timeline;
   private swapping = false;
@@ -80,7 +87,10 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   ) {
     effect(() => {
       this.locale.locale();
-      if (this.product) this.buildTrail();
+      if (this.product) {
+        this.buildTrail();
+        this.hydrateDerived();
+      }
     });
   }
 
@@ -99,11 +109,13 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
       this.galleryEnteredFor = null;
       this.galleryReady = false;
       this.swapping = false;
+      this.galleryWatch?.disconnect();
       this.stopGalleryLoop();
       this.galleryTween?.kill();
       if (!this.product) this.router.navigateByUrl('/');
       else {
         this.buildTrail();
+        this.hydrateDerived();
         this.catalog.reviews(this.product.id).subscribe((rows) => this.applyReviews(rows));
       }
     });
@@ -111,13 +123,15 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   ngAfterViewChecked(): void {
     const id = this.product?.id ?? null;
-    if (id && this.galleryFrame && this.galleryEnteredFor !== id) {
-      this.galleryEnteredFor = id;
-      requestAnimationFrame(() => this.zone.runOutsideAngular(() => this.enterGallery()));
-    }
+    if (!id || this.galleryEnteredFor === id || !this.galleryFrame) return;
+    this.galleryEnteredFor = id;
+    this.zone.runOutsideAngular(() => {
+      requestAnimationFrame(() => this.enterGallery());
+    });
   }
 
   ngOnDestroy(): void {
+    this.galleryWatch?.disconnect();
     this.stopGalleryLoop();
     this.galleryTween?.kill();
     this.closeLightbox();
@@ -131,18 +145,6 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
   get comparing(): boolean {
     return !!this.product && this.store.compare().includes(this.product.id);
-  }
-  get related(): Product[] {
-    if (!this.product) return [];
-    const list = this.catalog.byCategory(this.product.category).filter((p) => p.id !== this.product!.id);
-    return list.length ? list : this.catalog.all().slice(0, 5);
-  }
-  get bundle(): Product[] {
-    if (!this.product) return [];
-    return [this.product, ...this.catalog.all().filter((p) => p.id !== this.product!.id).slice(0, 2)];
-  }
-  get bundleTotal(): number {
-    return this.bundle.reduce((s, p) => s + p.price, 0);
   }
   private buildTrail(): void {
     if (!this.product) {
@@ -161,17 +163,28 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
       { label: this.locale.tr(this.product.name) },
     ];
   }
-  get promises() {
-    if (!this.product) return [];
-    const p = this.product;
+
+  private hydrateDerived(): void {
+    const product = this.product;
+    if (!product) {
+      this.related = [];
+      this.bundle = [];
+      this.bundleTotal = 0;
+      this.promises = [];
+      return;
+    }
+    const same = this.catalog.byCategory(product.category).filter((p) => p.id !== product.id);
+    this.related = same.length ? same : this.catalog.all().filter((p) => p.id !== product.id).slice(0, 5);
+    this.bundle = [product, ...this.catalog.all().filter((p) => p.id !== product.id).slice(0, 2)];
+    this.bundleTotal = this.bundle.reduce((s, p) => s + p.price, 0);
     const ar = this.locale.isAr();
     const loc = this.locale.locale();
-    return [
+    this.promises = [
       {
         icon: 'truck',
-        stat: formatCount(p.deliveryDays, loc),
+        stat: formatCount(product.deliveryDays, loc),
         title: ar ? 'توصيل' : 'Delivery',
-        detail: p.freeShipping ? (ar ? 'بدون رسوم' : 'No fee') : ar ? '٢٥ ر.س' : 'SAR 25',
+        detail: product.freeShipping ? (ar ? 'بدون رسوم' : 'No fee') : ar ? '٢٥ ر.س' : 'SAR 25',
       },
       {
         icon: 'lock',
@@ -236,6 +249,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   onGalleryMove(ev: MouseEvent): void {
+    if (!this.hoverZoom) return;
     const el = ev.currentTarget as HTMLElement;
     const rect = el.getBoundingClientRect();
     this.origin = `${((ev.clientX - rect.left) / rect.width) * 100}% ${((ev.clientY - rect.top) / rect.height) * 100}%`;
@@ -290,12 +304,38 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   private resetGalleryFrame(): void {
     const frame = this.galleryFrame?.nativeElement;
     if (!frame) return;
-    const radius = getComputedStyle(frame).borderTopLeftRadius || '18px';
-    gsap.set(frame, { clipPath: `inset(0% 0% 0% 0% round ${radius})`, scale: 1 });
+    const img = frame.querySelector('img');
+    gsap.set(frame, { clipPath: 'none', scale: 1, clearProps: 'clipPath,transform' });
+    if (img) gsap.set(img, { scale: 1, clearProps: 'transform' });
   }
 
   private reduceMotion(): boolean {
     return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  private isCompact(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches;
+  }
+
+  private clip(parts: string, radius: string): string {
+    return this.isCompact() ? `inset(${parts})` : `inset(${parts} round ${radius})`;
+  }
+
+  private watchGallery(root: HTMLElement): void {
+    this.galleryWatch?.disconnect();
+    if (typeof IntersectionObserver === 'undefined') {
+      this.galleryInView = true;
+      return;
+    }
+    this.galleryWatch = new IntersectionObserver(
+      (entries) => {
+        this.galleryInView = entries.some((entry) => entry.isIntersecting);
+        if (this.galleryInView) this.armGalleryLoop();
+        else this.stopGalleryLoop();
+      },
+      { threshold: 0.4 }
+    );
+    this.galleryWatch.observe(root);
   }
 
   private enterGallery(): void {
@@ -303,20 +343,25 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     const root = this.galleryRoot?.nativeElement;
     if (!frame || !root) return;
     this.galleryTween?.kill();
+    this.watchGallery(root);
     const thumbs = root.querySelectorAll('.pdp-gallery__thumb');
+    const img = frame.querySelector('img');
     const radius = getComputedStyle(frame).borderTopLeftRadius || '18px';
     if (this.reduceMotion()) {
       this.zone.run(() => {
         this.galleryReady = true;
       });
-      gsap.set(frame, { clipPath: `inset(0% 0% 0% 0% round ${radius})`, scale: 1, clearProps: 'clipPath,transform' });
+      gsap.set(frame, { clipPath: 'none', clearProps: 'clipPath,transform' });
+      if (img) gsap.set(img, { scale: 1, clearProps: 'transform' });
       gsap.set(thumbs, { clearProps: 'opacity,transform' });
       this.armGalleryLoop();
       return;
     }
-    const fromClip = `inset(24% 18% 24% 18% round ${radius})`;
-    const toClip = `inset(0% 0% 0% 0% round ${radius})`;
-    gsap.set(frame, { clipPath: fromClip, scale: 1.28, force3D: true });
+    const compact = this.isCompact();
+    const fromClip = this.clip('24% 18% 24% 18%', radius);
+    const toClip = this.clip('0% 0% 0% 0%', radius);
+    gsap.set(frame, { clipPath: fromClip });
+    if (img) gsap.set(img, { scale: compact ? 1.18 : 1.28, transformOrigin: '50% 50%', force3D: true });
     gsap.set(thumbs, { y: 32, opacity: 0 });
     this.zone.run(() => {
       this.galleryReady = true;
@@ -324,13 +369,15 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     this.galleryTween = gsap.timeline({
       defaults: { ease: 'power3.out' },
       onComplete: () => {
-        gsap.set(frame, { clearProps: 'clipPath,transform' });
+        gsap.set(frame, { clearProps: 'clipPath' });
+        if (img) gsap.set(img, { clearProps: 'transform' });
         this.armGalleryLoop();
       },
     });
-    this.galleryTween.to(frame, { clipPath: toClip, scale: 1, duration: 1.2 }, 0);
+    this.galleryTween.to(frame, { clipPath: toClip, duration: compact ? 0.9 : 1.2 }, 0);
+    if (img) this.galleryTween.to(img, { scale: 1, duration: compact ? 0.9 : 1.2 }, 0);
     if (thumbs.length) {
-      this.galleryTween.to(thumbs, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1 }, 0.45);
+      this.galleryTween.to(thumbs, { y: 0, opacity: 1, duration: compact ? 0.45 : 0.6, stagger: compact ? 0.06 : 0.1 }, compact ? 0.28 : 0.45);
     }
   }
 
@@ -347,47 +394,54 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     }
     this.swapping = true;
     this.galleryTween?.kill();
+    const img = frame.querySelector('img');
     const radius = getComputedStyle(frame).borderTopLeftRadius || '18px';
-    const hide = this.locale.isAr()
-      ? `inset(0% 0% 0% 100% round ${radius})`
-      : `inset(0% 100% 0% 0% round ${radius})`;
-    const open = `inset(0% 0% 0% 0% round ${radius})`;
+    const compact = this.isCompact();
+    const hide = this.clip(this.locale.isAr() ? '0% 0% 0% 100%' : '0% 100% 0% 0%', radius);
+    const open = this.clip('0% 0% 0% 0%', radius);
     this.galleryTween = gsap.timeline({
       defaults: { ease: 'power3.inOut' },
       onComplete: () => {
-        gsap.set(frame, { clearProps: 'clipPath,transform' });
+        gsap.set(frame, { clearProps: 'clipPath' });
+        if (img) gsap.set(img, { clearProps: 'transform' });
         this.swapping = false;
         this.armGalleryLoop();
       },
     });
-    this.galleryTween
-      .to(frame, { clipPath: hide, scale: 1.08, duration: 0.38, ease: 'power3.in' })
-      .add(() => {
-        this.zone.run(() => {
-          this.galleryIndex = i;
-        });
-      })
-      .fromTo(
-        frame,
-        { clipPath: hide, scale: 1.22 },
-        { clipPath: open, scale: 1, duration: 0.72, ease: 'power3.out' }
+    this.galleryTween.to(frame, { clipPath: hide, duration: compact ? 0.28 : 0.38, ease: 'power3.in' });
+    if (img) {
+      this.galleryTween.to(img, { scale: compact ? 1.06 : 1.08, duration: compact ? 0.28 : 0.38, ease: 'power3.in' }, 0);
+    }
+    this.galleryTween.add(() => {
+      this.zone.run(() => {
+        this.galleryIndex = i;
+      });
+    });
+    this.galleryTween.fromTo(frame, { clipPath: hide }, { clipPath: open, duration: compact ? 0.55 : 0.72, ease: 'power3.out' });
+    if (img) {
+      this.galleryTween.fromTo(
+        img,
+        { scale: compact ? 1.14 : 1.22 },
+        { scale: 1, duration: compact ? 0.55 : 0.72, ease: 'power3.out' },
+        '<'
       );
+    }
   }
 
   private armGalleryLoop(): void {
     this.stopGalleryLoop();
     if (typeof window === 'undefined') return;
-    if (this.lightbox || this.galleryPaused) return;
+    if (this.lightbox || this.galleryPaused || !this.galleryInView) return;
     if ((this.product?.gallery.length ?? 0) < 2) return;
     this.galleryTimer = window.setTimeout(() => {
       this.galleryTimer = undefined;
-      if (this.lightbox || this.galleryPaused || !this.product) return;
+      if (this.lightbox || this.galleryPaused || !this.galleryInView || !this.product) return;
       const list = this.product.gallery;
       if (list.length < 2) return;
       this.zone.run(() => {
         this.swapGallery((this.galleryIndex + 1) % list.length);
       });
-    }, 3800);
+    }, this.isCompact() ? 5200 : 3800);
   }
 
   private stopGalleryLoop(): void {
@@ -445,7 +499,10 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   goReviews(): void {
     this.tab = 'reviews';
     window.setTimeout(() => {
-      document.getElementById('pdp-reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('pdp-reviews')?.scrollIntoView({
+        behavior: this.isCompact() ? 'auto' : 'smooth',
+        block: 'start',
+      });
     }, 40);
   }
 

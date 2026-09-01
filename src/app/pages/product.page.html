@@ -22,6 +22,8 @@
               class="pdp-gallery__image"
               [class.is-zoom]="hoverZoom"
               [style.transform-origin]="origin"
+              decoding="async"
+              fetchpriority="high"
             />
           </span>
           <span class="pointer-events-none absolute bottom-3 start-3 inline-flex items-center gap-1.5 rounded-md bg-sand-50/95 px-2.5 py-1.5 text-xs text-ink-soft shadow-sm">
@@ -39,7 +41,7 @@
             [attr.aria-label]="locale.isAr() ? 'صورة ' + (i + 1) : 'View ' + (i + 1)"
             [attr.aria-current]="i === galleryIndex"
           >
-            <img [src]="img" alt="" class="h-full w-full object-cover" />
+            <img [src]="img" alt="" class="h-full w-full object-cover" loading="lazy" decoding="async" />
           </button>
         </div>
       </div>
@@ -107,14 +109,14 @@
     </div>
   </section>
 
-  <section class="border-y border-olive-800/10 bg-sand-100/50 py-7 md:py-12">
+  <section class="border-y border-olive-800/10 bg-sand-100/50 py-7 md:py-12 pdp-defer">
     <div class="mx-auto max-w-shell px-4 md:px-6 lg:px-10">
       <h2 class="font-display text-2xl text-olive-800">{{ locale.ui('boughtTogether') }}</h2>
       <div class="mt-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <ul class="flex flex-wrap items-center gap-3">
           <li *ngFor="let item of bundle; let last = last" class="flex items-center gap-3">
             <a [routerLink]="['/product', item.slug]" class="h-20 w-20 overflow-hidden rounded-lg bg-white shadow-xs md:h-24 md:w-24">
-              <img [src]="item.image" [alt]="locale.tr(item.name)" class="h-full w-full bg-sand-50 object-contain" />
+              <img [src]="item.image" [alt]="locale.tr(item.name)" class="h-full w-full bg-sand-50 object-contain" loading="lazy" decoding="async" />
             </a>
             <span *ngIf="!last" class="text-lg text-sand-300">+</span>
           </li>
@@ -131,7 +133,7 @@
     </div>
   </section>
 
-  <section id="pdp-reviews" class="mx-auto max-w-shell scroll-mt-32 px-4 py-7 md:px-6 md:py-12 lg:px-10 lg:py-16">
+  <section id="pdp-reviews" class="mx-auto max-w-shell scroll-mt-32 px-4 py-7 md:px-6 md:py-12 lg:px-10 lg:py-16 pdp-defer">
     <div class="no-rail flex gap-1 overflow-x-auto border-b border-olive-800/10" role="tablist">
       <button type="button" role="tab" class="relative shrink-0 px-3 py-3.5 text-sm font-medium transition-colors duration-200 ease-premium md:px-4" [ngClass]="tab === 'description' ? 'text-olive-800' : 'text-ink-muted hover:text-olive-700'" [attr.aria-selected]="tab === 'description'" (click)="tab = 'description'">
         {{ locale.ui('description') }}
@@ -160,7 +162,7 @@
           </ul>
         </div>
         <div class="overflow-hidden rounded-xl">
-          <img [src]="product.gallery[1] || product.image" alt="" class="aspect-[4/3] w-full bg-sand-50 object-contain" />
+          <img [src]="product.gallery[1] || product.image" alt="" class="aspect-[4/3] w-full bg-sand-50 object-contain" loading="lazy" decoding="async" />
         </div>
       </div>
 
@@ -221,7 +223,7 @@
     </div>
   </section>
 
-  <section class="mx-auto max-w-shell px-4 pb-5 md:px-6 md:pb-8 lg:px-10">
+  <section class="mx-auto max-w-shell px-4 pb-5 md:px-6 md:pb-8 lg:px-10 pdp-defer">
     <app-section-header [title]="locale.ui('faq')"></app-section-header>
     <div class="max-w-3xl divide-y divide-olive-800/10 border-y border-olive-800/10">
       <div *ngFor="let f of faqs; let i = index">
@@ -238,7 +240,7 @@
     </div>
   </section>
 
-  <section class="mx-auto max-w-shell px-4 pb-4 md:px-6 md:pb-6 lg:px-10">
+  <section class="mx-auto max-w-shell px-4 pb-4 md:px-6 md:pb-6 lg:px-10 pdp-defer">
     <app-section-header [title]="locale.ui('relatedProducts')" [linkTo]="'/listing/' + product.category" [linkLabel]="locale.ui('viewAll')"></app-section-header>
     <app-product-rail [products]="related"></app-product-rail>
   </section>

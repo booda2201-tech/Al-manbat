@@ -4038,6 +4038,7 @@ app-icon svg {
   cursor: zoom-in;
   border-radius: 18px;
   background: #fbf8ee;
+  contain: layout paint;
 }
 
 .pdp-gallery__frame {
@@ -4047,7 +4048,6 @@ app-icon svg {
   overflow: hidden;
   border-radius: inherit;
   background: #fbf8ee;
-  transform-origin: 50% 50%;
 }
 
 .pdp-gallery__image {
@@ -4058,7 +4058,13 @@ app-icon svg {
   object-fit: contain;
   background: #fbf8ee;
   transform-origin: 50% 50%;
-  transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  backface-visibility: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pdp-gallery__image {
+    transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  }
 }
 
 .pdp-gallery__image.is-zoom {
@@ -4066,8 +4072,17 @@ app-icon svg {
 }
 
 .pdp-gallery:not(.is-ready) .pdp-gallery__frame {
-  clip-path: inset(24% 18% 24% 18% round 18px);
+  clip-path: inset(24% 18% 24% 18%);
+}
+
+.pdp-gallery:not(.is-ready) .pdp-gallery__image {
   transform: scale(1.28);
+}
+
+@media (min-width: 1024px) {
+  .pdp-gallery:not(.is-ready) .pdp-gallery__frame {
+    clip-path: inset(24% 18% 24% 18% round 18px);
+  }
 }
 
 .pdp-gallery:not(.is-ready) .pdp-gallery__thumb {
@@ -8583,9 +8598,18 @@ app-icon svg {
 
   .mobile-dock__bar,
   .product-buybar {
-    background: rgba(251, 248, 238, 0.9);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(251, 248, 238, 0.94);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .pdp-gallery__image.is-zoom {
+    transform: none;
+  }
+
+  .pdp-defer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 28rem;
   }
 
   .checkout-dock {
