@@ -3,7 +3,10 @@ import { environment } from '../../environments/environment';
 
 export function apiUrl(path: string): string {
   const base = environment.apiBaseUrl.replace(/\/$/, '');
-  const suffix = path.startsWith('/') ? path : `/${path}`;
+  let suffix = path.startsWith('/') ? path : `/${path}`;
+  if (base.endsWith('/api') && (suffix === '/api' || suffix.startsWith('/api/'))) {
+    suffix = suffix.slice(4) || '/';
+  }
   return `${base}${suffix}`;
 }
 
