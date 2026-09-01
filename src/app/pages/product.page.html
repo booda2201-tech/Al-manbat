@@ -114,7 +114,7 @@
         <ul class="flex flex-wrap items-center gap-3">
           <li *ngFor="let item of bundle; let last = last" class="flex items-center gap-3">
             <a [routerLink]="['/product', item.slug]" class="h-20 w-20 overflow-hidden rounded-lg bg-white shadow-xs md:h-24 md:w-24">
-              <img [src]="item.image" [alt]="locale.tr(item.name)" class="h-full w-full object-cover" />
+              <img [src]="item.image" [alt]="locale.tr(item.name)" class="h-full w-full bg-sand-50 object-contain" />
             </a>
             <span *ngIf="!last" class="text-lg text-sand-300">+</span>
           </li>
@@ -160,7 +160,7 @@
           </ul>
         </div>
         <div class="overflow-hidden rounded-xl">
-          <img [src]="product.gallery[1] || product.image" alt="" class="aspect-[4/3] w-full object-cover" />
+          <img [src]="product.gallery[1] || product.image" alt="" class="aspect-[4/3] w-full bg-sand-50 object-contain" />
         </div>
       </div>
 
@@ -178,9 +178,9 @@
       <div *ngIf="tab === 'reviews'" class="pdp-reviews">
         <aside class="pdp-reviews__summary">
           <div class="pdp-reviews__score">
-            <span class="pdp-reviews__score-num font-display">{{ product.rating.toFixed(1) }}</span>
+            <span class="pdp-reviews__score-num font-display">{{ displayRating.toFixed(1) }}</span>
             <div>
-              <app-rating [rating]="product.rating" size="md"></app-rating>
+              <app-rating [rating]="displayRating" size="md"></app-rating>
               <p class="pdp-reviews__score-count">{{ reviewCount | countLoc }} {{ locale.ui('reviews') }}</p>
             </div>
           </div>
@@ -210,8 +210,11 @@
               <span *ngIf="isOwnReview(r.id)" class="pdp-review__yours">{{ locale.ui('yourReview') }}</span>
             </div>
             <app-rating [rating]="r.rating" size="sm"></app-rating>
-            <h3 class="pdp-review__title">{{ locale.tr(r.title) }}</h3>
-            <p class="pdp-review__body">{{ locale.tr(r.body) }}</p>
+            <h3 *ngIf="locale.tr(r.title)" class="pdp-review__title">{{ locale.tr(r.title) }}</h3>
+            <p *ngIf="locale.tr(r.body)" class="pdp-review__body">{{ locale.tr(r.body) }}</p>
+          </li>
+          <li *ngIf="!reviews.length" class="rounded-xl border border-dashed border-olive-800/15 bg-sand-50 px-5 py-10 text-center text-sm text-ink-muted">
+            {{ locale.ui('noReviews') }}
           </li>
         </ul>
       </div>
@@ -256,7 +259,14 @@
   </div>
 </div>
 
-<app-review-form *ngIf="reviewOpen && product" [productName]="locale.tr(product.name)" (closed)="reviewOpen = false" (submitted)="addReview($event)"></app-review-form>
+<app-review-form
+  *ngIf="reviewOpen && product"
+  [productName]="locale.tr(product.name)"
+  [reviewerName]="reviewerName"
+  [saving]="reviewSaving"
+  (closed)="reviewOpen = false"
+  (submitted)="addReview($event)"
+></app-review-form>
 
 <div
   *ngIf="lightbox && product"

@@ -3,14 +3,13 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { Category, Product, Subcategory } from '../types';
-import { categories, categoryBySlug } from '../data/categories';
 import { images } from '../data/images';
-import { byCategory, products } from '../data/products';
 import { LocaleService } from '../services/locale.service';
+import { CatalogService } from '../services/catalog.service';
 import { CountPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
 import { SortSelectComponent } from '../ui/sort-select.component';
-import { ProductCardComponent, ProductRailComponent, SectionHeaderComponent, TrustStripComponent } from '../commerce/commerce.component';
+import { PagerComponent, ProductCardComponent, ProductRailComponent, SectionHeaderComponent, TrustStripComponent } from '../commerce/commerce.component';
 import { FilterPanelComponent } from '../commerce/filter-panel.component';
 import { CrumbsComponent } from '../commerce/crumbs.component';
 import { applyFilters, emptyFilters, sortProducts, type FilterState } from '../commerce/filters';
@@ -18,7 +17,7 @@ import { applyFilters, emptyFilters, sortProducts, type FilterState } from '../c
 @Component({
   selector: 'app-listing',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent, SortSelectComponent, ProductCardComponent, CrumbsComponent, CountPipe, FilterPanelComponent],
+  imports: [CommonModule, FormsModule, RouterLink, IconComponent, SortSelectComponent, ProductCardComponent, CrumbsComponent, CountPipe, FilterPanelComponent, PagerComponent],
   template: `
     <div class="mx-auto max-w-shell px-4 pb-6 pt-3 lg:px-10 lg:py-10">
       <app-crumbs [trail]="trail"></app-crumbs>
@@ -73,9 +72,10 @@ import { applyFilters, emptyFilters, sortProducts, type FilterState } from '../c
             <p class="font-medium text-olive-800">{{ locale.ui('noResults') }}</p>
             <button type="button" class="mt-4 text-sm text-olive-700" (click)="reset()">{{ locale.ui('clearAll') }}</button>
           </div>
-          <div *ngIf="!loading && visible.length" class="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-5 md:gap-y-9 xl:grid-cols-4">
-            <app-product-card *ngFor="let p of visible" [product]="p"></app-product-card>
+          <div id="listing-results" *ngIf="!loading && visible.length" class="grid scroll-mt-24 grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-5 md:gap-y-9 lg:scroll-mt-32 xl:grid-cols-4">
+            <app-product-card *ngFor="let p of paged" [product]="p"></app-product-card>
           </div>
+          <app-pager [page]="page" [pageCount]="pageCount" (pageChange)="goPage($event)"></app-pager>
         </div>
       </div>
     </div>
@@ -113,19 +113,24 @@ import { applyFilters, emptyFilters, sortProducts, type FilterState } from '../c
 export class ListingComponent implements OnInit, OnDestroy {
   slug = 'all';
   category: Category | null = null;
-  allCategories = categories;
-  source: Product[] = products;
+  source: Product[] = [];
   filters: FilterState = emptyFilters(1000);
   sort = 'popular';
   query = '';
   visible: Product[] = [];
+  page = 1;
+  pageSize = 12;
   loading = true;
   drawer = false;
   skeletons = [1, 2, 3, 4, 5, 6, 7, 8];
   trail: { label: string; to?: string }[] = [];
   subs: Subcategory[] = [];
 
-  constructor(public locale: LocaleService, private route: ActivatedRoute, private router: Router) {}
+  constructor(public locale: LocaleService, public catalog: CatalogService, private route: ActivatedRoute, private router: Router) {}
+
+  get allCategories() {
+    return this.catalog.categories();
+  }
 
   get selectedCat(): string | null {
     return this.slug === 'all' ? null : this.slug;
@@ -149,8 +154,8 @@ export class ListingComponent implements OnInit, OnDestroy {
 
   boot(): void {
     this.slug = this.route.snapshot.paramMap.get('slug') || 'all';
-    this.category = this.slug === 'all' ? null : categoryBySlug(this.slug) ?? null;
-    this.source = this.slug === 'all' ? products : byCategory(this.slug);
+    this.category = this.slug === 'all' ? null : this.catalog.categoryBySlug(this.slug) ?? null;
+    this.source = this.slug === 'all' ? this.catalog.all() : this.catalog.byCategory(this.slug);
     const ceiling = Math.max(...this.source.map((p) => p.price), 100);
     const prev = this.filters;
     this.filters = {
@@ -186,6 +191,21 @@ export class ListingComponent implements OnInit, OnDestroy {
       );
     }
     this.visible = sortProducts(list, this.sort);
+    this.page = 1;
+  }
+
+  get pageCount(): number {
+    return Math.max(1, Math.ceil(this.visible.length / this.pageSize));
+  }
+
+  get paged(): Product[] {
+    const start = (this.page - 1) * this.pageSize;
+    return this.visible.slice(start, start + this.pageSize);
+  }
+
+  goPage(n: number): void {
+    this.page = n;
+    document.getElementById('listing-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   onFilters(next: FilterState): void {
@@ -288,23 +308,24 @@ export class CategoryComponent implements OnInit {
   items: Product[] = [];
   deals: Product[] = [];
   featured: Product[] = [];
-  siblings = categories;
   totalCount = 0;
   trail: { label: string; to?: string }[] = [];
-  constructor(public locale: LocaleService, private route: ActivatedRoute, private router: Router) {}
+  constructor(public locale: LocaleService, public catalog: CatalogService, private route: ActivatedRoute, private router: Router) {}
+  get siblings() {
+    return this.catalog.categories().filter((c) => c.slug !== this.category?.slug);
+  }
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const slug = params.get('slug') || '';
-      this.category = categoryBySlug(slug) ?? null;
+      this.category = this.catalog.categoryBySlug(slug) ?? null;
       if (!this.category) {
         this.router.navigateByUrl('/not-found', { skipLocationChange: true });
         return;
       }
-      this.items = byCategory(slug);
+      this.items = this.catalog.byCategory(slug);
       this.deals = this.items.filter((p) => !!p.compareAt);
       this.featured = this.items.slice(0, 8);
-      this.totalCount = this.category.subcategories.reduce((s, x) => s + x.count, 0);
-      this.siblings = categories.filter((c) => c.slug !== slug);
+      this.totalCount = this.category.subcategories.reduce((s, x) => s + x.count, 0) || this.items.length;
       this.trail = [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.tr(this.category.name) }];
     });
   }
@@ -338,9 +359,13 @@ export class SearchComponent implements OnInit {
   query = '';
   cat: string | null = null;
   results: Product[] = [];
-  categories = categories;
-  fallback = products.slice(0, 6);
-  constructor(public locale: LocaleService, private route: ActivatedRoute) {}
+  constructor(public locale: LocaleService, public catalog: CatalogService, private route: ActivatedRoute) {}
+  get categories() {
+    return this.catalog.categories();
+  }
+  get fallback() {
+    return this.catalog.all().slice(0, 6);
+  }
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((q) => {
       this.query = q.get('q') || '';
@@ -348,15 +373,8 @@ export class SearchComponent implements OnInit {
     });
   }
   run(): void {
-    const q = this.query.trim().toLowerCase();
-    let base = products.filter(
-      (p) =>
-        !q ||
-        p.name.ar.includes(q) ||
-        p.name.en.toLowerCase().includes(q) ||
-        p.brand.en.toLowerCase().includes(q) ||
-        p.category.includes(q)
-    );
+    const q = this.query.trim();
+    let base = q ? this.catalog.search(q) : this.catalog.all();
     if (this.cat) base = base.filter((p) => p.category === this.cat);
     this.results = sortProducts(base, 'popular');
   }
@@ -365,7 +383,7 @@ export class SearchComponent implements OnInit {
 @Component({
   selector: 'app-offers',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent, ProductCardComponent, CrumbsComponent, CountPipe, FilterPanelComponent, SortSelectComponent],
+  imports: [CommonModule, FormsModule, RouterLink, IconComponent, ProductCardComponent, CrumbsComponent, CountPipe, FilterPanelComponent, SortSelectComponent, PagerComponent],
   template: `
     <section class="relative h-[300px] overflow-hidden lg:h-[360px]">
       <img [src]="hero" alt="" class="h-full w-full object-cover" />
@@ -427,9 +445,10 @@ export class SearchComponent implements OnInit {
             <p class="font-medium text-olive-800">{{ locale.ui('noResults') }}</p>
             <button type="button" class="mt-4 text-sm text-olive-700" (click)="reset()">{{ locale.ui('clearAll') }}</button>
           </div>
-          <div *ngIf="visible.length" class="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-5 md:gap-y-9 xl:grid-cols-4">
-            <app-product-card *ngFor="let p of visible" [product]="p"></app-product-card>
+          <div id="offers-results" *ngIf="visible.length" class="grid scroll-mt-24 grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-5 md:gap-y-9 lg:scroll-mt-32 xl:grid-cols-4">
+            <app-product-card *ngFor="let p of paged" [product]="p"></app-product-card>
           </div>
+          <app-pager [page]="page" [pageCount]="pageCount" (pageChange)="goPage($event)"></app-pager>
         </div>
       </div>
     </div>
@@ -466,19 +485,24 @@ export class SearchComponent implements OnInit {
 })
 export class OffersComponent implements OnInit, OnDestroy {
   isNew = false;
-  allCategories = categories;
   selectedCat: string | null = null;
   filters: FilterState = emptyFilters(1000);
   sort = 'popular';
   query = '';
   visible: Product[] = [];
+  page = 1;
+  pageSize = 12;
   drawer = false;
   subs: Subcategory[] = [];
 
-  constructor(public locale: LocaleService, private route: ActivatedRoute) {}
+  constructor(public locale: LocaleService, public catalog: CatalogService, private route: ActivatedRoute) {}
+
+  get allCategories() {
+    return this.catalog.categories();
+  }
 
   get pool(): Product[] {
-    return this.isNew ? products.filter((p) => p.badges.includes('new')) : products.filter((p) => p.compareAt);
+    return this.isNew ? this.catalog.withBadge('new') : this.catalog.all().filter((p) => !!p.compareAt);
   }
 
   get panelSource(): Product[] {
@@ -528,6 +552,21 @@ export class OffersComponent implements OnInit, OnDestroy {
       );
     }
     this.visible = sortProducts(list, this.sort);
+    this.page = 1;
+  }
+
+  get pageCount(): number {
+    return Math.max(1, Math.ceil(this.visible.length / this.pageSize));
+  }
+
+  get paged(): Product[] {
+    const start = (this.page - 1) * this.pageSize;
+    return this.visible.slice(start, start + this.pageSize);
+  }
+
+  goPage(n: number): void {
+    this.page = n;
+    document.getElementById('offers-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   onFilters(next: FilterState): void {
@@ -538,7 +577,7 @@ export class OffersComponent implements OnInit, OnDestroy {
   selectCategory(slug: string | null): void {
     this.selectedCat = slug;
     this.filters = { ...this.filters, sub: null };
-    this.subs = slug ? categoryBySlug(slug)?.subcategories ?? [] : [];
+    this.subs = slug ? this.catalog.categoryBySlug(slug)?.subcategories ?? [] : [];
     this.refresh();
   }
 

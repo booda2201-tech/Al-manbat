@@ -1,15 +1,20 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { addresses, orders } from '../data/content';
-import { productById, products } from '../data/products';
+import { forkJoin, interval, of, Subscription } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { LocaleService } from '../services/locale.service';
+import { CatalogService } from '../services/catalog.service';
+import { AuthApiService } from '../services/auth-api.service';
+import { AccountApiService, orderTrackStep, resolveApiStatus, type AccountProfile } from '../services/account-api.service';
+import { SessionService } from '../services/session.service';
 import { StoreService } from '../services/store.service';
-import type { Address, Locale, Order, Product } from '../types';
+import { pickDisplayName } from '../api/api.util';
+import type { Address, ApiOrderStatus, Locale, Order, Product } from '../types';
 import { CountPipe, SarPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
-import { ReviewFormComponent, type ReviewDraft } from '../ui/review-form.component';
+import { ReviewFormComponent, composeReviewComment, type ReviewDraft } from '../ui/review-form.component';
 import { ProductCardComponent, ProductRailComponent, SectionHeaderComponent } from '../commerce/commerce.component';
 import { CrumbsComponent } from '../commerce/crumbs.component';
 
@@ -19,46 +24,38 @@ import { CrumbsComponent } from '../commerce/crumbs.component';
   imports: [CommonModule, FormsModule, RouterLink, IconComponent, CrumbsComponent, SarPipe, ReviewFormComponent],
   templateUrl: './account.page.html',
 })
-export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
+export class AccountPageComponent implements OnInit, OnDestroy {
   @ViewChild('navList') navList?: ElementRef<HTMLElement>;
-  @ViewChild('navSentinel') navSentinel?: ElementRef<HTMLElement>;
-  @ViewChild('accountNav') accountNav?: ElementRef<HTMLElement>;
-  navPinned = false;
-  navHeight = 56;
   tab = 'overview';
-  private navPinObs?: IntersectionObserver;
-  orders = orders;
-  addressList: Address[] = addresses.map((a) => ({ ...a }));
-  reorderIds = ['oil-reserve', 'pkl-cucumber'];
-  firstName = 'فهد';
-  lastName = 'العتيبي';
-  email = 'fahd@example.com';
-  phone = '+966 55 014 2288';
+  loading = true;
+  saving = false;
+  private pollSub?: Subscription;
+  private sawRoute = false;
+  orders: Order[] = [];
+  addressList: Address[] = [];
+  reorderIds: string[] = [];
+  firstName = '';
+  lastName = '';
+  email = '';
+  phone = '';
+  joinedYear = '';
   currentPassword = '';
   nextPassword = '';
   confirmPassword = '';
+  showPassword = false;
+  passwordSaving = false;
   orderFilter: 'all' | Order['status'] = 'all';
   addressFormOpen = false;
   editingAddressId: string | null = null;
-  addrDraft = { label: '', line: '', city: '', phone: '' };
-  cardFormOpen = false;
-  cardDraft = { brand: 'mada', last4: '', exp: '' };
-  returnPicker = false;
+  addrDraft = { label: '', line: '', city: '', governorate: '', postalCode: '', phone: '' };
   reviewOpen = false;
+  reviewSaving = false;
   reviewOrderId = '';
   reviewProduct: Product | null = null;
   ratings: Record<string, number> = {};
-  cards = [
-    { brand: 'mada', last4: '4417', exp: '09/28', primary: true },
-    { brand: 'VISA', last4: '8802', exp: '02/27', primary: false },
-  ];
-  notifRows = [
-    { labelAr: 'تحديثات الطلب والتوصيل', labelEn: 'Order and delivery updates', hintAr: 'رسائل نصية وبريد', hintEn: 'SMS and email', on: true },
-    { labelAr: 'انخفاض سعر منتج في المفضلة', labelEn: 'Price drops on wishlist items', hintAr: 'بريد إلكتروني', hintEn: 'Email', on: true },
-    { labelAr: 'عروض المنبت الأسبوعية', labelEn: 'Weekly Almanbat offers', hintAr: 'مرة واحدة أسبوعياً', hintEn: 'Once a week', on: false },
-  ];
   trackSteps = [
-    { ar: 'التجهيز', en: 'Prepared' },
+    { ar: 'جديد', en: 'Received' },
+    { ar: 'مؤكد', en: 'Confirmed' },
     { ar: 'في الطريق', en: 'On the way' },
     { ar: 'التسليم', en: 'Delivered' },
   ];
@@ -72,48 +69,80 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     public locale: LocaleService,
     public store: StoreService,
+    public catalog: CatalogService,
+    public session: SessionService,
+    private auth: AuthApiService,
+    private accountApi: AccountApiService,
     private route: ActivatedRoute,
-    private router: Router,
-    private zone: NgZone
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((p) => {
-      this.tab = p.get('tab') || 'overview';
+      const next = p.get('tab') || 'overview';
+      if (next === 'returns' || next === 'payments' || next === 'notifications') {
+        this.router.navigate(['/account', 'overview'], { replaceUrl: true });
+        return;
+      }
+      this.tab = next;
       this.scrollActiveNav();
+      if (this.sawRoute) this.refresh(true);
+      this.sawRoute = true;
+    });
+    this.store.hydrateFromApi();
+    this.applySessionFallback();
+    this.refresh();
+    this.pollSub = interval(12000).subscribe(() => {
+      if (document.hidden) return;
+      if (this.tab === 'overview' || this.tab === 'orders') this.refresh(true);
     });
   }
 
-  ngAfterViewInit(): void {
-    this.bindNavPin();
+  @HostListener('document:visibilitychange')
+  onVisible(): void {
+    if (document.visibilityState === 'visible') this.refresh(true);
+  }
+
+  private refresh(silent = false): void {
+    if (!silent) this.loading = true;
+    forkJoin({
+      profile: this.accountApi.getProfile().pipe(catchError(() => of(null))),
+      orders: this.accountApi.getMyOrders().pipe(catchError(() => of([] as Order[]))),
+      addresses: this.accountApi.getAddresses().pipe(catchError(() => of([] as Address[]))),
+    }).subscribe(({ profile, orders, addresses }) => {
+      if (profile) this.applyProfile(profile);
+      this.addressList = addresses.length ? addresses : this.addressList;
+      this.orders = orders;
+      const fromOrders = orders.flatMap((o) => o.itemIds);
+      this.reorderIds = [...new Set(fromOrders)].slice(0, 2);
+      this.loading = false;
+    });
+  }
+
+  private applyProfile(profile: AccountProfile): void {
+    const phone = profile.phone || this.session.phone() || '';
+    const shown = pickDisplayName(`${profile.firstName} ${profile.lastName}`.trim(), profile.userName);
+    const parts = shown.split(/\s+/).filter(Boolean);
+    this.firstName = profile.firstName || parts[0] || '';
+    this.lastName = profile.lastName || parts.slice(1).join(' ');
+    this.email = profile.email;
+    this.phone = phone;
+    this.joinedYear = yearOf(profile.createdAt);
+    if (profile.addresses.length && !this.addressList.length) this.addressList = profile.addresses;
+    this.session.setProfile({
+      userName: shown || undefined,
+      phone: this.phone,
+      email: this.email,
+    });
+  }
+
+  private applySessionFallback(): void {
+    this.phone = this.session.phone() || '';
+    this.email = this.session.email() || '';
   }
 
   ngOnDestroy(): void {
-    this.navPinObs?.disconnect();
-  }
-
-  private bindNavPin(): void {
-    if (typeof IntersectionObserver === 'undefined') return;
-    const sentinel = this.navSentinel?.nativeElement;
-    if (!sentinel) return;
-    this.navPinObs?.disconnect();
-    this.navPinObs = new IntersectionObserver(
-      ([entry]) => {
-        this.zone.run(() => {
-          if (window.matchMedia('(min-width: 1024px)').matches) {
-            this.navPinned = false;
-            return;
-          }
-          const pin = !entry.isIntersecting;
-          if (pin && this.accountNav) {
-            this.navHeight = Math.round(this.accountNav.nativeElement.getBoundingClientRect().height);
-          }
-          this.navPinned = pin;
-        });
-      },
-      { root: null, threshold: 0, rootMargin: '-7rem 0px 0px 0px' }
-    );
-    this.navPinObs.observe(sentinel);
+    this.pollSub?.unsubscribe();
   }
 
   private scrollActiveNav(): void {
@@ -127,50 +156,68 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 40);
   }
 
+  readonly navItems = [
+    { id: 'overview', labelKey: 'dashboard' as const, icon: 'grid' },
+    { id: 'orders', labelKey: 'orders' as const, icon: 'package' },
+    { id: 'addresses', labelKey: 'addresses' as const, icon: 'pin' },
+    { id: 'profile', labelKey: 'profile' as const, icon: 'user' },
+  ];
+
   get trail() {
     return [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.ui('account') }];
   }
 
-  get nav() {
-    return [
-      { id: 'overview', label: this.locale.ui('dashboard'), icon: 'grid' },
-      { id: 'orders', label: this.locale.ui('orders'), icon: 'package' },
-      { id: 'addresses', label: this.locale.ui('addresses'), icon: 'pin' },
-      { id: 'payments', label: this.locale.ui('payments'), icon: 'card' },
-      { id: 'profile', label: this.locale.ui('profile'), icon: 'user' },
-      { id: 'notifications', label: this.locale.ui('notifications'), icon: 'bell' },
-      { id: 'returns', label: this.locale.ui('returns'), icon: 'rotate' },
-    ];
+  trackNav(_: number, item: { id: string }): string {
+    return item.id;
+  }
+
+  goTab(id: string, ev?: MouseEvent): void {
+    if (ev && (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)) return;
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    if (this.tab === id) return;
+    this.tab = id;
+    this.scrollActiveNav();
+    void this.router.navigate(['/account', id]);
   }
 
   get greeting(): string {
-    return this.locale.isAr() ? `أهلاً ${this.firstName}` : `Welcome back, ${this.firstName}`;
+    if (this.firstName) {
+      return this.locale.isAr() ? `أهلاً ${this.firstName}` : `Welcome back, ${this.firstName}`;
+    }
+    return this.locale.isAr() ? 'أهلاً بك' : 'Welcome back';
   }
 
   get initial(): string {
-    const name = this.firstName.trim();
-    return name ? name.charAt(0) : 'ن';
+    const name = this.firstName.trim() || pickDisplayName(this.session.userName()) || '';
+    return name ? name.charAt(0) : 'م';
   }
 
-  get active() {
-    return this.orders.find((o) => o.status === 'in_transit') ?? this.orders[0];
+  get active(): Order | null {
+    return this.orders.find((o) => o.status === 'in_transit' || o.status === 'processing') ?? null;
+  }
+
+  get activeStep(): number {
+    return orderTrackStep(this.active);
+  }
+
+  orderApiStatus(order: Order | null | undefined): ApiOrderStatus {
+    return resolveApiStatus(order);
   }
 
   get stats() {
+    const year = new Date().getFullYear();
+    const thisYear = this.orders.filter((o) => (o.date || '').startsWith(String(year))).length;
     return [
-      { labelAr: 'طلبات هذا العام', labelEn: 'Orders this year', value: String(this.orders.length), icon: 'package' },
-      { labelAr: 'نقاط الولاء', labelEn: 'Loyalty points', value: '2,480', icon: 'star' },
-      { labelAr: 'المحفوظة', labelEn: 'Saved items', value: String(this.store.wishlist().length), icon: 'heart' },
+      { labelAr: 'الطلبات', labelEn: 'Orders', value: String(thisYear || this.orders.length), icon: 'package', href: '/account/orders' },
+      { labelAr: 'العناوين', labelEn: 'Addresses', value: String(this.addressList.length), icon: 'pin', href: '/account/addresses' },
+      { labelAr: 'المحفوظة', labelEn: 'Saved', value: String(this.store.wishlist().length), icon: 'heart', href: '/wishlist' },
     ];
   }
 
   get filteredOrders(): Order[] {
     if (this.orderFilter === 'all') return this.orders;
     return this.orders.filter((o) => o.status === this.orderFilter);
-  }
-
-  get deliveredOrders(): Order[] {
-    return this.orders.filter((o) => o.status === 'delivered');
   }
 
   isTab(id: string): boolean {
@@ -182,7 +229,17 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   item(id: string) {
-    return productById(id);
+    return this.catalog.byId(id);
+  }
+
+  lineOf(order: Order | null | undefined, id: string): { name: string; image: string; slug: string; price?: number } | null {
+    const product = this.catalog.byId(id);
+    if (product) {
+      return { name: this.locale.tr(product.name), image: product.image, slug: product.slug, price: product.price };
+    }
+    const snap = order?.snapshots?.[id];
+    if (!snap) return null;
+    return { name: snap.name, image: snap.image, slug: '', price: snap.price };
   }
 
   formatDate(iso: string): string {
@@ -194,43 +251,42 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  statCardClass(i: number): string {
-    return i === 0 ? 'border-gold-400/40 bg-gold-50' : 'border-olive-800/10 bg-white';
-  }
-
   addressCardClass(isDefault: boolean): string {
     return isDefault ? 'border-gold-400/50 bg-gold-50' : 'border-olive-800/10 bg-white';
   }
 
   stepClass(i: number): string {
-    return i <= 1 ? 'text-olive-800 font-medium' : 'text-ink-muted';
+    return i <= this.activeStep ? 'text-olive-800 font-medium' : 'text-ink-muted';
   }
 
   stepDotClass(i: number): string {
-    if (i < 1) return 'bg-olive-600 text-sand-50';
-    if (i === 1) return 'bg-gold-400 text-olive-900';
+    if (i < this.activeStep) return 'bg-olive-600 text-sand-50';
+    if (i === this.activeStep) return 'bg-gold-400 text-olive-900';
     return 'bg-white text-ink-muted ring-1 ring-olive-800/15';
   }
 
-  statusTone(status: string): string {
+  statusTone(orderOrStatus: Order | string): string {
+    const api = typeof orderOrStatus === 'string' ? resolveApiStatus({ status: orderOrStatus as Order['status'] }) : resolveApiStatus(orderOrStatus);
     const map: Record<string, string> = {
-      delivered: 'bg-state-success/12 text-state-success',
-      in_transit: 'bg-gold-400 text-olive-900',
-      processing: 'bg-sand-100 text-olive-800',
-      cancelled: 'bg-state-danger/12 text-state-danger',
+      Delivered: 'bg-state-success/12 text-state-success',
+      Shipped: 'bg-gold-400 text-olive-900',
+      Confirmed: 'bg-olive-800/10 text-olive-800',
+      Pending: 'bg-sand-100 text-olive-800',
+      Cancelled: 'bg-state-danger/12 text-state-danger',
     };
-    return map[status] ?? map['processing'];
+    return map[api] || map['Pending'];
   }
 
-  statusLabel(status: string): string {
-    const map: Record<string, { ar: string; en: string }> = {
-      delivered: { ar: 'تم التسليم', en: 'Delivered' },
-      in_transit: { ar: 'في الطريق', en: 'In transit' },
-      processing: { ar: 'قيد التجهيز', en: 'Processing' },
-      cancelled: { ar: 'ملغي', en: 'Cancelled' },
+  statusLabel(orderOrStatus: Order | string): string {
+    const api = typeof orderOrStatus === 'string' ? resolveApiStatus({ status: orderOrStatus as Order['status'] }) : resolveApiStatus(orderOrStatus);
+    const map: Record<ApiOrderStatus, { ar: string; en: string }> = {
+      Pending: { ar: 'جديد', en: 'New' },
+      Confirmed: { ar: 'مؤكد', en: 'Confirmed' },
+      Shipped: { ar: 'في الطريق', en: 'On the way' },
+      Delivered: { ar: 'تم التسليم', en: 'Delivered' },
+      Cancelled: { ar: 'ملغي', en: 'Cancelled' },
     };
-    const row = map[status];
-    return row ? this.locale.tr(row) : status;
+    return this.locale.tr(map[api]);
   }
 
   reorder(ids: string[]): void {
@@ -254,7 +310,7 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openItemReview(orderId: string, productId: string): void {
-    const product = productById(productId);
+    const product = this.catalog.byId(productId);
     if (!product) return;
     this.reviewOrderId = orderId;
     this.reviewProduct = product;
@@ -271,25 +327,50 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   closeReview(): void {
+    if (this.reviewSaving) return;
     this.reviewOpen = false;
     this.reviewProduct = null;
     this.reviewOrderId = '';
   }
 
   submitReview(draft: ReviewDraft): void {
-    if (this.reviewOrderId && this.reviewProduct) {
-      this.ratings = {
-        ...this.ratings,
-        [this.rateKey(this.reviewOrderId, this.reviewProduct.id)]: draft.rating,
-      };
-    }
-    this.closeReview();
-    this.store.pushToast({ tone: 'success', title: this.locale.ui('reviewThanks') });
+    if (!this.reviewProduct || this.reviewSaving) return;
+    this.reviewSaving = true;
+    const productId = this.reviewProduct.id;
+    const orderId = this.reviewOrderId;
+    this.catalog.addReview(productId, draft.rating, composeReviewComment(draft)).subscribe({
+      next: () => {
+        this.reviewSaving = false;
+        this.ratings = {
+          ...this.ratings,
+          [this.rateKey(orderId, productId)]: draft.rating,
+        };
+        this.reviewOpen = false;
+        this.reviewProduct = null;
+        this.reviewOrderId = '';
+        this.store.pushToast({ tone: 'success', title: this.locale.ui('reviewThanks') });
+      },
+      error: (err) => {
+        this.reviewSaving = false;
+        const message = err instanceof Error && err.message && err.message !== 'REVIEW' ? err.message : '';
+        this.store.pushToast({
+          tone: 'warning',
+          title: message || this.locale.ui('reviewFailed'),
+        });
+      },
+    });
   }
 
   startAddress(): void {
     this.editingAddressId = null;
-    this.addrDraft = { label: '', line: '', city: this.locale.isAr() ? 'الرياض' : 'Riyadh', phone: this.phone };
+    this.addrDraft = {
+      label: '',
+      line: '',
+      city: this.locale.isAr() ? 'الرياض' : 'Riyadh',
+      governorate: '',
+      postalCode: '',
+      phone: this.phone,
+    };
     this.addressFormOpen = true;
   }
 
@@ -299,7 +380,9 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
       label: this.locale.tr(a.label),
       line: this.locale.tr(a.line),
       city: this.locale.tr(a.city),
-      phone: a.phone,
+      governorate: '',
+      postalCode: '',
+      phone: a.phone || this.phone,
     };
     this.addressFormOpen = true;
   }
@@ -311,44 +394,73 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   saveAddress(ev: Event): void {
     ev.preventDefault();
-    if (!this.addrDraft.label.trim() || !this.addrDraft.line.trim()) {
+    if (this.saving) return;
+    if (!this.addrDraft.label.trim() || !this.addrDraft.line.trim() || !this.addrDraft.city.trim()) {
       this.store.pushToast({
-        title: this.locale.isAr() ? 'أكمل وصف العنوان والسطر' : 'Add a label and street address',
+        title: this.locale.isAr() ? 'أكمل الوصف والعنوان والمدينة' : 'Add a label, street and city',
         tone: 'warning',
       });
       return;
     }
-    const bilingual = (value: string) => ({ ar: value, en: value });
-    if (this.editingAddressId) {
-      this.addressList = this.addressList.map((a) =>
-        a.id === this.editingAddressId
-          ? {
-              ...a,
-              label: bilingual(this.addrDraft.label),
-              line: bilingual(this.addrDraft.line),
-              city: bilingual(this.addrDraft.city),
-              phone: this.addrDraft.phone,
-            }
-          : a
-      );
-    } else {
-      this.addressList = [
-        ...this.addressList,
-        {
-          id: 'a' + Date.now(),
-          label: bilingual(this.addrDraft.label),
-          line: bilingual(this.addrDraft.line),
-          city: bilingual(this.addrDraft.city),
-          phone: this.addrDraft.phone,
-          isDefault: this.addressList.length === 0,
-        },
-      ];
-    }
-    this.addressFormOpen = false;
-    this.editingAddressId = null;
-    this.store.pushToast({
-      title: this.locale.isAr() ? 'تم حفظ العنوان' : 'Address saved',
-      tone: 'success',
+    const dto = {
+      label: this.addrDraft.label.trim(),
+      street: this.addrDraft.line.trim(),
+      city: this.addrDraft.city.trim(),
+      governorate: this.addrDraft.governorate.trim() || this.addrDraft.city.trim(),
+      postalCode: this.addrDraft.postalCode.trim() || undefined,
+      notes: this.addrDraft.phone.trim() || undefined,
+    };
+    this.saving = true;
+    const req$ = this.editingAddressId
+      ? this.accountApi.updateAddress(this.editingAddressId, dto)
+      : this.accountApi.addAddress(dto);
+    req$.subscribe({
+      next: () => {
+        const phone = this.addrDraft.phone.trim();
+        if (phone && phone !== this.phone) {
+          this.phone = phone;
+          this.accountApi
+            .updateProfile({
+              userName: `${this.firstName} ${this.lastName}`.trim(),
+              firstName: this.firstName,
+              lastName: this.lastName,
+              email: this.email,
+              phone,
+              addresses: this.addressList,
+            })
+            .pipe(catchError(() => of(null)))
+            .subscribe();
+        }
+        this.addressFormOpen = false;
+        this.editingAddressId = null;
+        this.reloadAddresses(true);
+      },
+      error: (err) => {
+        this.saving = false;
+        this.store.pushToast({
+          title: this.locale.isAr() ? 'تعذر حفظ العنوان على الحساب' : 'Could not save the address to your profile',
+          description: err instanceof Error ? err.message : undefined,
+          tone: 'warning',
+        });
+      },
+    });
+  }
+
+  private reloadAddresses(toast = false): void {
+    this.accountApi.getAddresses().subscribe({
+      next: (addresses) => {
+        this.saving = false;
+        this.addressList = addresses;
+        if (toast) {
+          this.store.pushToast({
+            title: this.locale.isAr() ? 'تم حفظ العنوان على حسابك' : 'Address saved to your profile',
+            tone: 'success',
+          });
+        }
+      },
+      error: () => {
+        this.saving = false;
+      },
     });
   }
 
@@ -361,61 +473,71 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   removeAddress(id: string): void {
-    this.addressList = this.addressList.filter((a) => a.id !== id);
-    if (this.addressList.length && !this.addressList.some((a) => a.isDefault)) {
-      this.addressList = this.addressList.map((a, i) => ({ ...a, isDefault: i === 0 }));
-    }
-  }
-
-  addCard(ev: Event): void {
-    ev.preventDefault();
-    if (!/^\d{4}$/.test(this.cardDraft.last4) || !this.cardDraft.exp.trim()) {
-      this.store.pushToast({
-        title: this.locale.isAr() ? 'أدخل آخر ٤ أرقام وتاريخ الانتهاء' : 'Enter the last 4 digits and expiry',
-        tone: 'warning',
-      });
-      return;
-    }
-    this.cards = [
-      ...this.cards,
-      { brand: this.cardDraft.brand, last4: this.cardDraft.last4, exp: this.cardDraft.exp, primary: this.cards.length === 0 },
-    ];
-    this.cardDraft = { brand: 'mada', last4: '', exp: '' };
-    this.cardFormOpen = false;
-    this.store.pushToast({
-      title: this.locale.isAr() ? 'أُضيفت البطاقة' : 'Card added',
-      tone: 'success',
+    this.accountApi.deleteAddress(id).subscribe({
+      next: () => this.reloadAddresses(),
+      error: () => {
+        this.store.pushToast({
+          title: this.locale.isAr() ? 'تعذر حذف العنوان' : 'Could not delete the address',
+          tone: 'warning',
+        });
+      },
     });
-  }
-
-  setPrimaryCard(last4: string): void {
-    this.cards = this.cards.map((c) => ({ ...c, primary: c.last4 === last4 }));
-  }
-
-  removeCard(last4: string): void {
-    this.cards = this.cards.filter((c) => c.last4 !== last4);
-    if (this.cards.length && !this.cards.some((c) => c.primary)) {
-      this.cards = this.cards.map((c, i) => ({ ...c, primary: i === 0 }));
-    }
   }
 
   saveProfile(ev: Event): void {
     ev.preventDefault();
-    if (!this.email.includes('@') || !this.firstName.trim()) {
+    if (!this.firstName.trim()) {
       this.store.pushToast({
-        title: this.locale.isAr() ? 'تحقق من الاسم والبريد' : 'Check name and email',
+        title: this.locale.isAr() ? 'أدخل الاسم' : 'Enter your name',
         tone: 'warning',
       });
       return;
     }
-    this.store.pushToast({
-      title: this.locale.isAr() ? 'تم حفظ الملف الشخصي' : 'Profile saved',
-      tone: 'success',
+    if (this.email && !this.email.includes('@')) {
+      this.store.pushToast({
+        title: this.locale.isAr() ? 'تحقق من البريد' : 'Check the email address',
+        tone: 'warning',
+      });
+      return;
+    }
+    this.saving = true;
+    const profile: AccountProfile = {
+      userName: `${this.firstName} ${this.lastName}`.trim(),
+      firstName: this.firstName.trim(),
+      lastName: this.lastName.trim(),
+      email: this.email.trim(),
+      phone: this.phone.trim(),
+      addresses: this.addressList,
+    };
+    this.accountApi.updateProfile(profile).subscribe({
+      next: (saved) => {
+        this.saving = false;
+        this.applyProfile(saved);
+        this.accountApi.getProfile().subscribe((fresh) => {
+          const fromServer = pickDisplayName(
+            fresh ? `${fresh.firstName} ${fresh.lastName}`.trim() : '',
+            fresh?.userName
+          );
+          if (fresh && fromServer) this.applyProfile(fresh);
+        });
+        this.store.pushToast({
+          title: this.locale.isAr() ? 'تم حفظ الملف الشخصي على الخادم' : 'Profile saved on the server',
+          tone: 'success',
+        });
+      },
+      error: () => {
+        this.saving = false;
+        this.store.pushToast({
+          title: this.locale.isAr() ? 'تعذر الحفظ على الخادم' : 'Could not save on the server',
+          tone: 'warning',
+        });
+      },
     });
   }
 
   savePassword(ev: Event): void {
     ev.preventDefault();
+    if (this.passwordSaving) return;
     if (this.nextPassword.length < 4 || this.nextPassword !== this.confirmPassword) {
       this.store.pushToast({
         title: this.locale.isAr() ? 'كلمة المرور الجديدة غير متطابقة أو قصيرة' : 'New password is too short or does not match',
@@ -423,12 +545,25 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
       });
       return;
     }
-    this.currentPassword = '';
-    this.nextPassword = '';
-    this.confirmPassword = '';
-    this.store.pushToast({
-      title: this.locale.isAr() ? 'تم تحديث كلمة المرور' : 'Password updated',
-      tone: 'success',
+    this.passwordSaving = true;
+    this.accountApi.changePassword(this.currentPassword, this.nextPassword).subscribe({
+      next: () => {
+        this.passwordSaving = false;
+        this.currentPassword = '';
+        this.nextPassword = '';
+        this.confirmPassword = '';
+        this.store.pushToast({
+          title: this.locale.isAr() ? 'تم تحديث كلمة المرور' : 'Password updated',
+          tone: 'success',
+        });
+      },
+      error: () => {
+        this.passwordSaving = false;
+        this.store.pushToast({
+          title: this.locale.isAr() ? 'تعذر تحديث كلمة المرور' : 'Could not update the password',
+          tone: 'warning',
+        });
+      },
     });
   }
 
@@ -436,28 +571,26 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
     if ((next === 'ar') !== this.locale.isAr()) this.locale.toggle();
   }
 
-  toastPrefs(): void {
-    this.store.pushToast({
-      title: this.locale.isAr() ? 'تم تحديث الإشعارات' : 'Notification preferences saved',
-      tone: 'success',
-    });
-  }
-
-  startReturn(id: string): void {
-    this.returnPicker = false;
-    this.store.pushToast({
-      title: this.locale.isAr() ? `بدأنا إرجاع ${id}` : `Return started for ${id}`,
-      tone: 'success',
-    });
-  }
-
   signOut(): void {
-    this.store.pushToast({
-      title: this.locale.isAr() ? 'تم تسجيل الخروج' : 'Signed out',
-      tone: 'success',
+    this.auth.logout().subscribe({
+      next: () => {
+        this.store.pushToast({
+          title: this.locale.isAr() ? 'تم تسجيل الخروج' : 'Signed out',
+          tone: 'success',
+        });
+        this.router.navigateByUrl('/login');
+      },
+      error: () => this.router.navigateByUrl('/login'),
     });
-    this.router.navigateByUrl('/login');
   }
+}
+
+function yearOf(value?: string): string {
+  if (!value) return '';
+  const match = value.match(/^(\d{4})/);
+  if (match) return match[1];
+  const d = new Date(value);
+  return Number.isFinite(d.getTime()) ? String(d.getFullYear()) : '';
 }
 
 @Component({
@@ -527,12 +660,14 @@ export class AccountPageComponent implements OnInit, AfterViewInit, OnDestroy {
   `,
 })
 export class WishlistPageComponent {
-  more = products.slice(0, 6);
   addedId: string | null = null;
   private addedTimer?: number;
-  constructor(public locale: LocaleService, public store: StoreService) {}
+  constructor(public locale: LocaleService, public store: StoreService, public catalog: CatalogService) {}
+  get more() {
+    return this.catalog.all().slice(0, 6);
+  }
   items() {
-    return this.store.wishlist().map(productById).filter(Boolean) as NonNullable<ReturnType<typeof productById>>[];
+    return this.store.wishlist().map((id) => this.catalog.byId(id)).filter((p): p is Product => Boolean(p));
   }
   get trail() {
     return [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.ui('wishlist') }];

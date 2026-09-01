@@ -11,6 +11,10 @@ export interface ReviewDraft {
   body: string;
 }
 
+export function composeReviewComment(draft: ReviewDraft): string {
+  return [draft.title.trim(), draft.body.trim()].filter(Boolean).join('\n\n');
+}
+
 @Component({
   selector: 'app-review-form',
   standalone: true,
@@ -72,8 +76,8 @@ export interface ReviewDraft {
             <p *ngIf="bodyError" class="mt-1.5 text-xs text-state-danger">{{ locale.ui('reviewNeedBody') }}</p>
           </div>
 
-          <button type="submit" class="inline-flex h-12 w-full items-center justify-center rounded-md bg-olive-600 px-5 text-sm font-medium text-sand-50 shadow-sm transition-colors duration-200 ease-premium hover:bg-olive-700">
-            {{ locale.ui('reviewSubmit') }}
+          <button type="submit" class="inline-flex h-12 w-full items-center justify-center rounded-md bg-olive-600 px-5 text-sm font-medium text-sand-50 shadow-sm transition-colors duration-200 ease-premium hover:bg-olive-700 disabled:opacity-60" [disabled]="saving">
+            {{ saving ? locale.ui('reviewPublishing') : locale.ui('reviewSubmit') }}
           </button>
         </form>
       </div>
@@ -83,6 +87,7 @@ export interface ReviewDraft {
 export class ReviewFormComponent implements OnInit, OnDestroy {
   @Input() productName = '';
   @Input() reviewerName = '';
+  @Input() saving = false;
   @Output() closed = new EventEmitter<void>();
   @Output() submitted = new EventEmitter<ReviewDraft>();
 
@@ -154,10 +159,11 @@ export class ReviewFormComponent implements OnInit, OnDestroy {
   }
 
   submit(): void {
+    if (this.saving) return;
     this.starsError = this.rating < 1;
     this.nameError = !this.name.trim();
-    this.bodyError = this.body.trim().length < 12;
-    if (this.starsError || this.nameError || this.bodyError) return;
+    this.bodyError = false;
+    if (this.starsError || this.nameError) return;
     this.submitted.emit({
       rating: this.rating,
       name: this.name.trim(),

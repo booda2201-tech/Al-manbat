@@ -45,24 +45,13 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="auth-label" for="email">
-              <span>{{ locale.isAr() ? 'البريد الإلكتروني' : 'Email address' }}</span>
-              <span>{{ locale.isAr() ? 'Email' : 'البريد الإلكتروني' }}</span>
-            </label>
-            <div class="auth-field">
-              <app-icon name="mail" [size]="18"></app-icon>
-              <input id="email" required type="email" [(ngModel)]="email" name="email" class="auth-input" placeholder="name@example.com" autocomplete="email" inputmode="email" />
-            </div>
-          </div>
-
-          <div *ngIf="signup" class="space-y-1.5">
             <label class="auth-label" for="phone">
               <span>{{ locale.isAr() ? 'الجوال' : 'Mobile' }}</span>
               <span>{{ locale.isAr() ? 'Mobile' : 'الجوال' }}</span>
             </label>
             <div class="auth-field">
               <app-icon name="phone" [size]="18"></app-icon>
-              <input id="phone" required type="tel" [(ngModel)]="phone" name="phone" class="auth-input" placeholder="+966 5X XXX XXXX" autocomplete="tel" />
+              <input id="phone" required type="tel" [(ngModel)]="phone" name="phone" class="auth-input" placeholder="05XXXXXXXX" autocomplete="tel" inputmode="tel" />
             </div>
           </div>
 
@@ -85,11 +74,22 @@
             </div>
           </div>
 
+          <div *ngIf="signup" class="space-y-1.5">
+            <label class="auth-label" for="confirm-password">
+              <span>{{ locale.isAr() ? 'تأكيد كلمة المرور' : 'Confirm password' }}</span>
+              <span>{{ locale.isAr() ? 'Confirm' : 'تأكيد' }}</span>
+            </label>
+            <div class="auth-field">
+              <app-icon name="lock" [size]="18"></app-icon>
+              <input id="confirm-password" required [type]="showPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword" name="confirmPassword" class="auth-input" placeholder="••••••••" autocomplete="new-password" />
+            </div>
+          </div>
+
           <p *ngIf="error" class="text-sm text-state-danger">{{ error }}</p>
 
           <div class="space-y-3 pt-3">
-            <button type="submit" class="shimmer-edge flex h-[52px] w-full items-center justify-center rounded-lg bg-gold-400 text-[15px] font-semibold text-olive-900 shadow-gold transition-colors duration-300 ease-premium hover:bg-gold-300">
-              {{ signup ? (locale.isAr() ? 'إنشاء حساب' : 'Create account') : (locale.isAr() ? 'تسجيل الدخول' : 'Sign in') }}
+            <button type="submit" [disabled]="busy" class="shimmer-edge flex h-[52px] w-full items-center justify-center rounded-lg bg-gold-400 text-[15px] font-semibold text-olive-900 shadow-gold transition-colors duration-300 ease-premium hover:bg-gold-300 disabled:opacity-60">
+              {{ busy ? (locale.isAr() ? 'جاري الإرسال…' : 'Sending…') : (signup ? (locale.isAr() ? 'إنشاء حساب' : 'Create account') : (locale.isAr() ? 'تسجيل الدخول' : 'Sign in')) }}
             </button>
             <a [routerLink]="signup ? '/login' : '/signup'" class="flex h-[52px] w-full items-center justify-center rounded-lg border border-olive-800/20 text-[15px] font-semibold text-olive-800 transition-colors duration-300 ease-premium hover:border-olive-800/40 hover:bg-olive-50/50">
               {{ signup ? (locale.isAr() ? 'لديك حساب؟ سجّل الدخول' : 'Have an account? Sign in') : (locale.isAr() ? 'إنشاء حساب' : 'Create account') }}

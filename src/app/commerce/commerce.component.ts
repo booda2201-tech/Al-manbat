@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, Output, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import type { Product } from '../types';
 import { trustPoints } from '../data/content';
@@ -118,7 +118,7 @@ export class QtyComponent {
       <div class="relative overflow-hidden bg-sand-100">
         <a [routerLink]="['/product', product.slug]" class="block" tabindex="-1" aria-hidden="true">
           <div class="product-card__media overflow-hidden">
-            <img [src]="product.image" alt="" draggable="false" class="h-full w-full object-cover transition-transform duration-[600ms] ease-premium group-hover:scale-[1.06]" [class.opacity-60]="soldOut" />
+            <img [src]="product.image" alt="" draggable="false" class="h-full w-full bg-sand-50 object-contain transition-transform duration-[600ms] ease-premium group-hover:scale-[1.06]" [class.opacity-60]="soldOut" />
           </div>
         </a>
         <div class="product-card__badges absolute start-3 top-3 flex flex-col gap-1">
@@ -305,26 +305,26 @@ export class SectionHeaderComponent {
   selector: 'app-product-rail',
   standalone: true,
   imports: [CommonModule, ProductCardComponent, IconComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'product-rail-host' },
   template: `
     <div class="product-rail-wrap" [class.product-rail-wrap--on-dark]="onDark">
       <div
         #rail
         class="rail product-rail"
-        (scroll)="onScroll()"
         (pointerdown)="onPointerDown($event)"
         (pointermove)="onPointerMove($event)"
         (pointerup)="onPointerUp($event)"
         (pointercancel)="onPointerUp($event)"
         (lostpointercapture)="onPointerUp($event)"
       >
-        <div *ngFor="let p of products" class="product-rail__item">
+        <div *ngFor="let p of visible; trackBy: trackId" class="product-rail__item">
           <app-product-card [product]="p" layout="rail"></app-product-card>
         </div>
       </div>
-      <div *ngIf="products.length > 1" class="product-rail__dots">
+      <div *ngIf="visible.length > 1 && visible.length <= 12" class="product-rail__dots">
         <button
-          *ngFor="let p of products; let i = index"
+          *ngFor="let p of visible; let i = index; trackBy: trackId"
           type="button"
           class="product-rail__dot"
           [class.is-on]="i === active"
@@ -335,7 +335,7 @@ export class SectionHeaderComponent {
       </div>
       <div class="mt-2 hidden items-center gap-3 lg:flex">
         <div class="h-0.5 min-w-0 flex-1 overflow-hidden rounded-full bg-olive-800/10">
-          <div class="h-full rounded-full bg-olive-700 transition-[width] duration-200 ease-premium" [style.width.%]="progress"></div>
+          <div #bar class="h-full rounded-full bg-olive-700 transition-[width] duration-200 ease-premium" style="width: 0%"></div>
         </div>
         <div class="flex shrink-0 gap-2">
           <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border border-olive-800/15 bg-white text-olive-700 transition-colors duration-200 ease-premium hover:border-olive-800/40" (click)="move(-1)" [attr.aria-label]="locale.isAr() ? 'السابق' : 'Previous'">
@@ -350,56 +350,71 @@ export class SectionHeaderComponent {
   `,
 })
 export class ProductRailComponent implements AfterViewInit, OnDestroy {
-  @Input() products: Product[] = [];
   @Input() onDark = false;
+  @Input() cap = 12;
   @ViewChild('rail') rail?: ElementRef<HTMLElement>;
-  progress = 0;
+  @ViewChild('bar') bar?: ElementRef<HTMLElement>;
+  visible: Product[] = [];
   active = 0;
-  private timer?: number;
-  private wheelBound?: (ev: WheelEvent) => void;
+  private raw: Product[] = [];
+  private timers: number[] = [];
+  private raf = 0;
   private clickBound?: (ev: MouseEvent) => void;
+  private scrollBound?: () => void;
+  private resizeBound?: () => void;
   private dragging = false;
   private dragged = false;
   private startX = 0;
   private startScroll = 0;
-  constructor(public locale: LocaleService) {}
+
+  @Input() set products(value: Product[]) {
+    this.raw = value ?? [];
+    this.visible = this.raw.slice(0, this.cap);
+    this.queueSync();
+  }
+  get products(): Product[] {
+    return this.raw;
+  }
+
+  constructor(
+    public locale: LocaleService,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  trackId(_i: number, p: Product): string {
+    return p.id;
+  }
 
   ngAfterViewInit(): void {
-    this.onScroll();
-    this.timer = window.setTimeout(() => this.onScroll(), 400);
     const el = this.rail?.nativeElement;
     if (!el) return;
     this.clickBound = (ev: MouseEvent) => this.onRailClick(ev);
     el.addEventListener('click', this.clickBound, true);
-    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      this.wheelBound = (ev: WheelEvent) => this.onWheel(ev);
-      el.addEventListener('wheel', this.wheelBound, { passive: false });
-    }
+    this.zone.runOutsideAngular(() => {
+      this.scrollBound = () => this.queueSync();
+      this.resizeBound = () => this.queueSync();
+      el.addEventListener('scroll', this.scrollBound, { passive: true });
+      window.addEventListener('resize', this.resizeBound, { passive: true });
+      this.queueSync();
+      this.timers.push(window.setTimeout(() => this.syncMetrics(), 400));
+      this.timers.push(window.setTimeout(() => this.syncMetrics(), 1200));
+    });
   }
 
   ngOnDestroy(): void {
-    if (this.timer) window.clearTimeout(this.timer);
+    this.timers.forEach((id) => window.clearTimeout(id));
+    if (this.raf) cancelAnimationFrame(this.raf);
     const el = this.rail?.nativeElement;
+    if (this.resizeBound) window.removeEventListener('resize', this.resizeBound);
     if (!el) return;
-    if (this.wheelBound) el.removeEventListener('wheel', this.wheelBound);
+    if (this.scrollBound) el.removeEventListener('scroll', this.scrollBound);
     if (this.clickBound) el.removeEventListener('click', this.clickBound, true);
   }
 
   slideLabel(i: number): string {
     const n = i + 1;
     return this.locale.isAr() ? `المنتج ${n}` : `Product ${n}`;
-  }
-
-  onWheel(ev: WheelEvent): void {
-    const el = this.rail?.nativeElement;
-    if (!el || el.scrollWidth <= el.clientWidth + 1) return;
-    const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
-    if (!delta) return;
-    const next = el.scrollLeft + delta * (this.isRtl(el) ? -1 : 1);
-    const before = el.scrollLeft;
-    this.setScroll(el, next, false);
-    if (el.scrollLeft === before) return;
-    ev.preventDefault();
   }
 
   onPointerDown(ev: PointerEvent): void {
@@ -444,7 +459,7 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
       }
     }
     if (this.dragged && el) {
-      this.onScroll();
+      this.syncMetrics();
       const card = el.children.item(this.active) as HTMLElement | null;
       if (card) this.alignCard(el, card, true);
     }
@@ -453,12 +468,21 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
     }, 0);
   }
 
-  @HostListener('window:resize')
-  onScroll(): void {
+  private queueSync(): void {
+    if (this.raf) return;
+    this.raf = requestAnimationFrame(() => {
+      this.raf = 0;
+      this.syncMetrics();
+    });
+  }
+
+  private syncMetrics(): void {
     const el = this.rail?.nativeElement;
     if (!el) return;
     const max = el.scrollWidth - el.clientWidth;
-    this.progress = max <= 0 ? 100 : Math.min(100, (Math.abs(el.scrollLeft) / max) * 100);
+    const pct = max <= 0 ? 100 : Math.min(100, (Math.abs(el.scrollLeft) / max) * 100);
+    const bar = this.bar?.nativeElement;
+    if (bar) bar.style.width = `${pct}%`;
     const kids = el.children;
     if (!kids.length) return;
     const mid = el.getBoundingClientRect().left + el.clientWidth / 2;
@@ -472,7 +496,9 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
         best = i;
       }
     }
+    if (best === this.active) return;
     this.active = best;
+    this.zone.run(() => this.cdr.markForCheck());
   }
 
   goTo(index: number): void {
@@ -487,7 +513,7 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
     const el = this.rail?.nativeElement;
     if (!el) return;
     if (window.matchMedia('(max-width: 1023px)').matches) {
-      const next = Math.max(0, Math.min(this.products.length - 1, this.active + dir));
+      const next = Math.max(0, Math.min(this.visible.length - 1, this.active + dir));
       this.goTo(next);
       return;
     }
@@ -522,6 +548,83 @@ export class ProductRailComponent implements AfterViewInit, OnDestroy {
     const pad = parseFloat(getComputedStyle(el).paddingInlineStart) || 0;
     const delta = this.isRtl(el) ? item.right - (box.right - pad) : item.left - (box.left + pad);
     this.setScroll(el, el.scrollLeft + delta, smooth);
+  }
+}
+
+@Component({
+  selector: 'app-pager',
+  standalone: true,
+  imports: [CommonModule, IconComponent, CountPipe],
+  template: `
+    <nav *ngIf="pageCount > 1" class="mt-8 flex justify-center lg:mt-12" [attr.aria-label]="locale.ui('pagination')">
+      <div class="inline-flex items-center gap-0.5 rounded-xl border border-olive-800/15 bg-white p-1.5" role="tablist">
+        <button
+          type="button"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-olive-700 transition-colors duration-200 ease-premium hover:bg-olive-50 disabled:cursor-not-allowed disabled:text-sand-300"
+          (click)="go(page - 1)"
+          [disabled]="page <= 1"
+          [attr.aria-label]="locale.ui('prevPage')"
+        >
+          <app-icon name="chevron-left" [size]="16" class="rtl:rotate-180"></app-icon>
+        </button>
+        <ng-container *ngFor="let item of items">
+          <span *ngIf="item === 'gap'" class="flex h-10 w-8 items-center justify-center text-[13px] tracking-widest text-ink-muted" aria-hidden="true">…</span>
+          <button
+            *ngIf="item !== 'gap'"
+            type="button"
+            role="tab"
+            class="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-lg px-2.5 text-[13px] font-medium tabular-nums transition-colors duration-200 ease-premium"
+            [class.bg-olive-800]="item === page"
+            [class.text-sand-50]="item === page"
+            [class.text-olive-800]="item !== page"
+            [class.hover:bg-olive-50]="item !== page"
+            [attr.aria-selected]="item === page"
+            [attr.aria-current]="item === page ? 'page' : null"
+            (click)="go(item)"
+          >
+            {{ item | countLoc }}
+          </button>
+        </ng-container>
+        <button
+          type="button"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-olive-700 transition-colors duration-200 ease-premium hover:bg-olive-50 disabled:cursor-not-allowed disabled:text-sand-300"
+          (click)="go(page + 1)"
+          [disabled]="page >= pageCount"
+          [attr.aria-label]="locale.ui('nextPage')"
+        >
+          <app-icon name="chevron-right" [size]="16" class="rtl:rotate-180"></app-icon>
+        </button>
+      </div>
+    </nav>
+  `,
+})
+export class PagerComponent {
+  @Input() page = 1;
+  @Input() pageCount = 1;
+  @Output() pageChange = new EventEmitter<number>();
+  constructor(public locale: LocaleService) {}
+
+  get items(): Array<number | 'gap'> {
+    const total = this.pageCount;
+    const current = Math.min(Math.max(this.page, 1), total);
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const items: Array<number | 'gap'> = [1];
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+
+    if (start > 2) items.push('gap');
+    for (let n = start; n <= end; n++) items.push(n);
+    if (end < total - 1) items.push('gap');
+    items.push(total);
+    return items;
+  }
+
+  go(n: number): void {
+    if (n < 1 || n > this.pageCount || n === this.page) return;
+    this.pageChange.emit(n);
   }
 }
 

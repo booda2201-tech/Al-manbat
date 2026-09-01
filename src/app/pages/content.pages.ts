@@ -3,10 +3,9 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { brandPillars, faqs, supportChannels } from '../data/content';
-import { categories } from '../data/categories';
 import { images } from '../data/images';
-import { products } from '../data/products';
 import { LocaleService } from '../services/locale.service';
+import { CatalogService } from '../services/catalog.service';
 import { StoreService } from '../services/store.service';
 import { IconComponent } from '../ui/icon.component';
 import { LogoComponent } from '../ui/logo.component';
@@ -103,7 +102,6 @@ import { CrumbsComponent } from '../commerce/crumbs.component';
 export class AboutPageComponent {
   images = images;
   pillars = brandPillars;
-  categories = categories;
   numbers = [
     { value: '2019', label: { ar: 'سنة التأسيس', en: 'Founded' } },
     { value: '48', label: { ar: 'صنفاً مختاراً', en: 'Curated SKUs' } },
@@ -116,7 +114,10 @@ export class AboutPageComponent {
     { ar: 'نثبت الحموضة وتاريخ الحصاد ورقم الدفعة على العبوة.', en: 'We print acidity, harvest date and batch number on the pack.' },
     { ar: 'نكتب الوصف بأنفسنا، بما فيه العيوب إن وُجدت.', en: 'We write the description ourselves — including the drawbacks.' },
   ];
-  constructor(public locale: LocaleService) {}
+  constructor(public locale: LocaleService, public catalog: CatalogService) {}
+  get categories() {
+    return this.catalog.categories();
+  }
 }
 
 @Component({
@@ -141,7 +142,7 @@ export class SupportPageComponent {
   };
   topics = [
     { ar: 'استفسار عن طلب', en: 'Order enquiry' },
-    { ar: 'إرجاع أو استبدال', en: 'Return or exchange' },
+    { ar: 'مشكلة في التوصيل', en: 'Delivery issue' },
     { ar: 'سؤال عن منتج', en: 'Product question' },
     { ar: 'شيء آخر', en: 'Something else' },
   ];
@@ -220,9 +221,13 @@ export class FaqPageComponent {
   `,
 })
 export class NotFoundPageComponent {
-  categories = categories;
-  more = products.slice(0, 6);
-  constructor(public locale: LocaleService, public store: StoreService) {}
+  constructor(public locale: LocaleService, public store: StoreService, public catalog: CatalogService) {}
+  get categories() {
+    return this.catalog.categories();
+  }
+  get more() {
+    return this.catalog.all().slice(0, 6);
+  }
 }
 
 @Component({

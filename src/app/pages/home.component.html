@@ -127,48 +127,41 @@
 <section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:py-24">
   <app-section-header [title]="locale.ui('featuredCategories')" [subtitle]="locale.isAr() ? 'من العصرة إلى المونة. ابدأ من الزيت، أو الزيتون، أو المخلل.' : 'From the press to the pantry. Start with oil, olives, or pickles.'"></app-section-header>
 
-  <ul class="grid gap-2.5 md:grid-cols-2 md:gap-3 lg:hidden">
-    <li *ngFor="let c of categories; let last = last" [ngClass]="catTileSpan(last)">
-      <a
-        [routerLink]="['/category', c.slug]"
-        appScrollOpen
-        class="group relative isolate flex h-36 overflow-hidden rounded-2xl"
-        [ngClass]="catTileHeight(last)"
-      >
-        <span class="scroll-open__media absolute inset-0">
-          <img [src]="c.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.05]" />
+  <ul class="menu-cats home-cats lg:hidden" [class.is-few]="catsFew()">
+    <li *ngFor="let c of categories(); let last = last; trackBy: trackCat" class="menu-tile" [class.is-wide]="last && catsOdd()">
+      <a [routerLink]="['/category', c.slug]" appScrollOpen class="menu-cat">
+        <span class="scroll-open__media">
+          <img [src]="c.image" alt="" />
         </span>
-        <span class="absolute inset-0 bg-gradient-to-t from-olive-900/90 via-olive-900/45 to-olive-900/10"></span>
-        <span class="relative z-10 flex w-full items-end justify-between gap-3 p-4 md:p-5">
-          <span class="min-w-0">
-            <span class="block font-displayAr text-xl leading-[1.45] text-sand-50 md:text-2xl">{{ locale.tr(c.name) }}</span>
-            <span class="mt-1 block truncate text-[11px] leading-normal text-sand-100/75 md:text-xs">{{ locale.tr(c.tagline) }}</span>
-          </span>
-          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-olive-900 md:h-10 md:w-10">
-            <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
-          </span>
+        <span class="menu-cat__scrim" aria-hidden="true"></span>
+        <span class="menu-cat__copy">
+          <span class="menu-cat__name">{{ locale.tr(c.name) }}</span>
+          <span class="menu-cat__tag">{{ locale.tr(c.tagline) }}</span>
+        </span>
+        <span class="menu-cat__go" aria-hidden="true">
+          <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="catsFew() ? 16 : 14"></app-icon>
         </span>
       </a>
     </li>
   </ul>
 
-  <div class="hidden gap-4 lg:grid lg:grid-cols-3 lg:grid-rows-2">
-    <a [routerLink]="['/category', lead.slug]" appScrollOpen class="group relative flex h-full min-h-[520px] flex-col justify-end overflow-hidden rounded-xl p-10 lg:col-span-2 lg:row-span-2">
+  <div *ngIf="lead() as leadCat" class="hidden gap-4 lg:grid lg:grid-cols-3 lg:grid-rows-2">
+    <a [routerLink]="['/category', leadCat.slug]" appScrollOpen class="group relative flex h-full min-h-[520px] flex-col justify-end overflow-hidden rounded-xl p-10 lg:col-span-2 lg:row-span-2">
       <span class="scroll-open__media absolute inset-0">
-        <img [src]="lead.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.04]" />
+        <img [src]="leadCat.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.04]" />
       </span>
       <span class="absolute inset-0 bg-olive-900/55 transition-colors duration-500 ease-premium group-hover:bg-olive-900/45"></span>
       <span class="relative">
-        <span class="text-2xs uppercase tracking-[0.24em] text-gold-300">{{ catCount(lead) | countLoc }} {{ locale.isAr() ? 'منتج' : 'products' }}</span>
-        <span class="mt-3 block font-displayAr text-5xl leading-tight text-sand-50">{{ locale.tr(lead.name) }}</span>
-        <span class="mt-3 block max-w-md text-sm leading-relaxed text-sand-100/80">{{ locale.tr(lead.tagline) }}</span>
+        <span class="text-2xs uppercase tracking-[0.24em] text-gold-300">{{ catCount(leadCat) | countLoc }} {{ locale.isAr() ? 'منتج' : 'products' }}</span>
+        <span class="mt-3 block font-displayAr text-5xl leading-tight text-sand-50">{{ locale.tr(leadCat.name) }}</span>
+        <span class="mt-3 block max-w-md text-sm leading-relaxed text-sand-100/80">{{ locale.tr(leadCat.tagline) }}</span>
         <span class="mt-6 inline-flex items-center gap-2 text-[13px] font-medium text-gold-300">
           {{ locale.ui('explore') }}
           <app-icon name="arrow-up-right" [size]="16" class="transition-transform duration-200 ease-premium group-hover:-translate-y-0.5"></app-icon>
         </span>
       </span>
     </a>
-    <a *ngFor="let c of rest" [routerLink]="['/category', c.slug]" appScrollOpen class="group relative flex h-full min-h-[170px] items-end overflow-hidden rounded-xl p-6">
+    <a *ngFor="let c of rest(); trackBy: trackCat" [routerLink]="['/category', c.slug]" appScrollOpen class="group relative flex h-full min-h-[170px] items-end overflow-hidden rounded-xl p-6">
       <span class="scroll-open__media absolute inset-0">
         <img [src]="c.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.05]" />
       </span>
@@ -183,7 +176,7 @@
 
 <section class="mx-auto max-w-shell px-4 pb-8 lg:px-10 lg:pb-20">
   <app-section-header [title]="locale.ui('bestSellers')" [subtitle]="locale.isAr() ? 'ما يعود إلى السلة أكثر من غيره: الزيت، الزيتون، ومخلل البيت.' : 'What returns to the cart most: the oil, the olives, and the house pickle.'" linkTo="/listing/all" [linkLabel]="locale.ui('viewAll')"></app-section-header>
-  <app-product-rail [products]="bestSellers"></app-product-rail>
+  <app-product-rail [products]="bestSellers()"></app-product-rail>
 </section>
 
 <section class="grain relative bg-olive-800 py-8 lg:py-20">
@@ -207,7 +200,7 @@
       </div>
     </div>
     <div class="rounded-xl bg-sand-50 p-4 lg:p-6">
-      <app-product-rail [products]="deals"></app-product-rail>
+      <app-product-rail [products]="deals()"></app-product-rail>
     </div>
   </div>
 </section>
@@ -254,21 +247,21 @@
   </div>
 </section>
 
-<section *ngFor="let spot of spotlights" class="py-6 lg:py-24" [ngClass]="spotlightSectionClass(spot.dark)">
+<section *ngFor="let spot of spots(); trackBy: trackSpot" class="py-6 lg:py-24" [ngClass]="spotlightSectionClass(spot.dark)">
   <div class="mx-auto max-w-shell px-4 lg:px-10">
     <div class="grid gap-6 lg:gap-14" [ngClass]="spot.flip ? 'lg:grid-cols-[1fr_340px]' : 'lg:grid-cols-[340px_1fr]'">
       <div class="lg:sticky lg:top-28" [ngClass]="spot.flip ? 'lg:order-2' : ''">
-        <p class="text-[11px] font-medium leading-relaxed" [ngClass]="spot.dark ? 'text-gold-300' : 'text-gold-400'">{{ locale.tr(spotlight(spot.slug).category.tagline) }}</p>
+        <p class="text-[11px] font-medium leading-relaxed" [ngClass]="spot.dark ? 'text-gold-300' : 'text-gold-400'">{{ locale.tr(spot.category.tagline) }}</p>
         <div class="mt-2 flex items-end justify-between gap-3 lg:mt-4 lg:block">
-          <h2 class="min-w-0 font-displayAr text-[28px] leading-tight lg:text-4xl" [ngClass]="spot.dark ? 'text-sand-50' : 'text-olive-800'">{{ locale.tr(spotlight(spot.slug).category.name) }}</h2>
+          <h2 class="min-w-0 font-displayAr text-[28px] leading-tight lg:text-4xl" [ngClass]="spot.dark ? 'text-sand-50' : 'text-olive-800'">{{ locale.tr(spot.category.name) }}</h2>
           <a [routerLink]="['/listing', spot.slug]" class="group mb-0.5 inline-flex shrink-0 items-center gap-1.5 border-b pb-0.5 text-[13px] font-medium transition-colors duration-200 ease-premium lg:hidden" [ngClass]="shopAllClass(spot.dark)">
             {{ locale.ui('shopAll') }}
             <app-icon name="arrow-up-right" [size]="14"></app-icon>
           </a>
         </div>
-        <p class="mt-3 text-sm leading-relaxed lg:mt-5" [ngClass]="storyClass(spot.dark)">{{ locale.tr(spotlight(spot.slug).category.story) }}</p>
+        <p class="mt-3 text-sm leading-relaxed lg:mt-5" [ngClass]="storyClass(spot.dark)">{{ locale.tr(spot.category.story) }}</p>
         <ul class="chip-rail no-rail -mx-4 mt-5 flex gap-2 px-4 lg:mx-0 lg:mt-7 lg:px-0">
-          <li *ngFor="let sub of spotlight(spot.slug).category.subcategories.slice(0, 4)" class="shrink-0">
+          <li *ngFor="let sub of spot.category.subcategories.slice(0, 4)" class="shrink-0">
             <a [routerLink]="['/category', spot.slug]" [queryParams]="{ sub: sub.slug }" class="inline-flex h-9 items-center rounded-full border px-3.5 text-[13px] transition-colors duration-200 ease-premium" [ngClass]="chipClass(spot.dark)">
               {{ locale.tr(sub.name) }}
             </a>
@@ -281,10 +274,10 @@
       </div>
       <div class="min-w-0" [ngClass]="spot.flip ? 'lg:order-1' : ''">
         <div class="lg:hidden">
-          <app-product-rail [products]="spotlight(spot.slug).items" [onDark]="spot.dark"></app-product-rail>
+          <app-product-rail [products]="spot.items" [onDark]="spot.dark"></app-product-rail>
         </div>
         <div class="hidden gap-5 lg:grid lg:grid-cols-3">
-          <div *ngFor="let p of spotlight(spot.slug).items" [ngClass]="spot.dark ? 'rounded-lg bg-sand-50 p-4' : ''">
+          <div *ngFor="let p of spot.items; trackBy: trackProduct" [ngClass]="spot.dark ? 'rounded-lg bg-sand-50 p-4' : ''">
             <app-product-card [product]="p"></app-product-card>
           </div>
         </div>
@@ -295,5 +288,5 @@
 
 <section class="mx-auto max-w-shell px-4 pb-4 pt-8 lg:px-10 lg:pb-8 lg:pt-16">
   <app-section-header [title]="locale.ui('newArrivals')" [subtitle]="locale.isAr() ? 'إضافات هذا الأسبوع، بعد مرورها على معايير الاختيار.' : 'This week’s additions, after passing our curation standard.'" linkTo="/new" [linkLabel]="locale.ui('viewAll')"></app-section-header>
-  <app-product-rail [products]="newArrivals"></app-product-rail>
+  <app-product-rail [products]="newArrivals()"></app-product-rail>
 </section>

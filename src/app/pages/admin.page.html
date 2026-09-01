@@ -1,0 +1,590 @@
+<div class="admin-shell">
+  <nav class="admin-rail" [attr.aria-label]="locale.ui('adminPanel')">
+    <div class="admin-rail__brand">
+      <app-logo size="xs" class="admin-rail__mark"></app-logo>
+      <div class="admin-rail__brand-copy">
+        <p class="admin-rail__brand-kicker">{{ locale.ui('adminKicker') }}</p>
+        <p class="admin-rail__brand-name">{{ locale.ui('adminPanel') }}</p>
+      </div>
+    </div>
+    <div class="admin-rail__nav">
+      <button
+        *ngFor="let n of navItems; trackBy: trackNav"
+        type="button"
+        [ngClass]="navClass(n.id)"
+        (click)="setTab(n.id, false, $event)"
+      >
+        <app-icon [name]="n.icon" [size]="16"></app-icon>
+        {{ locale.ui(n.labelKey) }}
+      </button>
+    </div>
+    <button type="button" class="admin-rail__link admin-rail__out" (click)="signOut()">
+      <app-icon name="logout" [size]="16"></app-icon>
+      {{ locale.ui('signOut') }}
+    </button>
+  </nav>
+
+  <div class="admin-stage">
+    <header class="admin-top">
+      <div class="admin-top__brand">
+        <div class="admin-top__copy">
+          <p class="admin-top__title">{{ tabTitle }}</p>
+        </div>
+      </div>
+      <div class="admin-top__tools">
+        <a routerLink="/" class="admin-top__ghost">
+          <app-icon name="home" [size]="14"></app-icon>
+          {{ locale.ui('visitStore') }}
+        </a>
+        <a routerLink="/" class="admin-top__icon lg:hidden" [attr.aria-label]="locale.ui('visitStore')">
+          <app-icon name="home" [size]="16"></app-icon>
+        </a>
+        <button type="button" class="admin-top__icon lg:hidden" (click)="signOut()" [attr.aria-label]="locale.ui('signOut')">
+          <app-icon name="logout" [size]="15"></app-icon>
+        </button>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      <div *ngIf="loading" class="admin-panel p-8 text-center text-sm text-ink-muted">
+        {{ locale.ui('loading') }}
+      </div>
+
+      <section *ngIf="!loading && isTab('overview')" class="admin-overview">
+        <div class="admin-hero">
+          <div class="admin-hero__copy">
+            <div class="min-w-0">
+              <p class="admin-hero__kicker">{{ locale.ui('adminKicker') }}</p>
+              <h2 class="admin-hero__name">{{ greeting }}</h2>
+              <p class="admin-hero__sub">
+                {{ locale.isAr() ? 'إدارة الرف، العروض، ومسار الطلبات من مكان واحد.' : 'Merchandising, offers, and order flow in one place.' }}
+              </p>
+            </div>
+            <div class="admin-hero__acts">
+              <button type="button" class="admin-hero__btn" (click)="openNewProduct()">
+                <app-icon name="plus" [size]="15"></app-icon>
+                {{ locale.ui('adminAddProduct') }}
+              </button>
+              <button type="button" class="admin-hero__btn is-ghost" (click)="setTab('orders')">
+                <app-icon name="truck" [size]="15"></app-icon>
+                {{ locale.isAr() ? 'مسار الطلبات' : 'Order board' }}
+              </button>
+            </div>
+          </div>
+          <div class="admin-tally">
+            <button *ngFor="let stat of stats" type="button" class="admin-tally__row" (click)="setTab(stat.tab)">
+              <span class="admin-tally__name">{{ locale.isAr() ? stat.labelAr : stat.labelEn }}</span>
+              <i class="admin-tally__dots" aria-hidden="true"></i>
+              <b>{{ stat.value | countLoc }}</b>
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-strip">
+          <div class="admin-pulse__head">
+            <h3>{{ locale.isAr() ? 'العروض' : 'Offers' }}</h3>
+            <button type="button" (click)="setTab('offers')">{{ locale.isAr() ? 'كل العروض' : 'All offers' }}</button>
+          </div>
+          <p *ngIf="!latestOffers.length" class="admin-empty">{{ locale.isAr() ? 'لا توجد عروض نشطة.' : 'No active offers.' }}</p>
+          <ul *ngIf="latestOffers.length" class="admin-catalog admin-catalog--offers">
+            <li *ngFor="let p of latestOffers; trackBy: trackProduct">
+              <article class="admin-tile" [class.is-picked]="selectedOfferId === p.id" (click)="selectOffer(p, $event)">
+                <span class="admin-tile__tag">{{ p.discountPercent || 0 }}%</span>
+                <span class="admin-tile__shot">
+                  <span class="admin-tile__ph" aria-hidden="true">
+                    <app-icon name="image" [size]="22"></app-icon>
+                  </span>
+                  <img *ngIf="productImage(p)" [src]="productImage(p)" alt="" (error)="hideBrokenImage($event)" />
+                </span>
+                <span class="admin-tile__meta">
+                  <span class="admin-tile__name">{{ productName(p) }}</span>
+                  <span class="admin-tile__price">
+                    <s>{{ p.price | sar }}</s>
+                    <b>{{ salePrice(p) | sar }}</b>
+                  </span>
+                </span>
+              </article>
+              <div *ngIf="selectedOfferId === p.id" class="admin-offer-pop" (click)="$event.stopPropagation()">
+                <ng-container *ngTemplateOutlet="offerPop; context: { $implicit: p }"></ng-container>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div *ngIf="pendingOrders.length" class="admin-pulse">
+          <div class="admin-pulse__head">
+            <h3>{{ locale.isAr() ? 'يحتاج تأكيد الآن' : 'Needs confirmation' }}</h3>
+            <button type="button" (click)="setTab('orders')">{{ locale.isAr() ? 'اللوحة كاملة' : 'Open board' }}</button>
+          </div>
+          <ul class="admin-catalog">
+            <li *ngFor="let o of pendingOrders; trackBy: trackOrder">
+              <article class="admin-tile" (click)="setTab('orders')">
+                <span class="admin-tile__shot">
+                  <span class="admin-tile__ph" aria-hidden="true">
+                    <app-icon name="package" [size]="28"></app-icon>
+                  </span>
+                  <img *ngIf="orderPreview(o)" [src]="orderPreview(o)" alt="" (error)="hideBrokenImage($event)" />
+                </span>
+                <span class="admin-tile__meta">
+                  <span class="admin-tile__name">{{ o.customerName || (locale.isAr() ? 'عميل جديد' : 'New customer') }}</span>
+                  <span class="admin-tile__price">#{{ o.id }} · {{ o.total | sar }}</span>
+                </span>
+              </article>
+            </li>
+          </ul>
+        </div>
+
+        <div class="admin-strip">
+          <div class="admin-pulse__head">
+            <h3>{{ locale.isAr() ? 'الرف' : 'The shelf' }}</h3>
+            <button type="button" (click)="setTab('products')">{{ locale.isAr() ? 'كل المنتجات' : 'All products' }}</button>
+          </div>
+          <p *ngIf="!latestProducts.length" class="admin-empty">{{ locale.isAr() ? 'لا توجد منتجات بعد.' : 'No products yet.' }}</p>
+          <ul *ngIf="latestProducts.length" class="admin-catalog">
+            <li *ngFor="let p of latestProducts; trackBy: trackProduct">
+              <article class="admin-tile" (click)="openEditProduct(p)">
+                <span class="admin-tile__shot">
+                  <span *ngIf="!productImage(p)" class="admin-tile__ph" aria-hidden="true">
+                    <app-icon name="image" [size]="28"></app-icon>
+                  </span>
+                  <img *ngIf="productImage(p)" [src]="productImage(p)" alt="" (error)="hideBrokenImage($event)" />
+                </span>
+                <span class="admin-tile__meta">
+                  <span class="admin-tile__name">{{ productName(p) }}</span>
+                  <span class="admin-tile__price">{{ (p.finalPrice ?? p.price) | sar }}</span>
+                </span>
+              </article>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section *ngIf="!loading && isTab('products')">
+        <div class="admin-bar">
+          <div class="admin-bar__search">
+            <app-icon name="search" [size]="16"></app-icon>
+            <input name="productQuery" [(ngModel)]="query" (ngModelChange)="onQuery()" [placeholder]="locale.ui('adminSearchProducts')" />
+          </div>
+          <button type="button" class="admin-bar__add" (click)="openNewProduct()">
+            <app-icon name="plus" [size]="16"></app-icon>
+            <span>{{ locale.ui('adminAddProduct') }}</span>
+          </button>
+        </div>
+
+        <form *ngIf="productFormOpen" class="admin-panel admin-editor mb-5 p-4 sm:p-6" (submit)="saveProduct($event)">
+          <p class="text-sm font-semibold text-olive-800">{{ productDraft.id ? locale.ui('adminEditProduct') : locale.ui('adminAddProduct') }}</p>
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="auth-label" for="pr-name-ar"><span>الاسم بالعربي</span><span>Arabic name</span></label>
+              <input id="pr-name-ar" name="nameAr" class="field-input !mt-1.5" [(ngModel)]="productDraft.nameAr" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-name-en"><span>الاسم بالإنجليزي</span><span>English name</span></label>
+              <input id="pr-name-en" name="nameEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.nameEn" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-price"><span>السعر</span><span>Price</span></label>
+              <input id="pr-price" name="price" type="number" min="0" step="0.01" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.price" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-cat"><span>القسم</span><span>Category</span></label>
+              <select id="pr-cat" name="categoryId" class="field-input !mt-1.5 appearance-none" [(ngModel)]="productDraft.categoryId">
+                <option *ngFor="let c of categories" [ngValue]="c.id">{{ categoryName(c) }}</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <p class="auth-label"><span>صور المنتج</span><span>Product images</span></p>
+              <div
+                class="mt-1.5 rounded-xl border-2 border-dashed p-3 transition-colors duration-200 sm:p-4"
+                [ngClass]="dropZoneClass"
+                (dragenter)="onDragEnter($event)"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onDrop($event)"
+              >
+                <ul *ngIf="productDraft.images.length" class="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  <li *ngFor="let img of productDraft.images; let i = index; trackBy: trackProductImage" class="relative aspect-square overflow-hidden rounded-lg bg-sand-100 ring-1 ring-olive-800/10">
+                    <img *ngIf="!img.broken" [src]="img.preview" alt="" class="h-full w-full bg-sand-100 object-contain" (error)="onSlotImageError(i)" />
+                    <span *ngIf="img.broken" class="flex h-full items-center justify-center text-ink-muted">
+                      <app-icon name="image" [size]="22"></app-icon>
+                    </span>
+                    <span *ngIf="i === 0" class="pointer-events-none absolute start-1.5 top-1.5 z-10 rounded-full bg-gold-400 px-1.5 py-0.5 text-[9px] font-bold text-olive-900">{{ locale.isAr() ? 'رئيسية' : 'Cover' }}</span>
+                    <button type="button" class="absolute end-1.5 top-1.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-sand-100 text-state-danger shadow-sm" (click)="removeProductImage(i, $event)" [attr.aria-label]="locale.ui('adminDelete')">
+                      <app-icon name="trash" [size]="14"></app-icon>
+                    </button>
+                    <button *ngIf="i !== 0" type="button" class="absolute inset-x-1.5 bottom-1.5 z-20 rounded-md bg-olive-800/90 px-1.5 py-1 text-[10px] font-medium text-sand-50" (click)="setCoverImage(i, $event)">{{ locale.isAr() ? 'اجعلها رئيسية' : 'Set as cover' }}</button>
+                  </li>
+                </ul>
+                <button type="button" class="flex w-full flex-col items-center justify-center gap-2 rounded-lg py-7 text-ink-muted transition-colors hover:text-olive-800" (click)="imageInput.click()" [disabled]="uploadingImages">
+                  <span class="flex h-11 w-11 items-center justify-center rounded-full bg-sand-100 ring-1 ring-olive-800/10">
+                    <app-icon name="image" [size]="20" class="text-gold-400"></app-icon>
+                  </span>
+                  <span class="text-sm font-medium">{{ dropActive ? (locale.isAr() ? 'أفلت الصور هنا' : 'Drop images here') : (locale.isAr() ? 'اسحب الصور هنا أو اضغط للاختيار' : 'Drag images here or click to browse') }}</span>
+                  <span class="text-xs">{{ locale.isAr() ? 'أضف حتى ٨ صور. الجديدة تنضم للمعرض بدون مسح القديمة. الأولى هي الرئيسية.' : 'Add up to 8 photos. New ones join the gallery without replacing the rest. The first is the cover.' }}</span>
+                </button>
+                <input #imageInput type="file" accept="image/*" multiple class="hidden" (change)="onProductImagesPicked($event)" />
+              </div>
+              <p *ngIf="uploadingImages" class="mt-2 text-xs text-ink-muted">{{ locale.isAr() ? 'جاري حفظ الصور…' : 'Saving images…' }}</p>
+            </div>
+            <div>
+              <label class="auth-label" for="pr-desc-ar"><span>الوصف عربي</span><span>Arabic description</span></label>
+              <textarea id="pr-desc-ar" name="descAr" class="field-input !mt-1.5 min-h-[88px]" [(ngModel)]="productDraft.descriptionAr"></textarea>
+            </div>
+            <div>
+              <label class="auth-label" for="pr-desc-en"><span>الوصف إنجليزي</span><span>English description</span></label>
+              <textarea id="pr-desc-en" name="descEn" class="field-input !mt-1.5 min-h-[88px]" dir="ltr" [(ngModel)]="productDraft.descriptionEn"></textarea>
+            </div>
+            <div>
+              <label class="auth-label" for="pr-size-ar"><span>الحجم عربي</span><span>Arabic size</span></label>
+              <input id="pr-size-ar" name="sizeAr" class="field-input !mt-1.5" [(ngModel)]="productDraft.sizeAr" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-size-en"><span>الحجم إنجليزي</span><span>English size</span></label>
+              <input id="pr-size-en" name="sizeEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.sizeEn" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-origin-ar"><span>المنشأ عربي</span><span>Arabic origin</span></label>
+              <input id="pr-origin-ar" name="originAr" class="field-input !mt-1.5" [(ngModel)]="productDraft.originAr" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-origin-en"><span>المنشأ إنجليزي</span><span>English origin</span></label>
+              <input id="pr-origin-en" name="originEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.originEn" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-variety-ar"><span>الصنف عربي</span><span>Arabic variety</span></label>
+              <input id="pr-variety-ar" name="varietyAr" class="field-input !mt-1.5" [(ngModel)]="productDraft.varietyAr" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-variety-en"><span>الصنف إنجليزي</span><span>English variety</span></label>
+              <input id="pr-variety-en" name="varietyEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.varietyEn" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-harvest-ar"><span>الحصاد عربي</span><span>Arabic harvest</span></label>
+              <input id="pr-harvest-ar" name="harvestAr" class="field-input !mt-1.5" [(ngModel)]="productDraft.harvestAr" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-harvest-en"><span>الحصاد إنجليزي</span><span>English harvest</span></label>
+              <input id="pr-harvest-en" name="harvestEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.harvestEn" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-delivery-ar"><span>التوصيل عربي</span><span>Arabic delivery</span></label>
+              <input id="pr-delivery-ar" name="deliveryAr" class="field-input !mt-1.5" [(ngModel)]="productDraft.deliveryAr" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-delivery-en"><span>التوصيل إنجليزي</span><span>English delivery</span></label>
+              <input id="pr-delivery-en" name="deliveryEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.deliveryEn" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-acidity"><span>الحموضة ٪</span><span>Acidity %</span></label>
+              <input id="pr-acidity" name="acidity" type="number" min="0" max="100" step="0.01" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.acidity" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-disc"><span>نسبة العرض ٪</span><span>Offer %</span></label>
+              <input id="pr-disc" name="discountPercent" type="number" min="0" max="100" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.discountPercent" />
+            </div>
+            <div>
+              <label class="auth-label" for="pr-disc-days"><span>مدة العرض بالأيام</span><span>Offer days</span></label>
+              <input id="pr-disc-days" name="discountDays" type="number" min="1" max="365" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.discountDays" />
+            </div>
+            <div class="grid grid-cols-3 gap-2 sm:items-end">
+              <button type="button" class="h-12 rounded-xl text-xs font-medium" [ngClass]="productDraft.isAvailable ? 'bg-olive-800 text-sand-50' : 'bg-sand-100 text-olive-800 ring-1 ring-olive-800/15'" (click)="productDraft.isAvailable = !productDraft.isAvailable">{{ locale.isAr() ? 'متوفر' : 'In stock' }}</button>
+              <button type="button" class="h-12 rounded-xl text-xs font-medium" [ngClass]="productDraft.isNew ? 'bg-olive-800 text-sand-50' : 'bg-sand-100 text-olive-800 ring-1 ring-olive-800/15'" (click)="productDraft.isNew = !productDraft.isNew">{{ locale.isAr() ? 'جديد' : 'New' }}</button>
+              <button type="button" class="h-12 rounded-xl text-xs font-medium" [ngClass]="productDraft.hasOffer ? 'bg-olive-800 text-sand-50' : 'bg-sand-100 text-olive-800 ring-1 ring-olive-800/15'" (click)="productDraft.hasOffer = !productDraft.hasOffer">{{ locale.isAr() ? 'عرض' : 'Offer' }}</button>
+            </div>
+            <div>
+              <label class="auth-label" for="pr-hi-ar"><span>المميزات عربي</span><span>Arabic highlights</span></label>
+              <textarea id="pr-hi-ar" name="highlightsAr" class="field-input !mt-1.5 min-h-[88px]" [(ngModel)]="productDraft.highlightsAr" [placeholder]="locale.isAr() ? 'سطر لكل ميزة' : 'One highlight per line'"></textarea>
+            </div>
+            <div>
+              <label class="auth-label" for="pr-hi-en"><span>المميزات إنجليزي</span><span>English highlights</span></label>
+              <textarea id="pr-hi-en" name="highlightsEn" class="field-input !mt-1.5 min-h-[88px]" dir="ltr" [(ngModel)]="productDraft.highlightsEn" placeholder="One highlight per line"></textarea>
+            </div>
+          </div>
+          <div class="mt-5 flex flex-col gap-2 sm:flex-row">
+            <button type="submit" [disabled]="saving" class="inline-flex h-11 items-center justify-center rounded-xl bg-gold-400 px-6 text-sm font-semibold text-olive-900 hover:bg-gold-300 disabled:opacity-60">{{ saving ? locale.ui('loading') : locale.ui('adminSave') }}</button>
+            <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl border border-olive-800/20 px-5 text-sm font-medium text-olive-800" (click)="closeForms()">{{ locale.ui('adminCancel') }}</button>
+          </div>
+        </form>
+
+        <nav class="admin-cats" [attr.aria-label]="locale.ui('adminCategories')">
+          <button type="button" [ngClass]="categoryChipClass(0)" (click)="setCategory(0, $event)">
+            {{ locale.ui('allCategories') }}
+            <i>{{ categoryCount(0) | countLoc }}</i>
+          </button>
+          <button *ngFor="let c of categories" type="button" [ngClass]="categoryChipClass(c.id)" (click)="setCategory(c.id, $event)">
+            {{ categoryName(c) }}
+            <i>{{ categoryCount(c.id) | countLoc }}</i>
+          </button>
+        </nav>
+
+        <p *ngIf="!filteredProducts.length" class="admin-empty">{{ locale.ui('noResults') }}</p>
+
+        <ul *ngIf="filteredProducts.length" class="admin-catalog">
+          <li *ngFor="let p of pagedProducts; trackBy: trackProduct">
+            <article class="admin-tile" [class.is-picked]="selectedProductId === p.id" (click)="selectProduct(p, $event)">
+              <span *ngIf="p.isAvailable === false" class="admin-tile__tag is-mute">{{ locale.isAr() ? 'غير متوفر' : 'Out' }}</span>
+              <span *ngIf="p.isAvailable !== false && (p.hasOffer || (p.discountPercent ?? 0) > 0)" class="admin-tile__tag">{{ p.discountPercent }}%</span>
+              <span class="admin-tile__shot">
+                <span class="admin-tile__ph" aria-hidden="true">
+                  <app-icon name="image" [size]="28"></app-icon>
+                </span>
+                <img *ngIf="productImage(p)" [src]="productImage(p)" alt="" (error)="hideBrokenImage($event)" />
+              </span>
+              <span class="admin-tile__meta">
+                <span class="admin-tile__name">{{ productName(p) }}</span>
+                <span class="admin-tile__price">{{ (p.finalPrice ?? p.price) | sar }}</span>
+              </span>
+            </article>
+            <div *ngIf="selectedProductId === p.id" class="admin-offer-pop" (click)="$event.stopPropagation()">
+              <div class="admin-tile__acts">
+                <button type="button" (click)="openEditProduct(p)">
+                  <app-icon name="pencil" [size]="14"></app-icon>
+                  {{ locale.isAr() ? 'تعديل' : 'Edit' }}
+                </button>
+                <button type="button" class="is-danger" (click)="confirmDeleteProduct(p)">
+                  <app-icon name="trash" [size]="14"></app-icon>
+                  {{ locale.ui('adminDelete') }}
+                </button>
+              </div>
+            </div>
+          </li>
+        </ul>
+        <app-pager [page]="page" [pageCount]="pageCount" (pageChange)="goPage($event)"></app-pager>
+      </section>
+
+      <section *ngIf="!loading && isTab('categories')">
+        <div class="admin-bar">
+          <p class="admin-bar__note">{{ categories.length | countLoc }} {{ locale.isAr() ? 'قسم — اضغط البطاقة' : 'departments — tap a card' }}</p>
+          <button type="button" class="admin-bar__add" (click)="openNewCategory()">
+            <app-icon name="plus" [size]="16"></app-icon>
+            <span>{{ locale.ui('adminAddCategory') }}</span>
+          </button>
+        </div>
+
+        <form *ngIf="categoryFormOpen" class="admin-panel admin-editor mb-5 p-4 sm:p-6" (submit)="saveCategory($event)">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="auth-label" for="cat-ar"><span>الاسم بالعربي</span><span>Arabic name</span></label>
+              <input id="cat-ar" name="catNameAr" class="field-input !mt-1.5" [(ngModel)]="categoryDraft.nameAr" />
+            </div>
+            <div>
+              <label class="auth-label" for="cat-en"><span>الاسم بالإنجليزي</span><span>English name</span></label>
+              <input id="cat-en" name="catNameEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="categoryDraft.nameEn" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="auth-label" for="cat-img"><span>رابط الصورة</span><span>Image URL</span></label>
+              <input id="cat-img" name="catImage" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="categoryDraft.imageUrl" />
+            </div>
+            <div>
+              <label class="auth-label" for="cat-desc-ar"><span>الوصف عربي</span><span>Arabic description</span></label>
+              <textarea id="cat-desc-ar" name="catDescAr" class="field-input !mt-1.5 min-h-[80px]" [(ngModel)]="categoryDraft.descriptionAr"></textarea>
+            </div>
+            <div>
+              <label class="auth-label" for="cat-desc-en"><span>الوصف إنجليزي</span><span>English description</span></label>
+              <textarea id="cat-desc-en" name="catDescEn" class="field-input !mt-1.5 min-h-[80px]" dir="ltr" [(ngModel)]="categoryDraft.descriptionEn"></textarea>
+            </div>
+          </div>
+          <div class="mt-5 flex flex-col gap-2 sm:flex-row">
+            <button type="submit" [disabled]="saving" class="inline-flex h-11 items-center justify-center rounded-xl bg-gold-400 px-6 text-sm font-semibold text-olive-900 hover:bg-gold-300 disabled:opacity-60">{{ saving ? locale.ui('loading') : locale.ui('adminSave') }}</button>
+            <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl border border-olive-800/20 px-5 text-sm font-medium text-olive-800" (click)="closeForms()">{{ locale.ui('adminCancel') }}</button>
+          </div>
+        </form>
+
+        <ul *ngIf="categories.length" class="admin-catalog">
+          <li *ngFor="let c of categories; trackBy: trackCategory">
+            <article class="admin-tile admin-tile--dept" [class.is-picked]="selectedCategoryId === c.id" (click)="selectCategory(c, $event)">
+              <span class="admin-tile__shot">
+                <span class="admin-tile__mono" aria-hidden="true">{{ categoryInitial(c) }}</span>
+                <img *ngIf="c.imageUrl" [src]="c.imageUrl" alt="" (error)="hideBrokenImage($event)" />
+              </span>
+              <span class="admin-tile__meta">
+                <span class="admin-tile__name">{{ categoryName(c) }}</span>
+                <span class="admin-tile__price">{{ (c.productsCount ?? 0) | countLoc }} {{ locale.isAr() ? 'منتج' : 'products' }}</span>
+              </span>
+            </article>
+            <div *ngIf="selectedCategoryId === c.id" class="admin-offer-pop" (click)="$event.stopPropagation()">
+              <button type="button" class="admin-offer-pop__edit" (click)="openCategoryShelf(c)">
+                {{ locale.isAr() ? 'فتح الرف' : 'Open shelf' }}
+              </button>
+              <div class="admin-tile__acts">
+                <button type="button" (click)="openEditCategory(c)">
+                  <app-icon name="pencil" [size]="14"></app-icon>
+                  {{ locale.isAr() ? 'تعديل' : 'Edit' }}
+                </button>
+                <button type="button" class="is-danger" (click)="confirmDeleteCategory(c)">
+                  <app-icon name="trash" [size]="14"></app-icon>
+                  {{ locale.ui('adminDelete') }}
+                </button>
+              </div>
+            </div>
+          </li>
+        </ul>
+        <p *ngIf="!categories.length" class="admin-empty">{{ locale.isAr() ? 'لا توجد أقسام بعد.' : 'No categories yet.' }}</p>
+      </section>
+
+      <section *ngIf="!loading && isTab('offers')">
+        <div class="admin-bar">
+          <div class="admin-bar__search">
+            <app-icon name="search" [size]="16"></app-icon>
+            <input name="offerQuery" [(ngModel)]="query" (ngModelChange)="onQuery()" [placeholder]="locale.ui('adminSearchProducts')" />
+          </div>
+          <p class="admin-bar__note">
+            {{ filteredOffers.length | countLoc }}
+            {{ locale.isAr() ? 'عرض نشط' : 'active offers' }}
+          </p>
+        </div>
+        <nav class="admin-cats">
+          <button type="button" [ngClass]="categoryChipClass(0)" (click)="setCategory(0, $event)">
+            {{ locale.ui('allCategories') }}
+            <i>{{ categoryCount(0) | countLoc }}</i>
+          </button>
+          <button *ngFor="let c of categories" type="button" [ngClass]="categoryChipClass(c.id)" (click)="setCategory(c.id, $event)">
+            {{ categoryName(c) }}
+            <i>{{ categoryCount(c.id) | countLoc }}</i>
+          </button>
+        </nav>
+        <p *ngIf="!filteredOffers.length" class="admin-empty">{{ locale.isAr() ? 'لا توجد عروض في هذا القسم.' : 'No offers in this category.' }}</p>
+        <ul *ngIf="filteredOffers.length" class="admin-catalog admin-catalog--offers">
+          <li *ngFor="let p of pagedOffers; trackBy: trackProduct">
+            <article class="admin-tile" [class.is-picked]="selectedOfferId === p.id" (click)="selectOffer(p, $event)">
+              <span class="admin-tile__tag">{{ p.discountPercent || 0 }}%</span>
+              <span class="admin-tile__shot">
+                <span class="admin-tile__ph" aria-hidden="true">
+                  <app-icon name="image" [size]="22"></app-icon>
+                </span>
+                <img *ngIf="productImage(p)" [src]="productImage(p)" alt="" (error)="hideBrokenImage($event)" />
+              </span>
+              <span class="admin-tile__meta">
+                <span class="admin-tile__name">{{ productName(p) }}</span>
+                <span class="admin-tile__price">
+                  <s>{{ p.price | sar }}</s>
+                  <b>{{ salePrice(p) | sar }}</b>
+                </span>
+              </span>
+            </article>
+            <div *ngIf="selectedOfferId === p.id" class="admin-offer-pop" (click)="$event.stopPropagation()">
+              <ng-container *ngTemplateOutlet="offerPop; context: { $implicit: p }"></ng-container>
+            </div>
+          </li>
+        </ul>
+        <app-pager [page]="page" [pageCount]="offerPageCount" (pageChange)="goPage($event)"></app-pager>
+      </section>
+
+      <section *ngIf="!loading && isTab('orders')" class="admin-desk">
+        <div class="admin-line">
+          <div class="admin-line__search">
+            <app-icon name="search" [size]="16"></app-icon>
+            <input
+              name="orderQuery"
+              [(ngModel)]="orderQuery"
+              (ngModelChange)="onOrderQuery()"
+              [placeholder]="locale.isAr() ? 'رقم الطلب، الاسم، أو الجوال' : 'Order number, name, or phone'"
+            />
+          </div>
+          <div class="admin-line__pills">
+            <button
+              *ngFor="let f of orderFilters; trackBy: trackColumn"
+              type="button"
+              class="admin-pill"
+              [class.is-on]="activeLane === f.id"
+              [class.is-void]="f.id === 'Cancelled'"
+              (click)="focusLane(f.id)"
+            >
+              <app-icon *ngIf="f.id === 'all'" [name]="columnIcon(f.id)" [size]="13"></app-icon>
+              <span>{{ locale.isAr() ? f.ar : f.en }}</span>
+              <b *ngIf="f.id !== 'all'">{{ filterCount(f.id) | countLoc }}</b>
+            </button>
+          </div>
+        </div>
+
+        <p *ngIf="ordersError" class="admin-empty">{{ ordersError }}</p>
+        <p *ngIf="!ordersError && !orders.length && !ordersLoading" class="admin-empty">{{ locale.isAr() ? 'لا توجد طلبات بعد.' : 'No orders yet.' }}</p>
+        <p *ngIf="ordersLoading && !orders.length" class="admin-empty">{{ locale.ui('loading') }}</p>
+        <p *ngIf="orders.length && !queuedOrders.length" class="admin-lane__empty">
+          {{ locale.isAr() ? 'مفيش طلبات في الفلتر ده' : 'No orders in this filter' }}
+        </p>
+
+        <ul *ngIf="pagedOrders.length" class="admin-tickets">
+          <li *ngFor="let o of pagedOrders; trackBy: trackOrder">
+            <article class="admin-hot" [attr.data-status]="orderApiStatus(o)" [class.is-done]="!hasOrderActions(o)">
+              <p *ngIf="hasOrderActions(o)" class="admin-hot__kicker">{{ hotKicker(o) }}</p>
+              <div class="admin-hot__paper">
+                <span class="admin-hot__seal">{{ statusLabel(orderApiStatus(o)) }}</span>
+                <div class="admin-hot__shot">
+                  <span class="admin-hot__ph" aria-hidden="true"><app-icon name="package" [size]="28"></app-icon></span>
+                  <img *ngIf="orderPreview(o)" [src]="orderPreview(o)" alt="" (error)="hideBrokenImage($event)" />
+                </div>
+                <div class="admin-hot__copy">
+                  <span class="admin-hot__id">#{{ o.id }}</span>
+                  <strong>{{ o.customerName || (locale.isAr() ? 'عميل' : 'Customer') }}</strong>
+                  <span class="admin-hot__hint" *ngIf="orderLeadName(o) as lead">{{ lead }}</span>
+                  <span class="admin-hot__pay">{{ o.total | sar }}</span>
+                  <span class="admin-hot__when">{{ formatOrderWhen(o.date) }}</span>
+                </div>
+                <ul *ngIf="o.itemIds.length" class="admin-hot__items">
+                  <li *ngFor="let id of o.itemIds">
+                    <ng-container *ngIf="orderLine(o, id) as line">
+                      <span>{{ line.qty }} × {{ line.name }}</span>
+                    </ng-container>
+                  </li>
+                </ul>
+                <div class="admin-hot__reach" *ngIf="o.customerPhone || o.customerAddress">
+                  <a *ngIf="o.customerPhone" [href]="'tel:' + o.customerPhone" dir="ltr">
+                    <app-icon name="phone" [size]="14"></app-icon>
+                    {{ o.customerPhone }}
+                  </a>
+                  <p *ngIf="o.customerAddress">
+                    <app-icon name="pin" [size]="14"></app-icon>
+                    {{ o.customerAddress }}
+                  </p>
+                </div>
+                <div class="admin-hot__acts" *ngIf="hasOrderActions(o)">
+                  <button *ngIf="nextStatus(o)" type="button" [disabled]="saving" (click)="advanceOrder(o, $event)">
+                    {{ nextActionLabel(o) }}
+                  </button>
+                  <button
+                    type="button"
+                    class="is-quiet"
+                    [disabled]="saving"
+                    (click)="pickOrderStatus(o, 'Cancelled', $event)"
+                  >
+                    {{ locale.isAr() ? 'إلغاء' : 'Cancel' }}
+                  </button>
+                </div>
+              </div>
+            </article>
+          </li>
+        </ul>
+        <app-pager [page]="page" [pageCount]="orderPageCount" (pageChange)="goPage($event)"></app-pager>
+      </section>
+    </div>
+  </div>
+
+  <div class="admin-float">
+    <nav class="admin-dock" [attr.aria-label]="locale.ui('adminPanel')">
+      <button
+        *ngFor="let n of navItems; trackBy: trackNav"
+        type="button"
+        [ngClass]="dockClass(n.id)"
+        (click)="setTab(n.id, false, $event)"
+      >
+        <app-icon [name]="n.icon" [size]="18"></app-icon>
+        <span>{{ locale.ui(n.labelKey) }}</span>
+      </button>
+    </nav>
+  </div>
+
+  <ng-template #offerPop let-offer>
+    <div class="admin-offer-ctrl">
+      <label class="admin-offer-ctrl__rate">
+        <input type="number" min="0" max="90" [name]="'pop-offer-' + offer.id" [(ngModel)]="offer.discountPercent" />
+        <span>%</span>
+      </label>
+      <button type="button" [disabled]="saving" (click)="saveOffer(offer)">{{ locale.ui('adminSave') }}</button>
+      <button type="button" class="is-danger" [disabled]="saving" (click)="clearOffer(offer)">{{ locale.isAr() ? 'إيقاف' : 'Stop' }}</button>
+    </div>
+    <button type="button" class="admin-offer-pop__edit" (click)="openEditProduct(offer)">
+      {{ locale.isAr() ? 'تعديل المنتج' : 'Edit product' }}
+    </button>
+  </ng-template>
+</div>

@@ -3,14 +3,15 @@ import { AfterViewChecked, Component, effect, ElementRef, HostListener, NgZone, 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { gsap } from 'gsap';
 import type { Product, Review } from '../types';
-import { faqs, ratingBreakdown, reviews as seedReviews } from '../data/content';
-import { categoryBySlug } from '../data/categories';
-import { byCategory, productBySlug, products } from '../data/products';
+import { faqs } from '../data/content';
 import { LocaleService } from '../services/locale.service';
+import { CatalogService } from '../services/catalog.service';
+import { SessionService } from '../services/session.service';
 import { StoreService } from '../services/store.service';
 import { formatCount } from '../utils/format';
+import { pickDisplayName } from '../api/api.util';
 import { IconComponent } from '../ui/icon.component';
-import { ReviewFormComponent, type ReviewDraft } from '../ui/review-form.component';
+import { ReviewFormComponent, composeReviewComment, type ReviewDraft } from '../ui/review-form.component';
 import {
   PriceBlockComponent,
   ProductRailComponent,
@@ -55,11 +56,11 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   lightbox = false;
   origin = '50% 50%';
   faqs = faqs.slice(0, 4);
-  reviews: Review[] = [...seedReviews];
+  reviews: Review[] = [];
   extraReviews = 0;
-  breakdown = ratingBreakdown;
   openFaq: number | null = null;
   reviewOpen = false;
+  reviewSaving = false;
   galleryReady = false;
   trail: { label: string; to?: string }[] = [];
   private galleryEnteredFor: string | null = null;
@@ -71,6 +72,8 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   constructor(
     public locale: LocaleService,
     public store: StoreService,
+    public catalog: CatalogService,
+    public session: SessionService,
     private route: ActivatedRoute,
     private router: Router,
     private zone: NgZone
@@ -83,14 +86,14 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
-      this.product = productBySlug(params.get('slug') || '') ?? null;
+      this.product = this.catalog.bySlug(params.get('slug') || '') ?? null;
       this.qty = 1;
       this.tab = 'description';
       this.galleryIndex = 0;
       this.lightboxIndex = 0;
       this.hoverZoom = false;
       this.closeLightbox();
-      this.reviews = [...seedReviews];
+      this.reviews = [];
       this.extraReviews = 0;
       this.reviewOpen = false;
       this.galleryEnteredFor = null;
@@ -99,7 +102,10 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
       this.stopGalleryLoop();
       this.galleryTween?.kill();
       if (!this.product) this.router.navigateByUrl('/');
-      else this.buildTrail();
+      else {
+        this.buildTrail();
+        this.catalog.reviews(this.product.id).subscribe((rows) => this.applyReviews(rows));
+      }
     });
   }
 
@@ -128,12 +134,12 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
   get related(): Product[] {
     if (!this.product) return [];
-    const list = byCategory(this.product.category).filter((p) => p.id !== this.product!.id);
-    return list.length ? list : products.slice(0, 5);
+    const list = this.catalog.byCategory(this.product.category).filter((p) => p.id !== this.product!.id);
+    return list.length ? list : this.catalog.all().slice(0, 5);
   }
   get bundle(): Product[] {
     if (!this.product) return [];
-    return [this.product, ...products.filter((p) => p.id !== this.product!.id).slice(0, 2)];
+    return [this.product, ...this.catalog.all().filter((p) => p.id !== this.product!.id).slice(0, 2)];
   }
   get bundleTotal(): number {
     return this.bundle.reduce((s, p) => s + p.price, 0);
@@ -143,7 +149,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
       this.trail = [];
       return;
     }
-    const cat = categoryBySlug(this.product.category);
+    const cat = this.catalog.categoryBySlug(this.product.category);
     this.trail = [
       { label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' },
       ...(cat
@@ -168,10 +174,10 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
         detail: p.freeShipping ? (ar ? 'بدون رسوم' : 'No fee') : ar ? '٢٥ ر.س' : 'SAR 25',
       },
       {
-        icon: 'rotate',
-        stat: formatCount(14, loc),
-        title: ar ? 'إرجاع' : 'Returns',
-        detail: ar ? 'من بابك مجاناً' : 'Free pickup',
+        icon: 'lock',
+        stat: ar ? 'مشفّر' : 'PCI',
+        title: ar ? 'الدفع' : 'Payment',
+        detail: ar ? 'آمن بالكامل' : 'Fully secure',
       },
       {
         icon: 'pin',
@@ -313,7 +319,10 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     this.galleryReady = true;
     this.galleryTween = gsap.timeline({
       defaults: { ease: 'power3.out' },
-      onComplete: () => this.armGalleryLoop(),
+      onComplete: () => {
+        gsap.set(frame, { clearProps: 'clipPath,transform' });
+        this.armGalleryLoop();
+      },
     });
     this.galleryTween.to(frame, { clipPath: toClip, scale: 1, duration: 1.2 }, 0);
     if (thumbs.length) {
@@ -342,6 +351,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
     this.galleryTween = gsap.timeline({
       defaults: { ease: 'power3.inOut' },
       onComplete: () => {
+        gsap.set(frame, { clearProps: 'clipPath,transform' });
         this.swapping = false;
         this.armGalleryLoop();
       },
@@ -405,7 +415,27 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   get reviewCount(): number {
-    return (this.product?.reviews ?? 0) + this.extraReviews;
+    if (this.reviews.length) return this.reviews.length;
+    return this.product?.reviews ?? 0;
+  }
+
+  get displayRating(): number {
+    if (this.reviews.length) {
+      return this.reviews.reduce((sum, row) => sum + row.rating, 0) / this.reviews.length;
+    }
+    return this.product?.rating ?? 0;
+  }
+
+  get breakdown(): Array<{ stars: number; percent: number }> {
+    const total = this.reviews.length;
+    return [5, 4, 3, 2, 1].map((stars) => ({
+      stars,
+      percent: total ? Math.round((this.reviews.filter((row) => row.rating === stars).length / total) * 100) : 0,
+    }));
+  }
+
+  get reviewerName(): string {
+    return pickDisplayName(this.session.userName()) || '';
   }
 
   goReviews(): void {
@@ -421,24 +451,35 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   addReview(draft: ReviewDraft): void {
-    const today = new Date().toISOString().slice(0, 10);
-    const fallback = this.locale.isAr() ? 'تقييم' : 'Review';
-    const next: Review = {
-      id: 'u-' + Date.now(),
-      author: { ar: draft.name, en: draft.name },
-      rating: draft.rating,
-      date: today,
-      title: { ar: draft.title || fallback, en: draft.title || fallback },
-      body: { ar: draft.body, en: draft.body },
-      verified: false,
-    };
-    this.reviews = [next, ...this.reviews];
-    this.extraReviews += 1;
-    this.reviewOpen = false;
-    this.store.pushToast({ tone: 'success', title: this.locale.ui('reviewThanks') });
-    window.setTimeout(() => {
-      document.getElementById('pdp-reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 40);
+    if (!this.product || this.reviewSaving) return;
+    this.reviewSaving = true;
+    const productId = this.product.id;
+    this.catalog.addReview(productId, draft.rating, composeReviewComment(draft)).subscribe({
+      next: (created) => {
+        this.reviewSaving = false;
+        this.reviewOpen = false;
+        this.store.pushToast({ tone: 'success', title: this.locale.ui('reviewThanks') });
+        this.catalog.reviews(productId).subscribe((rows) => {
+          this.applyReviews(rows.length ? rows : created ? [created] : this.reviews);
+        });
+      },
+      error: (err) => {
+        this.reviewSaving = false;
+        const message = err instanceof Error && err.message && err.message !== 'REVIEW' ? err.message : '';
+        this.store.pushToast({
+          tone: 'warning',
+          title: message || this.locale.ui('reviewFailed'),
+        });
+      },
+    });
+  }
+
+  private applyReviews(rows: Review[]): void {
+    this.reviews = rows;
+    this.extraReviews = 0;
+    if (!this.product) return;
+    const fresh = this.catalog.byId(this.product.id);
+    if (fresh) this.product = { ...fresh };
   }
 
   isOwnReview(id: string): boolean {

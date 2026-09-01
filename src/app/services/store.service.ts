@@ -1,6 +1,9 @@
 import { Injectable, computed, signal } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import type { CartLine, Product } from '../types';
-import { productById, products } from '../data/products';
+import { CatalogService } from './catalog.service';
+import { SessionService } from './session.service';
+import { ShopApiService } from './shop-api.service';
 
 export interface Toast {
   id: number;
@@ -15,13 +18,10 @@ const PROMO_CODES: Record<string, number> = { ALMANBAT10: 0.1, HARVEST15: 0.15 }
 
 @Injectable({ providedIn: 'root' })
 export class StoreService {
-  readonly lines = signal<CartLine[]>([
-    { productId: 'oil-reserve', qty: 2 },
-    { productId: 'pkl-cucumber', qty: 1 },
-  ]);
-  readonly savedForLater = signal<string[]>(['olv-green']);
-  readonly wishlist = signal<string[]>(['oil-tin', 'stf-makdous']);
-  readonly compare = signal<string[]>(['oil-reserve', 'oil-jouf']);
+  readonly lines = signal<CartLine[]>([]);
+  readonly savedForLater = signal<string[]>([]);
+  readonly wishlist = signal<string[]>([]);
+  readonly compare = signal<string[]>([]);
   readonly cartOpen = signal(false);
   readonly searchOpen = signal(false);
   readonly menuOpen = signal(false);
@@ -32,11 +32,11 @@ export class StoreService {
 
   readonly cartCount = computed(() => this.lines().reduce((s, l) => s + l.qty, 0));
   readonly subtotal = computed(() =>
-    this.lines().reduce((s, l) => s + (productById(l.productId)?.price ?? 0) * l.qty, 0)
+    this.lines().reduce((s, l) => s + (this.catalog.byId(l.productId)?.price ?? 0) * l.qty, 0)
   );
   readonly savings = computed(() =>
     this.lines().reduce((s, l) => {
-      const p = productById(l.productId);
+      const p = this.catalog.byId(l.productId);
       return p?.compareAt ? s + (p.compareAt - p.price) * l.qty : s;
     }, 0)
   );
@@ -49,14 +49,31 @@ export class StoreService {
   );
   readonly total = computed(() => Math.max(0, this.subtotal() - this.promoDiscount()) + this.shipping());
 
+  constructor(
+    private catalog: CatalogService,
+    private session: SessionService,
+    private shop: ShopApiService
+  ) {}
+
+  hydrateFromApi(): void {
+    if (!this.session.isLoggedIn() || this.session.isAdmin()) return;
+    this.shop.getCart().subscribe((lines) => {
+      if (lines.length) this.lines.set(lines);
+    });
+    this.shop.getWishlist().subscribe((ids) => {
+      if (ids.length) this.wishlist.set(ids);
+    });
+  }
+
   addToCart(productId: string, qty = 1, openCart = true): void {
     this.lines.update((lines) => {
       const i = lines.findIndex((l) => l.productId === productId);
       if (i === -1) return [...lines, { productId, qty }];
       return lines.map((l, idx) => (idx === i ? { ...l, qty: l.qty + qty } : l));
     });
-    this.lastAdded.set(productById(productId) ?? null);
+    this.lastAdded.set(this.catalog.byId(productId) ?? null);
     if (openCart) this.cartOpen.set(true);
+    if (this.session.isLoggedIn() && !this.session.isAdmin()) this.shop.addToCart(productId, qty).subscribe();
   }
 
   setQty(productId: string, qty: number): void {
@@ -65,14 +82,26 @@ export class StoreService {
         ? lines.filter((l) => l.productId !== productId)
         : lines.map((l) => (l.productId === productId ? { ...l, qty } : l))
     );
+    if (!this.session.isLoggedIn() || this.session.isAdmin()) return;
+    if (qty <= 0) this.shop.removeItem(productId).subscribe();
+    else this.shop.updateItem(productId, qty).subscribe();
   }
 
   removeLine(productId: string): void {
     this.lines.update((lines) => lines.filter((l) => l.productId !== productId));
+    if (this.session.isLoggedIn() && !this.session.isAdmin()) this.shop.removeItem(productId).subscribe();
   }
 
-  clearCart(): void {
+  clearCart(localOnly = false): void {
+    const ids = this.lines().map((l) => l.productId);
     this.lines.set([]);
+    if (localOnly || !this.session.isLoggedIn() || this.session.isAdmin()) return;
+    ids.forEach((id) => this.shop.removeItem(id).subscribe());
+  }
+
+  syncCartToServer(): Observable<unknown> {
+    if (!this.session.isLoggedIn() || this.session.isAdmin()) return of(null);
+    return this.shop.syncCart(this.lines());
   }
 
   applyPromo(code: string): boolean {
@@ -106,7 +135,11 @@ export class StoreService {
 
   toggleWishlist(productId: string): void {
     const list = this.wishlist();
-    this.wishlist.set(list.includes(productId) ? list.filter((id) => id !== productId) : [...list, productId]);
+    const adding = !list.includes(productId);
+    this.wishlist.set(adding ? [...list, productId] : list.filter((id) => id !== productId));
+    if (!this.session.isLoggedIn() || this.session.isAdmin()) return;
+    if (adding) this.shop.addWishlist(productId).subscribe();
+    else this.shop.removeWishlist(productId).subscribe();
   }
 
   toggleCompare(productId: string): void {
@@ -130,10 +163,10 @@ export class StoreService {
   }
 
   product(id: string): Product | undefined {
-    return productById(id);
+    return this.catalog.byId(id);
   }
 
   all(): Product[] {
-    return products;
+    return this.catalog.all();
   }
 }

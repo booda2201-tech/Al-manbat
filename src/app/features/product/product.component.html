@@ -91,7 +91,7 @@
     </table>
   </section>
   <section class="panel" *ngIf="tab === 'ship'">
-    <p>التوصيل التقديري: {{ p.deliveryEstimate }}. الإرجاع خلال 14 يوماً للمنتجات غير المفتوحة، مع استثناء الأغذية المفتوحة ومنتجات العناية المفضوضة.</p>
+    <p>التوصيل التقديري: {{ p.deliveryEstimate }}.</p>
     <p *ngIf="p.warrantyOrStorage">{{ p.warrantyOrStorage }}</p>
   </section>
   <section class="panel" *ngIf="tab === 'reviews'">

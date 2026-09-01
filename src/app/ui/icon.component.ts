@@ -84,8 +84,8 @@ import { Component, Input } from '@angular/core';
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
           <path d="M16 17l5-5-5-5M21 12H9" />
         </ng-container>
-        <path *ngSwitchCase="'pencil'" d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-        <path *ngSwitchCase="'info'" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 10v6M12 8h.01" />
+        <path *ngSwitchCase="'image'" d="M4 6h16v12H4zM4 15l4-4 3 3 4-5 5 6M9 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
+        <path *ngSwitchCase="'pencil'" d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
         <path *ngSwitchCase="'alert'" d="M12 3 3 20h18L12 3zM12 10v5M12 18h.01" />
         <ng-container *ngSwitchCase="'trash'">
           <path d="M3 6h18" />

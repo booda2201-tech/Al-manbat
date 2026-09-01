@@ -33,7 +33,7 @@ import { ToastService } from '../../core/services/toast.service';
           <a routerLink="/faq">الأسئلة الشائعة</a>
           <a routerLink="/track-order">تتبع طلبك</a>
           <a routerLink="/about">عن المنبت</a>
-          <p class="meta">التوصيل خلال 2 إلى 4 أيام عمل تقديرياً. الإرجاع خلال 14 يوماً للمنتجات غير المفتوحة.</p>
+          <p class="meta">التوصيل خلال 2 إلى 4 أيام عمل تقديرياً.</p>
         </div>
         <div>
           <h3>حسابك</h3>

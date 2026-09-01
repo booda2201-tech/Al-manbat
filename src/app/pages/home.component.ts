@@ -1,13 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { CategorySlug, HeroAd } from '../types';
+import type { HeroAd, Category } from '../types';
 import { brandPillars } from '../data/content';
-import { categories, categoryBySlug } from '../data/categories';
 import { HERO_AD_MS, heroAds } from '../data/hero-ads';
 import { images } from '../data/images';
-import { byCategory, products, withBadge } from '../data/products';
 import { LocaleService } from '../services/locale.service';
+import { CatalogService } from '../services/catalog.service';
 import { CountPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
 import { ScrollOpenDirective } from '../ui/scroll-open.directive';
@@ -35,17 +34,11 @@ import {
   templateUrl: './home.component.html',
 })
 export class HomeComponent implements OnInit, OnDestroy {
-  categories = categories;
   images = images;
   ads = heroAds;
   heroIndex = 0;
   heroPaused = false;
   pillars = brandPillars;
-  spotlights: Array<{ slug: CategorySlug; dark: boolean; flip: boolean }> = [
-    { slug: 'olive-oil', dark: false, flip: false },
-    { slug: 'pickles', dark: true, flip: true },
-    { slug: 'table-olives', dark: false, flip: false },
-  ];
   hours = '06';
   minutes = '42';
   seconds = '18';
@@ -56,7 +49,33 @@ export class HomeComponent implements OnInit, OnDestroy {
   private heroRemaining = HERO_AD_MS;
   private reduceMotion = false;
 
-  constructor(public locale: LocaleService) {}
+  constructor(public locale: LocaleService, public catalog: CatalogService) {}
+
+  readonly categories = computed(() => this.catalog.categories());
+  readonly catsFew = computed(() => this.categories().length <= 5);
+  readonly catsOdd = computed(() => this.categories().length % 2 === 1);
+  readonly lead = computed(() => this.categories()[0] ?? null);
+  readonly rest = computed(() => this.categories().slice(1, 5));
+  readonly bestSellers = computed(() => {
+    const list = this.catalog.withBadge('bestseller');
+    return (list.length ? list : this.catalog.all()).slice(0, 8);
+  });
+  readonly newArrivals = computed(() => {
+    const list = this.catalog.withBadge('new');
+    return (list.length ? list : this.catalog.all()).slice(0, 8);
+  });
+  readonly deals = computed(() => this.catalog.withBadge('deal').slice(0, 8));
+  readonly spots = computed(() =>
+    this.categories()
+      .slice(0, 3)
+      .map((c, i) => ({
+        slug: c.slug,
+        dark: i === 1,
+        flip: i === 1,
+        category: c,
+        items: this.catalog.byCategory(c.slug).slice(0, 3),
+      }))
+  );
 
   get currentAd(): HeroAd {
     return this.ads[this.heroIndex];
@@ -69,39 +88,22 @@ export class HomeComponent implements OnInit, OnDestroy {
   get heroCount(): string {
     return String(this.ads.length).padStart(2, '0');
   }
-  get lead() {
-    return this.categories[0];
-  }
-  get rest() {
-    return this.categories.slice(1);
-  }
-  get bestSellers() {
-    const list = withBadge('bestseller');
-    return list.length ? list : products.slice(0, 6);
-  }
-  get newArrivals() {
-    const list = withBadge('new');
-    return list.length ? list : products.slice(6, 12);
-  }
-  get deals() {
-    return products.filter((p) => p.badges.includes('deal')).slice(0, 8);
+
+  catCount(cat: Category): number {
+    const fromSubs = cat.subcategories.reduce((s, x) => s + x.count, 0);
+    return fromSubs || this.catalog.byCategory(cat.slug).length;
   }
 
-  catCount(cat: typeof categories[0]): number {
-    return cat.subcategories.reduce((s, x) => s + x.count, 0);
+  trackCat(_i: number, c: Category): string {
+    return c.slug;
   }
 
-  catTileSpan(last: boolean): string {
-    return last && this.categories.length % 2 === 1 ? 'md:col-span-2' : '';
+  trackSpot(_i: number, s: { slug: string }): string {
+    return s.slug;
   }
 
-  catTileHeight(last: boolean): string {
-    return last && this.categories.length % 2 === 1 ? 'md:h-52' : 'md:h-44';
-  }
-
-  spotlight(slug: CategorySlug) {
-    const category = categoryBySlug(slug)!;
-    return { category, items: byCategory(slug).slice(0, 3) };
+  trackProduct(_i: number, p: { id: string }): string {
+    return p.id;
   }
 
   chipClass(dark: boolean): string {

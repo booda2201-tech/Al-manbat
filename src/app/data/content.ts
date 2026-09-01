@@ -1,7 +1,7 @@
 import type { Address, Bilingual, Order, Review } from '../types';
 import { images } from './images';
 
-export const trustPoints: Array<{icon: 'truck' | 'shield' | 'rotate' | 'headset';title: Bilingual;body: Bilingual;}> = [
+export const trustPoints: Array<{icon: 'truck' | 'shield' | 'lock' | 'headset';title: Bilingual;body: Bilingual;}> = [
 {
   icon: 'truck',
   title: { ar: 'توصيل في نفس اليوم', en: 'Same-day delivery' },
@@ -13,9 +13,9 @@ export const trustPoints: Array<{icon: 'truck' | 'shield' | 'rotate' | 'headset'
   body: { ar: 'كل دفعة موثّقة من البستان أو المونة، بتاريخ حصاد واضح.', en: 'Every batch traced to the grove or pantry, with a clear harvest date.' }
 },
 {
-  icon: 'rotate',
-  title: { ar: 'إرجاع مجاني ١٤ يوماً', en: 'Free 14-day returns' },
-  body: { ar: 'نجمع الطلب من بابك دون أي رسوم.', en: 'We collect from your door at no cost.' }
+  icon: 'lock',
+  title: { ar: 'دفع آمن', en: 'Secure payment' },
+  body: { ar: 'المعاملة مشفّرة ولا نحتفظ ببيانات بطاقتك.', en: 'Encrypted checkout — we never store your card details.' }
 },
 {
   icon: 'headset',
@@ -185,17 +185,10 @@ export const faqs: Array<{q: Bilingual;a: Bilingual;}> = [
   }
 },
 {
-  q: { ar: 'ما سياسة الإرجاع؟', en: 'What is the return policy?' },
-  a: {
-    ar: 'إرجاع مجاني خلال ١٤ يوماً على كل المنتجات غير المستخدمة بعلبتها الأصلية. نجمع الشحنة من بابك ونعيد المبلغ خلال ٣ أيام عمل.',
-    en: 'Free returns within 14 days on any unused item in its original packaging. We collect from your door and refund within three working days.'
-  }
-},
-{
   q: { ar: 'كيف أعرف أن الزيت بكر ممتاز فعلاً؟', en: 'How do I know the oil is truly extra virgin?' },
   a: {
-    ar: 'كل زجاجة تحمل رقم الدفعة، نسبة الحموضة، وتاريخ الحصاد. نعصر على البارد ونختبر الحموضة قبل التعبئة. إن شككت نستبدل المنتج فوراً.',
-    en: 'Every bottle carries a batch number, acidity and harvest date. We cold-press and test acidity before filling. If you ever doubt a bottle, we replace it immediately.'
+    ar: 'كل زجاجة تحمل رقم الدفعة، نسبة الحموضة، وتاريخ الحصاد. نعصر على البارد ونختبر الحموضة قبل التعبئة. إن شككت تواصل معنا فوراً.',
+    en: 'Every bottle carries a batch number, acidity and harvest date. We cold-press and test acidity before filling. If you ever doubt a bottle, contact us immediately.'
   }
 },
 {

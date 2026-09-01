@@ -27,8 +27,8 @@ export const heroAds: HeroAd[] = [
       ar: 'حموضة منخفضة، زجاج داكن، ودفعة محدودة لكل حصاد. الزيت كما يخرج من المعصرة.',
       en: 'Low acidity, dark glass, a limited lot each harvest. Oil as it leaves the press.',
     },
-    primary: { label: { ar: 'تسوق الزيوت', en: 'Shop oils' }, to: '/listing/olive-oil' },
-    secondary: { label: { ar: 'المحصول المحفوظ', en: 'The reserve' }, to: '/product/reserve-olive-oil' },
+    primary: { label: { ar: 'تسوق الزيوت', en: 'Shop oils' }, to: '/listing/extra-virgin' },
+    secondary: { label: { ar: 'المحصول المحفوظ', en: 'The reserve' }, to: '/listing/extra-virgin' },
   },
   {
     id: 'pickles',
@@ -40,7 +40,7 @@ export const heroAds: HeroAd[] = [
       ar: 'خيار، لفت، مشكل وفلفل — بملوحة متوازنة وتاريخ دفعة على كل برطمان.',
       en: 'Cucumber, turnip, mixed and pepper — a balanced brine, every jar dated by batch.',
     },
-    primary: { label: { ar: 'تسوق المخللات', en: 'Shop pickles' }, to: '/listing/pickles' },
+    primary: { label: { ar: 'تسوق المخللات', en: 'Shop pickles' }, to: '/listing/table-olives' },
     secondary: { label: { ar: 'وصل حديثاً', en: 'New arrivals' }, to: '/new' },
   },
   {

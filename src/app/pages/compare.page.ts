@@ -8,9 +8,8 @@ import {
   StockComponent,
 } from '../commerce/commerce.component';
 import { CrumbsComponent } from '../commerce/crumbs.component';
-import { categoryBySlug } from '../data/categories';
-import { byCategory, productById, products } from '../data/products';
 import { LocaleService } from '../services/locale.service';
+import { CatalogService } from '../services/catalog.service';
 import { StoreService } from '../services/store.service';
 import type { Product } from '../types';
 import { IconComponent } from '../ui/icon.component';
@@ -43,7 +42,7 @@ export class ComparePageComponent implements OnInit, OnDestroy {
   private mq?: MediaQueryList;
 
   items = computed(() =>
-    this.store.compare().map(productById).filter((p): p is Product => Boolean(p))
+    this.store.compare().map((id) => this.catalog.byId(id)).filter((p): p is Product => Boolean(p))
   );
 
   columns = computed(() => {
@@ -91,7 +90,7 @@ export class ComparePageComponent implements OnInit, OnDestroy {
       .slice(0, 12);
   });
 
-  constructor(public locale: LocaleService, public store: StoreService) {
+  constructor(public locale: LocaleService, public store: StoreService, public catalog: CatalogService) {
     effect(() => {
       const n = this.items().length;
       if (n < 2) return;
@@ -158,7 +157,7 @@ export class ComparePageComponent implements OnInit, OnDestroy {
   }
 
   categoryName(product: Product): string {
-    const cat = categoryBySlug(product.category);
+    const cat = this.catalog.categoryBySlug(product.category);
     return cat ? this.locale.tr(cat.name) : '';
   }
 
@@ -232,7 +231,7 @@ export class ComparePageComponent implements OnInit, OnDestroy {
   private pool(): Product[] {
     const taken = new Set(this.store.compare());
     const lead = this.items()[0];
-    const source = lead ? [...byCategory(lead.category), ...products] : products;
+    const source = lead ? [...this.catalog.byCategory(lead.category), ...this.catalog.all()] : this.catalog.all();
     const seen = new Set<string>();
     return source.filter((p) => {
       if (taken.has(p.id) || seen.has(p.id)) return false;

@@ -30,7 +30,6 @@
       <div class="hidden shrink-0 items-center gap-5 lg:flex">
         <a routerLink="/support" class="hover:text-gold-300">{{ locale.ui('support') }}</a>
         <a routerLink="/track" class="hover:text-gold-300">{{ locale.ui('trackOrder') }}</a>
-        <a routerLink="/login" class="hover:text-gold-300">{{ locale.ui('signIn') }}</a>
         <button type="button" class="inline-flex items-center gap-1.5 hover:text-gold-300" (click)="locale.toggle()">
           <app-icon name="globe" [size]="14"></app-icon> {{ locale.ui('language') }}
         </button>
@@ -38,7 +37,7 @@
     </div>
   </div>
 
-  <header class="bg-transparent shadow-none lg:bg-sand-50/95 lg:backdrop-blur lg:shadow-md" (mouseleave)="openMenu = null">
+  <header class="bg-transparent shadow-none lg:bg-sand-50/95 lg:backdrop-blur lg:shadow-md" (mouseleave)="openMenu = null; openMore = false">
     <div class="mx-auto flex h-[72px] max-w-shell items-center gap-3 px-4 lg:gap-4 lg:px-10">
       <button
         type="button"
@@ -55,9 +54,14 @@
         <span class="truncate">{{ locale.ui('searchPlaceholder') }}</span>
       </button>
       <div class="ms-auto hidden shrink-0 items-center gap-0.5 lg:flex lg:gap-1">
-        <a routerLink="/login" class="hidden h-11 items-center gap-2 rounded-md px-2.5 text-[13px] font-medium text-olive-700 transition-colors duration-200 ease-premium hover:text-gold-400 lg:inline-flex" [attr.aria-label]="locale.ui('signIn')">
+        <a *ngIf="!session.isLoggedIn()" routerLink="/login" class="hidden h-11 items-center gap-2 rounded-md px-2.5 text-[13px] font-medium text-olive-700 transition-colors duration-200 ease-premium hover:text-gold-400 lg:inline-flex" [attr.aria-label]="locale.ui('signIn')">
           <app-icon name="user" [size]="20"></app-icon>
           <span class="hidden lg:inline">{{ locale.ui('signIn') }}</span>
+        </a>
+        <a *ngIf="session.isLoggedIn()" [routerLink]="accountHref()" class="hidden h-11 items-center gap-2 rounded-md px-2.5 text-[13px] font-medium text-olive-700 transition-colors duration-200 ease-premium hover:text-gold-400 lg:inline-flex" [attr.aria-label]="accountLabel()">
+          <app-icon [name]="session.isAdmin() ? 'sliders' : 'user'" [size]="20"></app-icon>
+          <span class="hidden max-w-[8rem] truncate lg:inline">{{ session.userName() || accountLabel() }}</span>
+          <span *ngIf="session.isAdmin()" class="hidden rounded-full bg-gold-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-olive-900 lg:inline">Admin</span>
         </a>
         <a routerLink="/compare" class="header-icon hidden lg:inline-flex" [attr.aria-label]="locale.ui('compare')">
           <app-icon name="scale" [size]="22"></app-icon>
@@ -75,27 +79,64 @@
     </div>
     <nav
       [attr.aria-label]="locale.ui('allCategories')"
-      class="relative hidden border-t border-olive-800/10 lg:block"
+      class="header-cats relative hidden border-t border-olive-800/10 lg:block"
     >
-      <div class="mx-auto flex max-w-shell items-center gap-1 px-10">
+      <div class="header-cats__scroller" #catRow>
         <button
-          *ngFor="let c of categories"
+          *ngFor="let c of navCategories"
           type="button"
-          class="group relative flex items-center gap-1.5 whitespace-nowrap px-3.5 py-3.5 text-[13px] font-medium transition-colors duration-200 ease-premium"
+          class="header-cats__item group relative"
           [ngClass]="navCatClass(c.slug)"
           [attr.aria-expanded]="openMenu === c.slug"
-          (mouseenter)="openMenu = c.slug"
-          (focus)="openMenu = c.slug"
-          (click)="openMenu = openMenu === c.slug ? null : c.slug"
+          (mouseenter)="hoverCat(c.slug)"
+          (focus)="hoverCat(c.slug)"
+          (click)="openCat(c.slug)"
         >
           {{ locale.tr(c.name) }}
           <app-icon name="chevron-down" [size]="14" class="transition-transform duration-200 ease-premium" [class.rotate-180]="openMenu === c.slug"></app-icon>
           <span class="absolute inset-x-3 bottom-0 h-[2px] origin-center bg-gold-400 transition-transform duration-200 ease-premium" [ngClass]="openMenu === c.slug ? 'scale-x-100' : 'scale-x-0'"></span>
         </button>
-        <span class="mx-2 h-4 w-px bg-olive-800/15"></span>
-        <a routerLink="/offers" routerLinkActive="text-clay-400" class="whitespace-nowrap px-3.5 py-3.5 text-[13px] font-semibold text-clay-400/90 transition-colors duration-200 ease-premium hover:text-clay-400">{{ locale.ui('offers') }}</a>
-        <a routerLink="/new" routerLinkActive="text-olive-700" class="whitespace-nowrap px-3.5 py-3.5 text-[13px] font-medium text-ink-soft transition-colors duration-200 ease-premium hover:text-olive-700">{{ locale.ui('newArrivals') }}</a>
-        <a routerLink="/about" routerLinkActive="text-olive-700" class="whitespace-nowrap px-3.5 py-3.5 text-[13px] font-medium text-ink-soft transition-colors duration-200 ease-premium hover:text-olive-700">{{ locale.ui('aboutBrand') }}</a>
+        <div *ngIf="moreCategories.length" class="header-cats__more">
+          <button
+            type="button"
+            class="header-cats__item"
+            [class.text-olive-700]="openMore"
+            [attr.aria-expanded]="openMore"
+            (click)="toggleMoreMenu($event)"
+          >
+            {{ locale.ui('moreNav') }}
+            <app-icon name="chevron-down" [size]="14" class="transition-transform duration-200 ease-premium" [class.rotate-180]="openMore"></app-icon>
+          </button>
+          <div *ngIf="openMore" class="header-cats__more-panel">
+            <button
+              *ngFor="let c of moreCategories"
+              type="button"
+              class="header-cats__more-link"
+              [class.is-on]="openMenu === c.slug"
+              (click)="openCat(c.slug)"
+            >
+              {{ locale.tr(c.name) }}
+            </button>
+          </div>
+        </div>
+        <span class="header-cats__sep" aria-hidden="true"></span>
+        <a routerLink="/offers" routerLinkActive="text-clay-400" class="header-cats__item font-semibold text-clay-400/90 hover:text-clay-400">{{ locale.ui('offers') }}</a>
+        <a *ngIf="showNewLink" routerLink="/new" routerLinkActive="text-olive-700" class="header-cats__item text-ink-soft hover:text-olive-700">{{ locale.ui('newArrivals') }}</a>
+        <a *ngIf="showAboutLink" routerLink="/about" routerLinkActive="text-olive-700" class="header-cats__item text-ink-soft hover:text-olive-700">{{ locale.ui('aboutBrand') }}</a>
+      </div>
+      <div class="header-cats__measure" #catMeasure aria-hidden="true">
+        <span *ngFor="let c of categories" class="header-cats__item" data-kind="cat">
+          {{ locale.tr(c.name) }}
+          <app-icon name="chevron-down" [size]="14"></app-icon>
+        </span>
+        <span class="header-cats__item" data-kind="more">
+          {{ locale.ui('moreNav') }}
+          <app-icon name="chevron-down" [size]="14"></app-icon>
+        </span>
+        <span class="header-cats__sep" data-kind="sep"></span>
+        <span class="header-cats__item font-semibold" data-kind="offers">{{ locale.ui('offers') }}</span>
+        <span class="header-cats__item" data-kind="new">{{ locale.ui('newArrivals') }}</span>
+        <span class="header-cats__item" data-kind="about">{{ locale.ui('aboutBrand') }}</span>
       </div>
 
       <div *ngIf="openMenu && openCategory as cat" class="absolute inset-x-0 top-full z-50 border-t border-olive-800/10 bg-sand-50 shadow-lg">
@@ -236,6 +277,7 @@
   </nav>
 </div>
 
+<ng-container *ngIf="!bareLayout && !focusLayout">
 <div *ngIf="store.menuOpen()" class="menu-sheet-scrim lg:hidden" (click)="store.menuOpen.set(false)"></div>
 <aside *ngIf="store.menuOpen()" class="menu-sheet lg:hidden" [attr.aria-label]="locale.ui('menu')">
   <header class="menu-sheet__head">
@@ -254,24 +296,21 @@
   </header>
 
   <div class="no-rail min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8">
-    <ul class="grid gap-2.5 md:grid-cols-2 md:gap-3">
-      <li *ngFor="let c of categories; let last = last" class="menu-tile" [ngClass]="menuCatSpan(last)">
+    <ul class="menu-cats" [class.is-few]="menuCatsFew">
+      <li *ngFor="let c of categories; let last = last" class="menu-tile" [class.is-wide]="last && menuCatsOdd">
         <a
           [routerLink]="['/listing', c.slug]"
-          class="group relative isolate flex h-[5.5rem] overflow-hidden rounded-2xl"
-          [ngClass]="menuCatHeight(last)"
+          class="menu-cat"
           (click)="store.menuOpen.set(false)"
         >
-          <img [src]="c.image" alt="" class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" />
-          <span class="absolute inset-0 bg-gradient-to-t from-olive-900/90 via-olive-900/45 to-olive-900/10"></span>
-          <span class="relative z-10 flex w-full items-end justify-between gap-3 p-4">
-            <span class="min-w-0">
-              <span class="block font-displayAr text-xl leading-[1.45] text-sand-50">{{ locale.tr(c.name) }}</span>
-              <span class="mt-1 block truncate text-[11px] leading-normal text-sand-100/75">{{ locale.tr(c.tagline) }}</span>
-            </span>
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-olive-900">
-              <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
-            </span>
+          <img [src]="c.image" alt="" />
+          <span class="menu-cat__scrim" aria-hidden="true"></span>
+          <span class="menu-cat__copy">
+            <span class="menu-cat__name">{{ locale.tr(c.name) }}</span>
+            <span class="menu-cat__tag">{{ locale.tr(c.tagline) }}</span>
+          </span>
+          <span class="menu-cat__go" aria-hidden="true">
+            <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="menuCatsFew ? 16 : 14"></app-icon>
           </span>
         </a>
       </li>
@@ -291,7 +330,7 @@
       </a>
     </div>
 
-    <nav class="menu-utility" [attr.aria-label]="locale.isAr() ? 'حساب ومساعدة' : 'Account and help'">
+    <nav class="menu-utility" [attr.aria-label]="locale.isAr() ? 'مساعدة' : 'Help'">
       <a routerLink="/support" class="menu-utility__item" (click)="store.menuOpen.set(false)">
         <app-icon name="headset" [size]="16"></app-icon>
         {{ locale.ui('support') }}
@@ -300,14 +339,6 @@
         <app-icon name="package" [size]="16"></app-icon>
         {{ locale.ui('trackOrder') }}
       </a>
-      <a routerLink="/login" class="menu-utility__item" (click)="store.menuOpen.set(false)">
-        <app-icon name="user" [size]="16"></app-icon>
-        {{ locale.ui('signIn') }}
-      </a>
-      <button type="button" class="menu-utility__item" (click)="locale.toggle()">
-        <app-icon name="globe" [size]="16"></app-icon>
-        {{ locale.ui('language') }}
-      </button>
     </nav>
   </div>
 
@@ -316,9 +347,9 @@
       {{ locale.ui('shopAll') }}
     </a>
     <div class="grid grid-cols-4 gap-1">
-      <a routerLink="/account" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="store.menuOpen.set(false)">
-        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="user" [size]="18"></app-icon></span>
-        {{ locale.ui('account') }}
+      <a [routerLink]="accountHref()" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="store.menuOpen.set(false)">
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon [name]="session.isAdmin() ? 'sliders' : 'user'" [size]="18"></app-icon></span>
+        {{ accountLabel() }}
       </a>
       <a routerLink="/wishlist" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium text-olive-800" (click)="store.menuOpen.set(false)">
         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-sand-100"><app-icon name="heart" [size]="18"></app-icon></span>
@@ -386,6 +417,7 @@
 </div>
 
 <app-cart-drawer></app-cart-drawer>
+</ng-container>
 
 <div class="fixed bottom-20 start-4 z-[100] w-80 space-y-2 lg:bottom-6">
   <div *ngFor="let t of store.toasts()" class="rounded-xl bg-olive-800 p-3 text-sm text-sand-50 shadow-lg">

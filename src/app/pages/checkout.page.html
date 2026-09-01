@@ -52,11 +52,11 @@
       </li>
     </ol>
 
-    <div class="mt-5 grid min-w-0 gap-6 lg:mt-9 lg:grid-cols-[1fr_320px] lg:gap-12">
+    <div class="mt-5 grid min-w-0 gap-6 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
       <div class="min-w-0">
         <section *ngIf="step === 0">
           <h1 class="checkout-title hidden font-displayAr lg:block">{{ locale.ui('stepAddress') }}</h1>
-          <div class="checkout-seg" role="tablist">
+          <div class="checkout-seg" role="tablist" *ngIf="!session.isLoggedIn()">
             <button type="button" class="checkout-seg__btn" [class.is-on]="guest" (click)="guest = true">
               {{ locale.ui('guestCheckout') }}
             </button>
@@ -65,33 +65,55 @@
             </button>
           </div>
           <p class="mt-2 text-xs text-ink-muted">
-            {{ guest
-              ? (locale.isAr() ? 'بدون إنشاء حساب — نرسل التأكيد على بريدك.' : 'No account needed — we email your confirmation.')
+            {{ session.isLoggedIn()
+              ? (locale.isAr() ? 'اختَر عنواناً محفوظاً أو أضف عنواناً جديداً.' : 'Choose a saved address or add a new one.')
+              : guest
+              ? (locale.isAr() ? 'بدون إنشاء حساب — نرسل التأكيد على بريدك. لإتمام الطلب ستحتاج لتسجيل الدخول.' : 'No account needed to fill the form — you’ll sign in to place the order.')
               : (locale.isAr() ? 'عناوينك المحفوظة تظهر بعد تسجيل الدخول.' : 'Your saved addresses appear after you sign in.') }}
           </p>
 
-          <div *ngIf="!guest" class="mt-4 rounded-xl border border-olive-800/10 bg-white p-4">
+          <div *ngIf="!guest && !session.isLoggedIn()" class="mt-4 rounded-xl border border-olive-800/10 bg-white p-4">
             <p class="text-sm font-medium text-olive-800">{{ locale.isAr() ? 'لديك حساب؟' : 'Have an account?' }}</p>
-            <a routerLink="/login" class="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl bg-olive-800 text-sm font-medium text-sand-50">{{ locale.ui('signIn') }}</a>
+            <a routerLink="/login" [queryParams]="{ redirect: '/checkout' }" class="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl bg-olive-800 text-sm font-medium text-sand-50">{{ locale.ui('signIn') }}</a>
           </div>
 
-          <div class="mt-5 grid gap-3.5 sm:grid-cols-2">
-            <div class="sm:col-span-2">
+          <div *ngIf="session.isLoggedIn()" class="mt-5 space-y-2.5">
+            <label *ngFor="let a of savedAddresses" class="checkout-choice" [ngClass]="optionClass(!addingNew && selectedAddressId === a.id)">
+              <input type="radio" name="savedAddress" class="checkout-choice__radio" [value]="a.id" [(ngModel)]="selectedAddressId" (ngModelChange)="applySavedAddress(a)" />
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm font-semibold text-olive-800">{{ locale.tr(a.label) }}</span>
+                <span class="mt-0.5 block text-xs leading-relaxed text-ink-muted">{{ locale.tr(a.line) }} · {{ locale.tr(a.city) }}</span>
+              </span>
+            </label>
+            <button type="button" class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-olive-800/25 bg-white text-sm font-medium text-olive-800 hover:border-gold-400 hover:text-gold-400" (click)="useNewAddress()" [class.border-gold-400]="addingNew" [class.text-gold-400]="addingNew">
+              <app-icon name="plus" [size]="16"></app-icon>
+              {{ locale.isAr() ? 'إضافة عنوان جديد' : 'Add a new address' }}
+            </button>
+          </div>
+
+          <div class="mt-5 grid gap-3.5 sm:grid-cols-2" *ngIf="addingNew || !savedAddresses.length || !session.isLoggedIn()">
+            <div class="sm:col-span-2" *ngIf="session.isLoggedIn() && addingNew">
+              <p class="text-sm font-semibold text-olive-800">{{ locale.isAr() ? 'عنوان جديد' : 'New address' }}</p>
+            </div>
+            <div class="sm:col-span-2" *ngIf="!session.isLoggedIn()">
               <label class="checkout-label" for="co-email">{{ locale.isAr() ? 'البريد الإلكتروني' : 'Email address' }}</label>
               <input id="co-email" type="email" dir="ltr" inputmode="email" autocomplete="email" class="field-input" [class.is-invalid]="emailError" [(ngModel)]="email" name="email" placeholder="name@example.com" />
               <p *ngIf="emailError" class="mt-1.5 flex items-center gap-1.5 text-xs text-state-danger">
                 <app-icon name="alert" [size]="14"></app-icon>
                 {{ emailError }}
               </p>
-              <p *ngIf="!emailError" class="mt-1.5 text-xs text-ink-muted">{{ locale.isAr() ? 'نرسل تأكيد الطلب ورابط التتبع عليه.' : 'We send order confirmation and tracking here.' }}</p>
             </div>
-            <div>
+            <div *ngIf="!session.isLoggedIn()">
               <label class="checkout-label" for="co-first">{{ locale.isAr() ? 'الاسم الأول' : 'First name' }}</label>
               <input id="co-first" class="field-input" autocomplete="given-name" [(ngModel)]="firstName" name="firstName" />
             </div>
-            <div>
+            <div *ngIf="!session.isLoggedIn()">
               <label class="checkout-label" for="co-last">{{ locale.isAr() ? 'اسم العائلة' : 'Last name' }}</label>
               <input id="co-last" class="field-input" autocomplete="family-name" [(ngModel)]="lastName" name="lastName" />
+            </div>
+            <div>
+              <label class="checkout-label" for="co-label">{{ locale.isAr() ? 'وصف العنوان' : 'Address label' }}</label>
+              <input id="co-label" class="field-input" [(ngModel)]="addressLabel" name="addressLabel" [placeholder]="locale.isAr() ? 'المنزل، العمل...' : 'Home, work...'" />
             </div>
             <div>
               <label class="checkout-label" for="co-phone">{{ locale.isAr() ? 'رقم الجوال' : 'Mobile number' }}</label>
@@ -99,17 +121,21 @@
             </div>
             <div>
               <label class="checkout-label" for="co-city">{{ locale.isAr() ? 'المدينة' : 'City' }}</label>
-              <select id="co-city" class="field-input appearance-none" [(ngModel)]="city" name="city">
-                <option *ngFor="let c of cities" [value]="c">{{ c }}</option>
-              </select>
+              <input id="co-city" class="field-input" autocomplete="address-level2" [(ngModel)]="city" name="city" />
             </div>
             <div class="sm:col-span-2">
               <label class="checkout-label" for="co-address">{{ locale.isAr() ? 'العنوان' : 'Street address' }}</label>
               <input id="co-address" class="field-input" autocomplete="street-address" [(ngModel)]="address" name="address" />
             </div>
-            <label class="flex cursor-pointer items-start gap-2.5 text-sm leading-snug text-ink-soft sm:col-span-2">
+            <div class="flex flex-wrap items-center gap-2 sm:col-span-2" *ngIf="session.isLoggedIn()">
+              <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-olive-600 px-5 text-sm font-medium text-sand-50 hover:bg-olive-700 disabled:opacity-60" [disabled]="savingAddress" (click)="saveNewAddress(false)">
+                {{ savingAddress ? locale.ui('loading') : (locale.isAr() ? 'حفظ العنوان على حسابي' : 'Save address to my account') }}
+              </button>
+              <button *ngIf="savedAddresses.length" type="button" class="inline-flex h-11 items-center rounded-xl px-4 text-sm font-medium text-ink-muted hover:text-olive-800" (click)="cancelNewAddress()">{{ locale.ui('back') }}</button>
+            </div>
+            <label *ngIf="!session.isLoggedIn()" class="flex cursor-pointer items-start gap-2.5 text-sm leading-snug text-ink-soft sm:col-span-2">
               <input type="checkbox" class="mt-0.5 h-[18px] w-[18px] shrink-0 rounded-xs border-olive-800/25 text-olive-600 focus:ring-gold-400" [(ngModel)]="saveAddress" name="saveAddress" />
-              {{ locale.isAr() ? 'حفظ هذا العنوان لطلباتي القادمة' : 'Save this address for next time' }}
+              {{ locale.isAr() ? 'حفظ هذا العنوان لطلباتي القادمة بعد تسجيل الدخول' : 'Save this address after you sign in' }}
             </label>
           </div>
         </section>
@@ -119,6 +145,9 @@
           <div class="mt-1 space-y-2.5 lg:mt-5">
             <label *ngFor="let o of shippingOptions" class="checkout-choice" [ngClass]="optionClass(ship === o.id)">
               <input type="radio" name="shipping" class="checkout-choice__radio" [value]="o.id" [(ngModel)]="ship" />
+              <span class="checkout-choice__icon" aria-hidden="true">
+                <app-icon [name]="shipIcon(o.id)" [size]="18"></app-icon>
+              </span>
               <span class="min-w-0 flex-1">
                 <span class="block text-sm font-semibold text-olive-800">{{ locale.tr(o.title) }}</span>
                 <span class="mt-0.5 block text-xs leading-relaxed text-ink-muted">{{ locale.tr(o.detail) }}</span>
@@ -137,23 +166,14 @@
           <div class="mt-1 space-y-2.5 lg:mt-5">
             <label *ngFor="let o of payOptions" class="checkout-choice checkout-choice--pay" [ngClass]="optionClass(pay === o.id)">
               <input type="radio" name="payment" class="checkout-choice__radio" [value]="o.id" [(ngModel)]="pay" />
+              <span class="checkout-choice__icon" aria-hidden="true">
+                <app-icon [name]="payIcon(o.id)" [size]="18"></app-icon>
+              </span>
               <span class="min-w-0 flex-1 text-sm font-semibold text-olive-800">{{ locale.tr(o.label) }}</span>
-              <app-icon [name]="payIcon(o.id)" class="shrink-0 text-gold-400" [size]="18"></app-icon>
             </label>
           </div>
-          <div *ngIf="pay === 'mada' || pay === 'card'" class="mt-4 grid gap-3.5 rounded-xl border border-olive-800/10 bg-white p-4 sm:grid-cols-2">
-            <div class="sm:col-span-2">
-              <label class="checkout-label" for="cc">{{ locale.isAr() ? 'رقم البطاقة' : 'Card number' }}</label>
-              <input id="cc" class="field-input" dir="ltr" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" />
-            </div>
-            <div>
-              <label class="checkout-label" for="exp">{{ locale.isAr() ? 'تاريخ الانتهاء' : 'Expiry' }}</label>
-              <input id="exp" class="field-input" dir="ltr" autocomplete="cc-exp" placeholder="MM / YY" />
-            </div>
-            <div>
-              <label class="checkout-label" for="cvc">CVC</label>
-              <input id="cvc" class="field-input" dir="ltr" inputmode="numeric" autocomplete="cc-csc" placeholder="123" />
-            </div>
+          <div *ngIf="pay === 'card'" class="mt-4 rounded-xl border border-olive-800/10 bg-white p-4 text-sm text-ink-muted">
+            {{ locale.isAr() ? 'الطلب يُسجَّل بطريقة فيزا على الخادم. تحصيل البطاقة يتم عند التأكيد من المتجر.' : 'The order is recorded as Visa on the server. Card capture happens when the store confirms it.' }}
           </div>
           <p class="mt-3.5 flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
             <app-icon name="shield" class="mt-0.5 shrink-0 text-gold-400" [size]="16"></app-icon>
@@ -163,79 +183,119 @@
 
         <section *ngIf="step === 3">
           <h1 class="checkout-title hidden font-displayAr lg:block">{{ locale.ui('stepReview') }}</h1>
-          <div class="mt-1 lg:mt-5">
-            <ul class="divide-y divide-olive-800/10 overflow-hidden rounded-xl border border-olive-800/10 bg-white">
-              <li *ngFor="let r of rows()" class="flex items-center gap-3 p-3.5">
-                <span class="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-sand-100">
-                  <img [src]="r.product.image" alt="" class="h-full w-full object-cover" />
+          <p class="checkout-review-lead">{{ locale.ui('reviewHint') }}</p>
+          <div class="mt-4 space-y-3 lg:mt-5">
+            <ul class="checkout-review-items">
+              <li *ngFor="let r of rows()" class="checkout-review-item">
+                <span class="checkout-review-item__img">
+                  <img [src]="r.product.image" alt="" />
+                  <span class="checkout-review-item__qty">{{ r.qty }}</span>
                 </span>
                 <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-medium leading-snug text-olive-800">{{ locale.tr(r.product.name) }}</span>
-                  <span class="mt-0.5 block text-xs text-ink-muted">× {{ r.qty }}</span>
+                  <span class="checkout-review-item__name">{{ locale.tr(r.product.name) }}</span>
+                  <span class="checkout-review-item__meta">{{ r.qty }} × {{ r.product.price | sar }}</span>
                 </span>
-                <span class="price shrink-0 text-sm font-bold">{{ r.product.price * r.qty | sar }}</span>
+                <span class="checkout-review-item__line">{{ r.product.price * r.qty | sar }}</span>
               </li>
             </ul>
-            <div class="mt-3 grid gap-2.5">
-              <div class="rounded-xl border border-olive-800/10 bg-white p-3.5">
-                <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-                  <app-icon name="pin" class="text-gold-400" [size]="15"></app-icon>
-                  {{ locale.ui('stepAddress') }}
-                </p>
-                <p class="mt-1.5 text-sm font-medium leading-snug text-olive-800">{{ firstName }} {{ lastName }}</p>
-                <p class="mt-0.5 text-xs leading-relaxed text-ink-muted">{{ address }} · {{ city }}</p>
-              </div>
-              <div class="grid gap-2.5 sm:grid-cols-2">
-                <div class="rounded-xl border border-olive-800/10 bg-white p-3.5">
-                  <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-                    <app-icon name="truck" class="text-gold-400" [size]="15"></app-icon>
-                    {{ locale.ui('stepShipping') }}
-                  </p>
-                  <p class="mt-1.5 text-sm font-medium text-olive-800">{{ locale.tr(shippingOptions[shipIndex].title) }}</p>
+
+            <div class="checkout-recap">
+              <div class="checkout-recap__row">
+                <span class="checkout-choice__icon" aria-hidden="true">
+                  <app-icon name="pin" [size]="18"></app-icon>
+                </span>
+                <div class="checkout-recap__body">
+                  <p class="checkout-recap__kicker">{{ locale.ui('stepAddress') }}</p>
+                  <p class="checkout-recap__title">{{ reviewLabel || reviewName || locale.ui('stepAddress') }}</p>
+                  <p class="checkout-recap__meta" *ngIf="reviewName && reviewLabel">{{ reviewName }}</p>
+                  <p class="checkout-recap__meta">{{ address }} · {{ city }}</p>
+                  <p class="checkout-recap__meta" *ngIf="reviewPhone" dir="ltr">{{ reviewPhone }}</p>
                 </div>
-                <div class="rounded-xl border border-olive-800/10 bg-white p-3.5">
-                  <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-                    <app-icon name="card" class="text-gold-400" [size]="15"></app-icon>
-                    {{ locale.ui('stepPayment') }}
-                  </p>
-                  <p class="mt-1.5 text-sm font-medium text-olive-800">{{ locale.tr(payOptions[payIndex].label) }}</p>
-                </div>
+                <button type="button" class="checkout-recap__edit" (click)="goStep(0)">{{ locale.ui('editStep') }}</button>
               </div>
+              <div class="checkout-recap__row">
+                <span class="checkout-choice__icon" aria-hidden="true">
+                  <app-icon [name]="shipIcon(ship)" [size]="18"></app-icon>
+                </span>
+                <div class="checkout-recap__body">
+                  <p class="checkout-recap__kicker">{{ locale.ui('stepShipping') }}</p>
+                  <p class="checkout-recap__title">{{ locale.tr(shippingOptions[shipIndex].title) }}</p>
+                  <p class="checkout-recap__meta">{{ locale.tr(shippingOptions[shipIndex].detail) }}</p>
+                  <p class="checkout-recap__meta">{{ checkoutShipping() === 0 ? locale.ui('freeShipping') : (checkoutShipping() | sar) }}</p>
+                </div>
+                <button type="button" class="checkout-recap__edit" (click)="goStep(1)">{{ locale.ui('editStep') }}</button>
+              </div>
+              <div class="checkout-recap__row">
+                <span class="checkout-choice__icon" aria-hidden="true">
+                  <app-icon [name]="payIcon(pay)" [size]="18"></app-icon>
+                </span>
+                <div class="checkout-recap__body">
+                  <p class="checkout-recap__kicker">{{ locale.ui('stepPayment') }}</p>
+                  <p class="checkout-recap__title">{{ locale.tr(payOptions[payIndex].label) }}</p>
+                  <p class="checkout-recap__meta">{{ pay === 'cod'
+                    ? (locale.isAr() ? 'تدفع عند استلام الطلب' : 'Pay when your order arrives')
+                    : (locale.isAr() ? 'تحصيل البطاقة عند تأكيد المتجر' : 'Card is charged when the store confirms') }}</p>
+                </div>
+                <button type="button" class="checkout-recap__edit" (click)="goStep(2)">{{ locale.ui('editStep') }}</button>
+              </div>
+            </div>
+
+            <div class="checkout-notes">
+              <label class="checkout-label" for="co-notes">{{ locale.ui('orderNotes') }}</label>
+              <textarea id="co-notes" name="notes" rows="2" class="field-input mt-1.5" [(ngModel)]="notes" [placeholder]="locale.ui('orderNotesHint')"></textarea>
             </div>
           </div>
         </section>
 
-        <div class="mt-8 hidden items-center justify-between gap-3 lg:flex">
-          <a *ngIf="step === 0" routerLink="/" class="inline-flex items-center gap-2 text-sm text-ink-muted transition-colors duration-150 ease-premium hover:text-olive-700" (click)="backToCart()">
-            <app-icon [name]="locale.isAr() ? 'arrow-right' : 'arrow-left'" [size]="16"></app-icon>
-            {{ locale.ui('cartTitle') }}
-          </a>
-          <button *ngIf="step > 0" type="button" class="inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-medium text-olive-700 hover:bg-olive-50" (click)="back()">
-            <app-icon [name]="locale.isAr() ? 'arrow-right' : 'arrow-left'" [size]="16"></app-icon>
-            {{ locale.ui('back') }}
-          </button>
-          <button *ngIf="step < 3" type="button" class="ms-auto inline-flex h-14 items-center gap-2.5 rounded-xl bg-olive-600 px-7 text-[15px] font-medium text-sand-50 shadow-sm hover:bg-olive-700" (click)="advance()">
-            {{ locale.ui('continue') }}
-            <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
-          </button>
-          <button *ngIf="step === 3" type="button" class="ms-auto inline-flex h-14 items-center rounded-xl bg-gold-400 px-7 text-[15px] font-medium text-olive-900 shadow-sm hover:bg-gold-300 disabled:cursor-not-allowed" [disabled]="placing" (click)="place()">
-            {{ placing ? locale.ui('loading') : locale.ui('placeOrder') }} · {{ checkoutTotal() | sar }}
-          </button>
+        <div class="mt-7 hidden lg:block">
+          <div *ngIf="step < 3" class="flex items-center justify-between gap-3">
+            <a *ngIf="step === 0" routerLink="/" class="inline-flex items-center gap-2 text-sm text-ink-muted transition-colors duration-150 ease-premium hover:text-olive-700" (click)="backToCart()">
+              <app-icon [name]="locale.isAr() ? 'arrow-right' : 'arrow-left'" [size]="16"></app-icon>
+              {{ locale.ui('cartTitle') }}
+            </a>
+            <button *ngIf="step > 0" type="button" class="inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-medium text-olive-700 hover:bg-olive-50" (click)="back()">
+              <app-icon [name]="locale.isAr() ? 'arrow-right' : 'arrow-left'" [size]="16"></app-icon>
+              {{ locale.ui('back') }}
+            </button>
+            <button type="button" class="ms-auto inline-flex h-14 items-center gap-2.5 rounded-xl bg-olive-600 px-7 text-[15px] font-medium text-sand-50 shadow-sm hover:bg-olive-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="savingAddress" (click)="advance()">
+              {{ savingAddress ? locale.ui('loading') : locale.ui('continue') }}
+              <app-icon *ngIf="!savingAddress" [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
+            </button>
+          </div>
+          <div *ngIf="step === 3" class="flex flex-col gap-3">
+            <button type="button" class="inline-flex h-14 w-full items-center justify-center rounded-xl bg-gold-400 px-7 text-[15px] font-semibold text-olive-900 shadow-sm hover:bg-gold-300 disabled:cursor-not-allowed" [disabled]="placing" (click)="place()">
+              {{ placing ? locale.ui('loading') : locale.ui('placeOrder') }} · {{ checkoutTotal() | sar }}
+            </button>
+            <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-medium text-olive-700 hover:bg-olive-50" (click)="back()">
+              <app-icon [name]="locale.isAr() ? 'arrow-right' : 'arrow-left'" [size]="16"></app-icon>
+              {{ locale.ui('back') }}
+            </button>
+          </div>
         </div>
       </div>
 
       <aside class="hidden lg:sticky lg:top-8 lg:block lg:self-start">
         <div class="summary-card">
           <h2 class="text-sm font-semibold uppercase tracking-[0.14em] text-olive-800">{{ locale.ui('orderSummary') }}</h2>
+          <div class="summary-mini" *ngIf="rows().length">
+            <span *ngFor="let r of rows()" class="summary-mini__thumb">
+              <img [src]="r.product.image" alt="" />
+              <span class="summary-mini__qty" *ngIf="r.qty > 1">{{ r.qty }}</span>
+            </span>
+          </div>
           <ng-container *ngTemplateOutlet="totals"></ng-container>
-          <ul class="mt-5 space-y-2 text-xs text-ink-muted">
-            <li class="flex items-center gap-2">
-              <app-icon name="rotate" class="text-gold-400" [size]="14"></app-icon>
-              {{ locale.ui('returnPolicy') }}
+          <ul class="summary-trust">
+            <li class="summary-trust__item">
+              <span class="summary-trust__icon" aria-hidden="true">
+                <app-icon name="lock" [size]="18"></app-icon>
+              </span>
+              <span class="summary-trust__text">{{ locale.ui('securePayment') }}</span>
             </li>
-            <li class="flex items-center gap-2">
-              <app-icon name="shield" class="text-gold-400" [size]="14"></app-icon>
-              {{ locale.ui('authenticGuarantee') }}
+            <li class="summary-trust__item">
+              <span class="summary-trust__icon" aria-hidden="true">
+                <app-icon name="shield" [size]="18"></app-icon>
+              </span>
+              <span class="summary-trust__text">{{ locale.ui('authenticGuarantee') }}</span>
             </li>
           </ul>
         </div>
@@ -283,8 +343,8 @@
         <app-icon name="chevron-down" [size]="14" [class.rotate-180]="summaryOpen"></app-icon>
       </span>
     </button>
-    <button *ngIf="step < 3" type="button" class="checkout-dock__next" (click)="advance()">
-      {{ locale.ui('continue') }}
+    <button *ngIf="step < 3" type="button" class="checkout-dock__next" [disabled]="savingAddress" (click)="advance()">
+      {{ savingAddress ? locale.ui('loading') : locale.ui('continue') }}
     </button>
     <button *ngIf="step === 3" type="button" class="checkout-dock__place" [disabled]="placing" (click)="place()">
       {{ placing ? locale.ui('loading') : locale.ui('placeOrder') }}

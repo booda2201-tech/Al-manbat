@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, computed, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { productById } from '../data/products';
 import { LocaleService } from '../services/locale.service';
 import { FREE_SHIPPING_THRESHOLD, StoreService } from '../services/store.service';
 import { formatPrice } from '../utils/format';
@@ -19,11 +18,11 @@ export class CartDrawerComponent {
   rows = computed(() =>
     this.store
       .lines()
-      .map((l) => ({ ...l, product: productById(l.productId)! }))
+      .map((l) => ({ ...l, product: this.store.product(l.productId)! }))
       .filter((l) => l.product)
   );
   saved = computed(() =>
-    this.store.savedForLater().map(productById).filter((p): p is NonNullable<typeof p> => !!p)
+    this.store.savedForLater().map((id) => this.store.product(id)).filter((p): p is NonNullable<typeof p> => !!p)
   );
 
   constructor(

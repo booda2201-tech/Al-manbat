@@ -5,12 +5,7 @@ export type Bilingual = {
   en: string;
 };
 
-export type CategorySlug =
-  | 'olive-oil'
-  | 'table-olives'
-  | 'pickles'
-  | 'stuffed'
-  | 'gifts';
+export type CategorySlug = string;
 
 export interface Subcategory {
   slug: string;
@@ -65,13 +60,29 @@ export interface Review {
   verified: boolean;
 }
 
+export interface OrderSnap {
+  name: string;
+  image: string;
+  price?: number;
+  qty?: number;
+}
+
+export type ApiOrderStatus = 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled';
+
 export interface Order {
   id: string;
   date: string;
   status: 'delivered' | 'in_transit' | 'processing' | 'cancelled';
+  apiStatus?: ApiOrderStatus;
   total: number;
   itemIds: string[];
+  snapshots?: Record<string, OrderSnap>;
   eta?: Bilingual;
+  paymentMethod?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  orderNotes?: string;
 }
 
 export interface Address {

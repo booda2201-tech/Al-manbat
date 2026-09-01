@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { accountGuard, adminGuard, adminLegacyTabGuard } from './services/auth.guard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./pages/home.component').then((m) => m.HomeComponent) },
@@ -8,8 +9,10 @@ export const routes: Routes = [
   { path: 'cart', redirectTo: '', pathMatch: 'full' },
   { path: 'checkout', loadComponent: () => import('./pages/checkout.pages').then((m) => m.CheckoutPageComponent) },
   { path: 'order/confirmed', loadComponent: () => import('./pages/checkout.pages').then((m) => m.OrderConfirmedComponent) },
-  { path: 'account', loadComponent: () => import('./pages/account.pages').then((m) => m.AccountPageComponent) },
-  { path: 'account/:tab', loadComponent: () => import('./pages/account.pages').then((m) => m.AccountPageComponent) },
+  { path: 'account', redirectTo: 'account/overview', pathMatch: 'full' },
+  { path: 'account/:tab', canActivate: [accountGuard], loadComponent: () => import('./pages/account.pages').then((m) => m.AccountPageComponent) },
+  { path: 'admin', canActivate: [adminGuard], loadComponent: () => import('./pages/admin.page').then((m) => m.AdminPageComponent) },
+  { path: 'admin/:tab', canActivate: [adminGuard, adminLegacyTabGuard], children: [] },
   { path: 'login', loadComponent: () => import('./pages/auth.page').then((m) => m.AuthPageComponent) },
   { path: 'signup', loadComponent: () => import('./pages/auth.page').then((m) => m.AuthPageComponent) },
   { path: 'search', loadComponent: () => import('./pages/catalog.pages').then((m) => m.SearchComponent) },
