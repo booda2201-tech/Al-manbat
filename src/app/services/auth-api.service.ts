@@ -120,9 +120,11 @@ export class AuthApiService {
   }
 
   private hydrateProfile(phone: string, fallbackName?: string): Observable<void> {
+    if (this.session.isAdmin()) return of(undefined);
     if (fallbackName) this.session.setProfile({ userName: fallbackName, phone });
-    return this.http.get(apiUrl('/api/Profile')).pipe(
-      tap((body) => {
+    return this.http.get(apiUrl('/api/Profile'), { responseType: 'text' }).pipe(
+      tap((raw) => {
+        const body = parseAuthBody(raw);
         const mapped = mapProfile(body);
         const name = pickDisplayName(
           mapped ? `${mapped.firstName} ${mapped.lastName}` : '',

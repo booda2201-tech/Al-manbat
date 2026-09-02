@@ -121,8 +121,12 @@ export class AuthPageComponent implements OnInit {
           ? 'أهلاً بعودتك'
           : 'Welcome back',
     });
+    if (this.session.isAdmin()) {
+      void this.router.navigateByUrl('/admin');
+      return;
+    }
     if (!this.store.fulfillCartAfterLogin()) {
-      this.router.navigateByUrl(this.redirectTo());
+      void this.router.navigateByUrl(this.redirectTo());
     }
   }
 

@@ -416,12 +416,15 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
   }
 
   private loadAccount(): void {
-    this.accountApi.getProfile().subscribe((profile) => {
-      if (!profile) return;
-      if (!this.firstName) this.firstName = profile.firstName;
-      if (!this.lastName) this.lastName = profile.lastName;
-      if (!this.email) this.email = profile.email;
-      if (!this.phone) this.phone = profile.phone || this.session.phone() || '';
+    this.accountApi.getProfile().subscribe({
+      next: (profile) => {
+        if (!profile) return;
+        if (!this.firstName) this.firstName = profile.firstName;
+        if (!this.lastName) this.lastName = profile.lastName;
+        if (!this.email) this.email = profile.email;
+        if (!this.phone) this.phone = profile.phone || this.session.phone() || '';
+      },
+      error: () => undefined,
     });
     this.accountApi.getAddresses().subscribe((rows) => {
       this.savedAddresses = rows;

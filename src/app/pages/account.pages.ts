@@ -3,14 +3,14 @@ import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } fro
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, interval, of, Subscription } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
 import { AuthApiService } from '../services/auth-api.service';
 import { AccountApiService, orderTrackStep, resolveApiStatus, type AccountProfile } from '../services/account-api.service';
 import { SessionService } from '../services/session.service';
 import { StoreService } from '../services/store.service';
-import { pickDisplayName } from '../api/api.util';
+import { isDeniedAccess, pickDisplayName } from '../api/api.util';
 import type { Address, ApiOrderStatus, Locale, Order, Product } from '../types';
 import { CountPipe, SarPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
@@ -28,6 +28,8 @@ export class AccountPageComponent implements OnInit, OnDestroy {
   @ViewChild('navList') navList?: ElementRef<HTMLElement>;
   tab = 'overview';
   loading = true;
+  loadError = '';
+  private probedAdmin = false;
   saving = false;
   private pollSub?: Subscription;
   private sawRoute = false;
@@ -93,7 +95,7 @@ export class AccountPageComponent implements OnInit, OnDestroy {
     this.applySessionFallback();
     this.refresh();
     this.pollSub = interval(12000).subscribe(() => {
-      if (document.hidden) return;
+      if (document.hidden || this.loadError) return;
       if (this.tab === 'overview' || this.tab === 'orders') this.refresh(true);
     });
   }
@@ -105,11 +107,49 @@ export class AccountPageComponent implements OnInit, OnDestroy {
 
   private refresh(silent = false): void {
     if (!silent) this.loading = true;
+    this.loadError = '';
+    const denied = this.locale.isAr()
+      ? 'السيرفر رافض قراءة الحساب. اخرج وادخل تاني.'
+      : 'The server rejected this account. Sign out and sign in again.';
     forkJoin({
-      profile: this.accountApi.getProfile().pipe(catchError(() => of(null))),
-      orders: this.accountApi.getMyOrders().pipe(catchError(() => of([] as Order[]))),
-      addresses: this.accountApi.getAddresses().pipe(catchError(() => of([] as Address[]))),
+      profile: this.accountApi.getProfile().pipe(
+        catchError((err) => {
+          if (isDeniedAccess(err) && !this.loadError) this.loadError = denied;
+          return of(null);
+        })
+      ),
+      orders: this.accountApi.getMyOrders().pipe(
+        catchError((err) => {
+          if (!isDeniedAccess(err)) {
+            this.loadError = this.locale.isAr() ? 'تعذر تحميل الطلبات.' : 'Could not load orders.';
+            return of([] as Order[]);
+          }
+          if (this.probedAdmin) {
+            this.loadError = denied;
+            return of([] as Order[]);
+          }
+          this.probedAdmin = true;
+          return this.accountApi.canAccessAdminOrders().pipe(
+            tap((ok) => {
+              if (ok) {
+                this.session.markAdmin();
+                void this.router.navigateByUrl('/admin');
+                return;
+              }
+              this.loadError = denied;
+            }),
+            map(() => [] as Order[])
+          );
+        })
+      ),
+      addresses: this.accountApi.getAddresses().pipe(
+        catchError((err) => {
+          if (isDeniedAccess(err) && !this.loadError) this.loadError = denied;
+          return of([] as Address[]);
+        })
+      ),
     }).subscribe(({ profile, orders, addresses }) => {
+      if (this.session.isAdmin()) return;
       if (profile) this.applyProfile(profile);
       this.addressList = addresses.length ? addresses : this.addressList;
       this.orders = orders;
@@ -513,12 +553,15 @@ export class AccountPageComponent implements OnInit, OnDestroy {
       next: (saved) => {
         this.saving = false;
         this.applyProfile(saved);
-        this.accountApi.getProfile().subscribe((fresh) => {
-          const fromServer = pickDisplayName(
-            fresh ? `${fresh.firstName} ${fresh.lastName}`.trim() : '',
-            fresh?.userName
-          );
-          if (fresh && fromServer) this.applyProfile(fresh);
+        this.accountApi.getProfile().subscribe({
+          next: (fresh) => {
+            const fromServer = pickDisplayName(
+              fresh ? `${fresh.firstName} ${fresh.lastName}`.trim() : '',
+              fresh?.userName
+            );
+            if (fresh && fromServer) this.applyProfile(fresh);
+          },
+          error: () => undefined,
         });
         this.store.pushToast({
           title: this.locale.isAr() ? 'تم حفظ الملف الشخصي على الخادم' : 'Profile saved on the server',

@@ -16,19 +16,27 @@ export function isApiRequest(url: string): boolean {
   return !!base && url.startsWith(base);
 }
 
+export function isDeniedAccess(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403);
+}
+
 function stripBearer(value: string): string {
   return value.replace(/^Bearer\s+/i, '').trim();
 }
 
+export function cleanAuthToken(value: string): string {
+  return stripBearer(value.trim().replace(/^["']+|["']+$/g, ''));
+}
+
 export function looksLikeJwt(value: string): boolean {
-  const parts = stripBearer(value).split('.');
+  const parts = cleanAuthToken(value).split('.');
   return parts.length === 3 && parts[0].length > 8 && parts[1].length > 8 && parts[2].length > 8;
 }
 
 export function extractToken(body: unknown, depth = 0): string | null {
   if (body == null || depth > 8) return null;
   if (typeof body === 'string') {
-    const trimmed = stripBearer(body.trim().replace(/^"|"$/g, ''));
+    const trimmed = cleanAuthToken(body);
     if (looksLikeJwt(trimmed)) return trimmed;
     return looksLikeToken(trimmed) ? trimmed : null;
   }
@@ -43,7 +51,7 @@ export function extractToken(body: unknown, depth = 0): string | null {
   const record = body as Record<string, unknown>;
   for (const [key, value] of Object.entries(record)) {
     if (typeof value !== 'string') continue;
-    const trimmed = stripBearer(value.trim());
+    const trimmed = cleanAuthToken(value);
     if (!looksLikeToken(trimmed)) continue;
     if (isTokenKey(key) || looksLikeJwt(trimmed)) return trimmed;
   }
@@ -118,18 +126,21 @@ export function parseAuthBody(raw: unknown): unknown {
   if (typeof raw !== 'string') return raw;
   const text = raw.replace(/^\uFEFF/, '').trim();
   if (!text) return null;
-  if (looksLikeJwt(text)) return text;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
+  if (text.startsWith('{') || text.startsWith('[') || (text.startsWith('"') && text.endsWith('"'))) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      /* raw JWT or plain text */
+    }
   }
+  if (looksLikeJwt(text)) return cleanAuthToken(text);
+  return text;
 }
 
 export function extractBearer(header: string | null | undefined): string | null {
   if (!header) return null;
   const trimmed = header.trim();
-  const bearer = trimmed.replace(/^Bearer\s+/i, '').trim();
+  const bearer = cleanAuthToken(trimmed);
   return looksLikeToken(bearer) ? bearer : null;
 }
 
@@ -166,15 +177,38 @@ export function extractUserName(body: unknown): string | null {
 }
 
 function isRoleKey(key: string): boolean {
-  const k = key.toLowerCase();
-  return k === 'role' || k === 'roles' || k === 'userrole' || k.endsWith('/role') || k.endsWith('/roles');
+  const k = key.toLowerCase().replace(/[_-]/g, '');
+  return k === 'role' || k === 'roles' || k === 'userrole' || k.includes('role') || k.includes('usertype') || k.includes('accounttype');
+}
+
+function isAdminFlagKey(key: string): boolean {
+  const k = key.toLowerCase().replace(/[_-]/g, '');
+  return k === 'isadmin' || k === 'admin' || k.endsWith('isadmin') || k === 'isadministrator';
+}
+
+function truthyFlag(value: unknown): boolean {
+  return value === true || value === 1 || value === '1' || value === 'true' || value === 'True' || value === 'TRUE';
 }
 
 function normalizeRole(value: unknown): string | null {
-  if (typeof value === 'string' && value.trim()) return value.trim();
+  if (typeof value === 'string' && value.trim()) {
+    const text = value.trim();
+    if (looksLikeJwt(text)) return null;
+    if (text.startsWith('[')) {
+      try {
+        return normalizeRole(JSON.parse(text));
+      } catch {
+        /* keep raw */
+      }
+    }
+    return text;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
   if (Array.isArray(value)) {
-    const parts = value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean);
-    const admin = parts.find((p) => p.toLowerCase() === 'admin' || p.toLowerCase() === 'administrator');
+    const parts = value
+      .map((item) => (typeof item === 'string' || typeof item === 'number' ? String(item).trim() : ''))
+      .filter(Boolean);
+    const admin = parts.find((p) => isAdminRole(p));
     return admin || parts[0] || null;
   }
   return null;
@@ -182,31 +216,28 @@ function normalizeRole(value: unknown): string | null {
 
 export function extractRole(body: unknown, depth = 0): string | null {
   if (body == null || depth > 6) return null;
-  if (typeof body === 'string') return body.trim() || null;
+  if (typeof body === 'string') {
+    const text = body.trim();
+    if (!text || looksLikeJwt(text) || text.length > 48) return null;
+    return text;
+  }
   if (typeof body !== 'object') return null;
   const record = body as Record<string, unknown>;
+  let fallback: string | null = null;
   for (const [key, value] of Object.entries(record)) {
+    if (isAdminFlagKey(key) && truthyFlag(value)) return 'Admin';
     if (!isRoleKey(key)) continue;
     const found = normalizeRole(value);
-    if (found) return found;
+    if (!found) continue;
+    if (isAdminRole(found)) return found;
+    if (!fallback) fallback = found;
   }
   for (const key of ['user', 'data', 'result', 'value', 'payload']) {
     const nested = extractRole(record[key], depth + 1);
-    if (nested) return nested;
+    if (nested && isAdminRole(nested)) return nested;
+    if (nested && !fallback) fallback = nested;
   }
-  return null;
-}
-
-export function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const part = stripBearer(token).split('.')[1];
-    if (!part) return null;
-    const padded = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(part.length / 4) * 4, '=');
-    const parsed = JSON.parse(atob(padded)) as unknown;
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
+  return fallback;
 }
 
 export function extractRoleFromToken(token: string | null | undefined): string | null {
@@ -214,23 +245,52 @@ export function extractRoleFromToken(token: string | null | undefined): string |
   return extractRole(decodeJwtPayload(token));
 }
 
+export function pickSessionRole(token: string | null | undefined, body?: unknown): string | null {
+  const fromToken = extractRoleFromToken(token);
+  const fromBody = extractRole(body);
+  if (isAdminRole(fromToken)) return fromToken;
+  if (isAdminRole(fromBody)) return fromBody;
+  return fromToken || fromBody;
+}
+
+export function isAdminRole(role: string | null | undefined): boolean {
+  if (!role || looksLikeJwt(role)) return false;
+  return /\b(admin|administrator|superadmin|owner|مدير|مشرف)\b/i.test(role);
+}
+
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = cleanAuthToken(token).split('.')[1];
+    if (!part) return null;
+    const padded = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(part.length / 4) * 4, '=');
+    const binary = atob(padded);
+    let json = binary;
+    try {
+      json = decodeURIComponent(Array.from(binary, (ch) => `%${ch.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
+    } catch {
+      /* payload is already ASCII JSON */
+    }
+    const parsed = JSON.parse(json) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function isTokenExpired(token: string | null | undefined): boolean {
   return !token;
 }
 
-export function isAdminRole(role: string | null | undefined): boolean {
-  if (!role) return false;
-  const n = role.trim().toLowerCase();
-  return n === 'admin' || n === 'administrator';
-}
-
 export function unwrapPayload(body: unknown): unknown {
-  if (!body || typeof body !== 'object') return body;
-  const record = body as Record<string, unknown>;
+  const parsed = typeof body === 'string' ? parseAuthBody(body) : body;
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  const record = parsed as Record<string, unknown>;
   for (const key of ['data', 'result', 'value', 'payload', 'content']) {
     if (record[key] != null && typeof record[key] === 'object') return record[key];
   }
-  return body;
+  return parsed;
 }
 
 export function extractEntityId(body: unknown, depth = 0): string {
@@ -256,16 +316,41 @@ export function extractEntityId(body: unknown, depth = 0): string {
 }
 
 export function unwrapList(body: unknown): unknown[] {
-  if (Array.isArray(body)) return body;
-  const inner = unwrapPayload(body);
-  if (Array.isArray(inner)) return inner;
-  if (inner && typeof inner === 'object') {
-    const record = inner as Record<string, unknown>;
-    for (const key of ['items', 'orders', 'addresses', 'Addresses', 'products', 'results', 'data', 'reviews']) {
-      if (Array.isArray(record[key])) return record[key] as unknown[];
+  const seen = new Set<unknown>();
+  const walk = (node: unknown, depth: number): unknown[] => {
+    if (node == null || depth > 6 || seen.has(node)) return [];
+    if (Array.isArray(node)) return node;
+    if (typeof node !== 'object') return [];
+    seen.add(node);
+    const record = node as Record<string, unknown>;
+    for (const key of [
+      '$values',
+      'items',
+      'orders',
+      'addresses',
+      'Addresses',
+      'products',
+      'results',
+      'data',
+      'reviews',
+      'value',
+      'list',
+      'content',
+    ]) {
+      const value = record[key];
+      if (Array.isArray(value)) return value;
     }
-  }
-  return [];
+    for (const value of Object.values(record)) {
+      if (!Array.isArray(value)) continue;
+      if (value.some((item) => item && typeof item === 'object')) return value;
+    }
+    for (const value of Object.values(record)) {
+      const found = walk(value, depth + 1);
+      if (found.length) return found;
+    }
+    return [];
+  };
+  return walk(typeof body === 'string' ? parseAuthBody(body) : body, 0);
 }
 
 export function normalizeAuthPhone(raw: string): string {

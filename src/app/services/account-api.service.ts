@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
-import { apiErrorMessage, apiUrl, extractEntityId, isGeneratedUserName, pickDisplayName, unwrapList, unwrapPayload } from '../api/api.util';
+import { apiErrorMessage, apiUrl, extractEntityId, isDeniedAccess, isGeneratedUserName, parseAuthBody, pickDisplayName, unwrapList, unwrapPayload } from '../api/api.util';
 import type { Address, ApiOrderStatus, Order, OrderSnap } from '../types';
 
 export interface AddressRequest {
@@ -28,9 +28,9 @@ export class AccountApiService {
   constructor(private http: HttpClient) {}
 
   getProfile(): Observable<AccountProfile | null> {
-    return this.http.get(apiUrl('/api/Profile')).pipe(
-      map((body) => mapProfile(body)),
-      catchError(() => of(null))
+    return this.http.get(apiUrl('/api/Profile'), { responseType: 'text' }).pipe(
+      map((body) => mapProfile(parseAuthBody(body))),
+      catchError((err) => (isDeniedAccess(err) ? throwError(() => err) : of(null)))
     );
   }
 
@@ -62,13 +62,14 @@ export class AccountApiService {
   }
 
   getAddresses(): Observable<Address[]> {
-    return this.http.get(apiUrl('/api/Profile/addresses/GetAddresses')).pipe(
-      map((body) => {
+    return this.http.get(apiUrl('/api/Profile/addresses/GetAddresses'), { responseType: 'text' }).pipe(
+      map((raw) => {
+        const body = parseAuthBody(raw);
         const rows = unwrapList(body);
         const mapped = (rows.length ? rows : [unwrapPayload(body)]).map((row, i) => mapAddress(row, i));
         return mapped.filter((a): a is Address => !!a);
       }),
-      catchError(() => of([]))
+      catchError((err) => (isDeniedAccess(err) ? throwError(() => err) : of([])))
     );
   }
 
@@ -110,16 +111,30 @@ export class AccountApiService {
   }
 
   getMyOrders(): Observable<Order[]> {
-    return this.http.get(apiUrl('/api/Orders/GetMyOrders')).pipe(
-      map((body) => unwrapList(body).map(mapOrder).filter((o): o is Order => !!o)),
-      switchMap((orders) => hydrateLiveOrders(this.http, orders)),
-      catchError(() => of([]))
+    return this.http.get(apiUrl('/api/Orders/GetMyOrders'), { responseType: 'text' }).pipe(
+      map((raw) => {
+        const body = parseAuthBody(raw);
+        const rows = unwrapList(body);
+        const mapped = rows.map((row, i) => mapOrder(row, i)).filter((o): o is Order => !!o);
+        if (mapped.length) return mapped;
+        const single = mapOrder(body);
+        return single ? [single] : [];
+      }),
+      switchMap((orders) => hydrateLiveOrders(this.http, orders).pipe(catchError(() => of(orders)))),
+      catchError((err) => (isDeniedAccess(err) ? throwError(() => err) : of([])))
+    );
+  }
+
+  canAccessAdminOrders(): Observable<boolean> {
+    return this.http.get(apiUrl('/api/Orders/admin/GetAllOrders'), { observe: 'response' }).pipe(
+      map((res) => res.status >= 200 && res.status < 300),
+      catchError(() => of(false))
     );
   }
 
   getOrder(id: string): Observable<Order | null> {
-    return this.http.get(apiUrl(`/api/Orders/GetOrder/${id}`)).pipe(
-      map((body) => mapOrder(body)),
+    return this.http.get(apiUrl(`/api/Orders/GetOrder/${id}`), { responseType: 'text' }).pipe(
+      map((body) => mapOrder(parseAuthBody(body))),
       catchError(() => of(null))
     );
   }
@@ -196,7 +211,9 @@ export function mapAddress(raw: unknown, index: number): Address | null {
   if (!record) return null;
   const label = pickString(record, ['label', 'title', 'name', 'type']) || 'Home';
   const line = pickString(record, ['line', 'street', 'Street', 'address', 'addressLine', 'addressLine1', 'details']);
-  const city = pickString(record, ['city', 'City', 'cityName', 'area']);
+  const city =
+    pickString(record, ['city', 'City', 'cityName', 'area']) ||
+    pickString(record, ['governorate', 'state', 'region']);
   const phone =
     pickString(record, ['phone', 'phoneNumber', 'mobile']) || pickString(record, ['notes', 'Notes']);
   if (!line && !city) return null;
@@ -288,10 +305,13 @@ export function orderTrackStep(order: Pick<Order, 'apiStatus' | 'status'> | null
   return 0;
 }
 
-export function mapOrder(raw: unknown): Order | null {
+export function mapOrder(raw: unknown, index = 0): Order | null {
   const record = unwrapOrderRecord(raw);
   if (!record) return null;
-  const id = pickString(record, ['id', 'orderId', 'orderNumber', 'number', 'code', 'orderNo', 'reference']);
+  const id =
+    pickString(record, ['id', 'orderId', 'orderNumber', 'number', 'code', 'orderNo', 'reference']) ||
+    extractEntityId(raw) ||
+    (hasOrderShape(record) ? `order-${index + 1}` : '');
   if (!id) return null;
   const rawStatus = pickOrderStatus(record) || 'Pending';
   const status = mapStatus(rawStatus);
@@ -368,6 +388,18 @@ export function mapOrder(raw: unknown): Order | null {
   };
 }
 
+function hasOrderShape(record: Record<string, unknown>): boolean {
+  return !!(
+    lookup(record, 'items') ||
+    lookup(record, 'orderItems') ||
+    lookup(record, 'products') ||
+    lookup(record, 'total') ||
+    lookup(record, 'totalAmount') ||
+    lookup(record, 'orderStatus') ||
+    lookup(record, 'status')
+  );
+}
+
 function scalarStatus(value: unknown): string {
   if (value == null) return '';
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
@@ -407,8 +439,8 @@ function hydrateLiveOrders(http: HttpClient, orders: Order[]): Observable<Order[
   if (!live.length) return of(orders);
   return forkJoin(
     live.map((order) =>
-      http.get(apiUrl(`/api/Orders/GetOrder/${order.id}`)).pipe(
-        map((body) => mapOrder(body)),
+      http.get(apiUrl(`/api/Orders/GetOrder/${order.id}`), { responseType: 'text' }).pipe(
+        map((body) => mapOrder(parseAuthBody(body))),
         catchError(() => of(null))
       )
     )

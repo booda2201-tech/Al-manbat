@@ -1,12 +1,12 @@
 import { Injectable, signal } from '@angular/core';
 import {
-  extractRole,
   extractRoleFromToken,
   extractToken,
-  extractUserName,
   isAdminRole,
   isTokenExpired,
   pickDisplayName,
+  pickSessionRole,
+  extractUserName,
 } from '../api/api.util';
 
 const STORAGE_KEY = 'almanbat.session';
@@ -50,7 +50,7 @@ function readSession(): SessionState {
       userName: null,
       phone: parsed.phone ?? null,
       email: null,
-      role: parsed.role ?? extractRoleFromToken(token),
+      role: extractRoleFromToken(token) || parsed.role || null,
     };
   } catch {
     return emptySession();
@@ -70,7 +70,7 @@ export class SessionService {
   readonly isAdmin = () => {
     const token = this.liveToken();
     if (!token) return false;
-    return isAdminRole(this.state().role) || isAdminRole(extractRoleFromToken(token));
+    return isAdminRole(extractRoleFromToken(token)) || isAdminRole(this.state().role);
   };
 
   private liveToken(): string | null {
@@ -96,9 +96,14 @@ export class SessionService {
       userName: pickDisplayName(extractUserName(body)) || null,
       phone,
       email: null,
-      role: extractRole(body) || extractRoleFromToken(token),
+      role: pickSessionRole(token, body),
     });
     return true;
+  }
+
+  markAdmin(): void {
+    if (this.isAdmin()) return;
+    this.commit({ ...this.state(), role: 'Admin' });
   }
 
   setProfile(patch: Partial<Pick<SessionState, 'userName' | 'phone' | 'email'>>): void {

@@ -83,7 +83,7 @@
     >
       <div class="header-cats__scroller" #catRow>
         <button
-          *ngFor="let c of navCategories"
+          *ngFor="let c of navCategories; trackBy: trackBySlug"
           type="button"
           class="header-cats__item group relative"
           [ngClass]="navCatClass(c.slug)"
@@ -109,7 +109,7 @@
           </button>
           <div *ngIf="openMore" class="header-cats__more-panel">
             <button
-              *ngFor="let c of moreCategories"
+              *ngFor="let c of moreCategories; trackBy: trackBySlug"
               type="button"
               class="header-cats__more-link"
               [class.is-on]="openMenu === c.slug"

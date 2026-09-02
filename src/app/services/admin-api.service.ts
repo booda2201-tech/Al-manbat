@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, throwError } from 'rxjs';
 import type { ApiCategory, ApiProduct } from '../api/api.models';
-import { apiErrorMessage, apiUrl, unwrapList } from '../api/api.util';
+import { apiErrorMessage, apiUrl, parseAuthBody, unwrapList } from '../api/api.util';
 import type { Order } from '../types';
 import { mapOrder } from './account-api.service';
 
@@ -61,15 +61,15 @@ export class AdminApiService {
   }
 
   getOrders(): Observable<Order[]> {
-    return this.http.get(apiUrl('/api/Orders/admin/GetAllOrders')).pipe(
-      map((body): Order[] => unwrapList(body).map(mapOrder).filter((row): row is Order => !!row)),
+    return this.http.get(apiUrl('/api/Orders/admin/GetAllOrders'), { responseType: 'text' }).pipe(
+      map((body): Order[] => unwrapList(parseAuthBody(body)).map(mapOrder).filter((row): row is Order => !!row)),
       catchError((err) => throwError(() => new Error(apiErrorMessage(err, 'ORDERS'))))
     );
   }
 
   getOrder(id: string): Observable<Order | null> {
-    return this.http.get(apiUrl(`/api/Orders/admin/GetOrder/${id}`)).pipe(
-      map((body) => mapOrder(body)),
+    return this.http.get(apiUrl(`/api/Orders/admin/GetOrder/${id}`), { responseType: 'text' }).pipe(
+      map((body) => mapOrder(parseAuthBody(body))),
       catchError(() => of(null))
     );
   }

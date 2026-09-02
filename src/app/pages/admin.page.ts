@@ -562,6 +562,18 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     return Math.round(price * (1 - percent / 100) * 100) / 100;
   }
 
+  offerPct(p: ApiProduct): number {
+    return Math.min(90, Math.max(0, Math.round(Number(p.discountPercent) || 0)));
+  }
+
+  setOfferPct(p: ApiProduct, value: number | string | null): void {
+    p.discountPercent = Math.min(90, Math.max(0, Math.round(Number(value) || 0)));
+  }
+
+  nudgeOffer(p: ApiProduct, delta: number): void {
+    p.discountPercent = Math.min(90, Math.max(0, this.offerPct(p) + delta));
+  }
+
   clearOffer(p: ApiProduct): void {
     p.discountPercent = 0;
     this.selectedOfferId = null;

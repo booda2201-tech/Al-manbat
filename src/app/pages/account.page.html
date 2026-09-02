@@ -109,7 +109,8 @@
             </ng-container>
           </li>
         </ul>
-        <p *ngIf="!reorderIds.length && !active" class="mt-4 rounded-xl border border-dashed border-olive-800/20 bg-white px-6 py-10 text-center text-sm text-ink-muted">{{ locale.isAr() ? 'لا توجد طلبات بعد. اطلب مرة وستظهر هنا.' : 'No orders yet. Place an order and it will show up here.' }}</p>
+        <p *ngIf="loadError" class="mt-4 rounded-xl border border-dashed border-olive-800/20 bg-white px-6 py-10 text-center text-sm text-ink-muted">{{ loadError }}</p>
+        <p *ngIf="!loadError && !reorderIds.length && !active" class="mt-4 rounded-xl border border-dashed border-olive-800/20 bg-white px-6 py-10 text-center text-sm text-ink-muted">{{ locale.isAr() ? 'لا توجد طلبات بعد. اطلب مرة وستظهر هنا.' : 'No orders yet. Place an order and it will show up here.' }}</p>
       </section>
 
       <section *ngIf="!loading && isTab('orders')">
@@ -171,7 +172,8 @@
             </div>
           </li>
         </ul>
-        <p *ngIf="!filteredOrders.length" class="rounded-xl border border-dashed border-olive-800/20 bg-white px-6 py-12 text-center text-sm text-ink-muted">{{ locale.isAr() ? 'لا توجد طلبات في هذا التصنيف.' : 'No orders in this filter.' }}</p>
+        <p *ngIf="loadError" class="rounded-xl border border-dashed border-olive-800/20 bg-white px-6 py-12 text-center text-sm text-ink-muted">{{ loadError }}</p>
+        <p *ngIf="!loadError && !filteredOrders.length" class="rounded-xl border border-dashed border-olive-800/20 bg-white px-6 py-12 text-center text-sm text-ink-muted">{{ locale.isAr() ? 'لا توجد طلبات في هذا التصنيف.' : 'No orders in this filter.' }}</p>
       </section>
 
       <section *ngIf="!loading && isTab('addresses')">

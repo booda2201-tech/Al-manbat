@@ -576,10 +576,36 @@
 
   <ng-template #offerPop let-offer>
     <div class="admin-offer-ctrl">
-      <label class="admin-offer-ctrl__rate">
-        <input type="number" min="0" max="90" [name]="'pop-offer-' + offer.id" [(ngModel)]="offer.discountPercent" />
+      <div class="admin-offer-ctrl__rate" dir="ltr">
+        <button
+          type="button"
+          class="admin-offer-ctrl__nudge"
+          [disabled]="saving || offerPct(offer) <= 0"
+          (click)="$event.stopPropagation(); nudgeOffer(offer, -1)"
+          [attr.aria-label]="locale.isAr() ? 'تقليل الخصم' : 'Decrease discount'"
+        >
+          −
+        </button>
+        <input
+          type="number"
+          min="0"
+          max="90"
+          inputmode="numeric"
+          [name]="'pop-offer-' + offer.id"
+          [ngModel]="offerPct(offer)"
+          (ngModelChange)="setOfferPct(offer, $event)"
+        />
         <span>%</span>
-      </label>
+        <button
+          type="button"
+          class="admin-offer-ctrl__nudge"
+          [disabled]="saving || offerPct(offer) >= 90"
+          (click)="$event.stopPropagation(); nudgeOffer(offer, 1)"
+          [attr.aria-label]="locale.isAr() ? 'زيادة الخصم' : 'Increase discount'"
+        >
+          +
+        </button>
+      </div>
       <button type="button" [disabled]="saving" (click)="saveOffer(offer)">{{ locale.ui('adminSave') }}</button>
       <button type="button" class="is-danger" [disabled]="saving" (click)="clearOffer(offer)">{{ locale.isAr() ? 'إيقاف' : 'Stop' }}</button>
     </div>

@@ -2,11 +2,12 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
-import { isApiRequest } from './api.util';
+import { isApiRequest, cleanAuthToken } from './api.util';
 import { LocaleService } from '../services/locale.service';
 import { SessionService } from '../services/session.service';
 
 const PUBLIC_AUTH = /\/api\/Auth\/(login|register|register-admin)(\?|$)/i;
+const ROLE_GATED = /\/api\/(Profile\b|Cart\b|Wishlist\b|Orders\b|Auth\/logout\b)/i;
 
 let signingOut = false;
 
@@ -23,10 +24,14 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
 
   let headers = req.headers.set('Accept-Language', lang);
   const token = skipAuth ? null : session.token();
-  if (token && !headers.has('Authorization')) {
-    headers = headers.set('Authorization', `Bearer ${token}`);
-  }
-  if (skipAuth && headers.has('Authorization')) {
+  const rawToken = token ? cleanAuthToken(token) : '';
+  const auth = rawToken ? `Bearer ${rawToken}` : '';
+  if (auth) {
+    headers = headers
+      .set('Authorization', auth)
+      .set('X-Authorization', auth)
+      .set('X-Token', rawToken);
+  } else if (headers.has('Authorization')) {
     headers = headers.delete('Authorization');
   }
   if (req.body instanceof FormData) {
@@ -38,13 +43,14 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
   let params = req.params;
   if (!params.has('lang')) params = params.set('lang', lang);
 
-  return next(req.clone({ headers, params })).pipe(
+  return next(req.clone({ headers, params, withCredentials: true })).pipe(
     catchError((err: unknown) => {
       if (
         err instanceof HttpErrorResponse &&
         token &&
         !skipAuth &&
-        ((err.status === 401) || (err.status === 403 && /\/api\/(Orders|Profile|Auth)\b/i.test(req.url)))
+        err.status === 401 &&
+        !ROLE_GATED.test(req.url)
       ) {
         sendToLogin(session, router);
       }

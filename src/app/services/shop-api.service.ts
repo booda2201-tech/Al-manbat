@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
-import { apiUrl, extractEntityId } from '../api/api.util';
-import type { ApiCart, ApiCartItem } from '../api/api.models';
+import { apiUrl, extractEntityId, parseAuthBody, unwrapList } from '../api/api.util';
+import type { ApiCartItem } from '../api/api.models';
 
 export interface RemoteLine {
   productId: string;
@@ -11,12 +11,13 @@ export interface RemoteLine {
 
 function asLines(body: unknown): RemoteLine[] {
   if (!body) return [];
-  const record = body as ApiCart & { items?: ApiCartItem[] };
-  const rows = record.items || record.cartItems || (Array.isArray(body) ? (body as ApiCartItem[]) : []);
-  return rows
+  const rows = unwrapList(body);
+  const list = rows.length ? rows : Array.isArray(body) ? body : [];
+  return list
     .map((row) => {
-      const id = row.productId ?? row.product?.id;
-      const qty = row.quantity ?? row.qty ?? 0;
+      const item = row as ApiCartItem;
+      const id = item.productId ?? item.product?.id;
+      const qty = item.quantity ?? item.qty ?? 0;
       if (id == null || qty <= 0) return null;
       return { productId: String(id), qty };
     })
@@ -25,11 +26,7 @@ function asLines(body: unknown): RemoteLine[] {
 
 function asIds(body: unknown): string[] {
   if (!body) return [];
-  const rows = Array.isArray(body)
-    ? body
-    : ((body as { items?: unknown[]; products?: unknown[] }).items ||
-        (body as { products?: unknown[] }).products ||
-        []);
+  const rows = unwrapList(body);
   return rows
     .map((row) => {
       if (typeof row === 'number' || typeof row === 'string') return String(row);
@@ -45,8 +42,8 @@ export class ShopApiService {
   constructor(private http: HttpClient) {}
 
   getCart(): Observable<RemoteLine[]> {
-    return this.http.get(apiUrl('/api/Cart')).pipe(
-      map(asLines),
+    return this.http.get(apiUrl('/api/Cart'), { responseType: 'text' }).pipe(
+      map((body) => asLines(parseAuthBody(body))),
       catchError(() => of([]))
     );
   }
@@ -92,8 +89,8 @@ export class ShopApiService {
   }
 
   getWishlist(): Observable<string[]> {
-    return this.http.get(apiUrl('/api/Wishlist/GetWishlist')).pipe(
-      map(asIds),
+    return this.http.get(apiUrl('/api/Wishlist/GetWishlist'), { responseType: 'text' }).pipe(
+      map((body) => asIds(parseAuthBody(body))),
       catchError(() => of([]))
     );
   }

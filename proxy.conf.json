@@ -3,6 +3,8 @@
     "target": "http://alhendalcompany-001-site12.jtempurl.com",
     "secure": false,
     "changeOrigin": true,
-    "logLevel": "warn"
+    "logLevel": "warn",
+    "cookieDomainRewrite": "localhost",
+    "cookiePathRewrite": "/"
   }
 }

@@ -40,6 +40,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   catLimit = 4;
   showNewLink = false;
   showAboutLink = false;
+  navCats: Category[] = [];
+  extraCats: Category[] = [];
   private navObserver: ResizeObserver | null = null;
   query = '';
   promo = '';
@@ -87,6 +89,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private zone: NgZone
   ) {
+    this.syncLayout(this.router.url);
+    this.syncNavCats();
     effect((onCleanup) => {
       const lock = this.store.menuOpen() || this.store.searchOpen() || this.store.cartOpen();
       document.body.style.overflow = lock ? 'hidden' : '';
@@ -97,20 +101,29 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     effect(() => {
       this.locale.locale();
       this.catalog.categories().length;
-      queueMicrotask(() => this.fitCats());
+      if (this.bareLayout || this.focusLayout) return;
+      this.zone.runOutsideAngular(() => {
+        setTimeout(() => this.zone.run(() => this.fitCats()));
+      });
     });
   }
 
   ngOnInit(): void {
-    if (this.session.dropIfExpired()) {
-      const path = this.router.url.split('?')[0];
-      if (path === '/admin' || path.startsWith('/admin/') || path.startsWith('/account')) {
-        void this.router.navigate(['/login'], { queryParams: { redirect: this.router.url } });
-      }
-    } else {
-      this.auth.refreshProfile().subscribe();
-    }
     this.syncLayout(this.router.url);
+    const path = this.router.url.split('?')[0];
+    if (path !== '/login' && path !== '/signup') {
+      if (this.session.dropIfExpired()) {
+        if (path === '/admin' || path.startsWith('/admin/') || path.startsWith('/account')) {
+          void this.router.navigate(['/login'], { queryParams: { redirect: this.router.url } });
+        }
+      } else if (this.session.isLoggedIn()) {
+        this.auth.refreshProfile().subscribe(() => {
+          if (this.session.isAdmin() && this.router.url.split('?')[0].startsWith('/account')) {
+            void this.router.navigateByUrl('/admin');
+          }
+        });
+      }
+    }
     this.router.events.subscribe((e) => {
       if (e instanceof NavigationStart && e.url.split('?')[0] === '/cart') {
         this.store.requestCartOpen();
@@ -234,14 +247,31 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showAboutLink = showAbout;
       this.openMore = false;
     }
+    this.syncNavCats();
+  }
+
+  private syncNavCats(): void {
+    const cats = this.catalog.categories();
+    const nextNav = cats.slice(0, this.catLimit);
+    const nextExtra = cats.slice(this.catLimit);
+    if (nextNav.length !== this.navCats.length || nextNav.some((c, i) => c !== this.navCats[i])) {
+      this.navCats = nextNav;
+    }
+    if (nextExtra.length !== this.extraCats.length || nextExtra.some((c, i) => c !== this.extraCats[i])) {
+      this.extraCats = nextExtra;
+    }
   }
 
   get navCategories(): Category[] {
-    return this.categories.slice(0, this.catLimit);
+    return this.navCats;
   }
 
   get moreCategories(): Category[] {
-    return this.categories.slice(this.catLimit);
+    return this.extraCats;
+  }
+
+  trackBySlug(_index: number, category: Category): string {
+    return category.slug;
   }
 
   openCat(slug: string): void {
