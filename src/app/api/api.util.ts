@@ -114,6 +114,18 @@ export function authPhoneVariants(raw: string): string[] {
   return out;
 }
 
+export function parseAuthBody(raw: unknown): unknown {
+  if (typeof raw !== 'string') return raw;
+  const text = raw.replace(/^\uFEFF/, '').trim();
+  if (!text) return null;
+  if (looksLikeJwt(text)) return text;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
 export function extractBearer(header: string | null | undefined): string | null {
   if (!header) return null;
   const trimmed = header.trim();
@@ -202,15 +214,8 @@ export function extractRoleFromToken(token: string | null | undefined): string |
   return extractRole(decodeJwtPayload(token));
 }
 
-export function isTokenExpired(token: string | null | undefined, skewMs = 5 * 60 * 1000): boolean {
-  if (!token) return true;
-  const payload = decodeJwtPayload(stripBearer(token));
-  if (!payload) return false;
-  const raw = payload['exp'];
-  const exp = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : NaN;
-  if (!Number.isFinite(exp)) return false;
-  const expMs = exp > 1e12 ? exp : exp * 1000;
-  return Date.now() >= expMs - skewMs;
+export function isTokenExpired(token: string | null | undefined): boolean {
+  return !token;
 }
 
 export function isAdminRole(role: string | null | undefined): boolean {
