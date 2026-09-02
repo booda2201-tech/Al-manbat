@@ -1,7 +1,7 @@
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, map, of, retry, switchMap, tap, throwError } from 'rxjs';
-import { apiErrorMessage, apiUrl, extractBearer, extractToken, extractUserName, pickDisplayName } from '../api/api.util';
+import { apiErrorMessage, apiUrl, extractBearer, extractToken, extractUserName, normalizeAuthPhone, pickDisplayName } from '../api/api.util';
 import { mapProfile } from './account-api.service';
 import { SessionService } from './session.service';
 
@@ -10,8 +10,9 @@ export class AuthApiService {
   constructor(private http: HttpClient, private session: SessionService) {}
 
   login(phone: string, password: string): Observable<void> {
-    return this.authenticate(phone, password).pipe(
-      switchMap(() => this.hydrateProfile(phone)),
+    const mobile = normalizeAuthPhone(phone) || phone.trim();
+    return this.authenticate(mobile, password).pipe(
+      switchMap(() => this.hydrateProfile(mobile)),
       catchError((err) => {
         if (err?.message === 'NO_TOKEN') return throwError(() => new Error('NO_TOKEN'));
         return throwError(() => new Error(apiErrorMessage(err, 'LOGIN')));
@@ -21,21 +22,22 @@ export class AuthApiService {
 
   register(data: { userName: string; displayName?: string; phone: string; password: string }): Observable<void> {
     const shownName = pickDisplayName(data.displayName, data.userName) || data.displayName || data.userName;
+    const phone = normalizeAuthPhone(data.phone) || data.phone.trim();
     const body = {
       userName: data.userName,
-      phone: data.phone,
+      phone,
       password: data.password,
       reEnterPassword: data.password,
     };
     return this.http.post(apiUrl('/api/Auth/register'), body, { observe: 'response' }).pipe(
       switchMap((res) => {
-        const signedIn = this.tryCommit(res, data.phone, shownName);
+        const signedIn = this.tryCommit(res, phone, shownName);
         const afterAuth = signedIn
           ? of(undefined)
-          : this.authenticate(data.phone, data.password).pipe(
-              tap(() => this.session.setProfile({ userName: shownName, phone: data.phone }))
+          : this.authenticate(phone, data.password).pipe(
+              tap(() => this.session.setProfile({ userName: shownName, phone }))
             );
-        return afterAuth.pipe(switchMap(() => this.saveFullName(shownName, data.phone)));
+        return afterAuth.pipe(switchMap(() => this.saveFullName(shownName, phone)));
       }),
       catchError((err) => {
         if (err instanceof Error && err.message && err.message !== 'REGISTER') {

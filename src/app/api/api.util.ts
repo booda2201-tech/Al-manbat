@@ -191,13 +191,41 @@ export function unwrapList(body: unknown): unknown[] {
   return [];
 }
 
+export function normalizeAuthPhone(raw: string): string {
+  let value = (raw || '').trim()
+    .replace(/[٠-٩]/g, (ch) => String(ch.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (ch) => String(ch.charCodeAt(0) - 0x06f0))
+    .replace(/[^\d+]/g, '');
+  if (value.startsWith('00')) value = value.slice(2);
+  if (value.startsWith('+')) value = value.slice(1);
+  if (/^20(10|11|12|15)\d{8}$/.test(value)) return `0${value.slice(2)}`;
+  if (/^9665\d{8}$/.test(value)) return `0${value.slice(3)}`;
+  return value;
+}
+
+function readableApiText(value: string): string | null {
+  const text = value.replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  if (/<[a-z!/]/i.test(text) || /عطل في الخادم/i.test(text) || /server error/i.test(text)) return null;
+  return text.length > 220 ? `${text.slice(0, 220)}…` : text;
+}
+
 export function apiErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof HttpErrorResponse)) return fallback;
   const body = error.error;
-  if (typeof body === 'string' && body.trim()) return body.trim();
+  if (error.status === 0) {
+    return 'تعذر الاتصال بالخادم. تحقق من الإنترنت وحاول مرة أخرى.';
+  }
+  if (typeof body === 'string') {
+    const text = readableApiText(body);
+    if (text) return text;
+  }
   if (body && typeof body === 'object') {
     const record = body as Record<string, unknown>;
-    if (typeof record['message'] === 'string' && record['message'].trim()) return record['message'];
+    if (typeof record['message'] === 'string') {
+      const text = readableApiText(record['message']);
+      if (text) return text;
+    }
     const errors = record['errors'];
     if (errors && typeof errors === 'object') {
       const messages: string[] = [];
@@ -212,16 +240,23 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
       }
       if (messages.length) return messages.join(' · ');
     }
-    if (typeof record['title'] === 'string' && record['title'].trim()) return record['title'];
+    if (typeof record['title'] === 'string') {
+      const text = readableApiText(record['title']);
+      if (text) return text;
+    }
   }
   if (error.status === 401 || error.status === 403) {
-    if (typeof body === 'string' && body.trim()) return body.trim();
     return fallback === 'LOGIN'
       ? 'رقم الجوال أو كلمة المرور غير صحيحة.'
       : 'الحساب الحالي غير مصرح له بهذا الطلب.';
   }
   if (error.status === 415) {
     return 'السيرفر رفض نوع البيانات المرسلة.';
+  }
+  if (error.status >= 500) {
+    return fallback === 'LOGIN'
+      ? 'الخادم رفض تسجيل الدخول. اكتب رقم الجوال كما هو محفوظ في الحساب، بدون + أو مسافات.'
+      : 'حدث عطل في الخادم. حاول مرة أخرى بعد قليل.';
   }
   return fallback;
 }

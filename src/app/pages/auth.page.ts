@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { images } from '../data/images';
 import { LocaleService } from '../services/locale.service';
+import { normalizeAuthPhone } from '../api/api.util';
 import { AuthApiService } from '../services/auth-api.service';
 import { StoreService } from '../services/store.service';
 import { SessionService } from '../services/session.service';
@@ -56,7 +57,7 @@ export class AuthPageComponent implements OnInit {
     ev.preventDefault();
     this.error = '';
     if (this.busy) return;
-    const phone = this.phone.trim();
+    const phone = normalizeAuthPhone(this.phone) || this.phone.trim();
     if (phone.length < 8 || this.password.length < 6) {
       this.error = this.locale.isAr()
         ? 'أدخل رقم جوال صحيح وكلمة مرور من ٦ أحرف على الأقل.'
@@ -142,7 +143,11 @@ export class AuthPageComponent implements OnInit {
       return;
     }
     if (code && code !== 'LOGIN' && code !== 'REGISTER') {
-      this.error = code;
+      this.error = /<[a-z!/]/i.test(code) || /عطل في الخادم/i.test(code)
+        ? this.locale.isAr()
+          ? 'الخادم رفض تسجيل الدخول. اكتب رقم الجوال بدون + أو مسافات.'
+          : 'The server rejected sign-in. Enter the mobile number without + or spaces.'
+        : code;
       return;
     }
     this.error = this.locale.isAr() ? 'تعذر إتمام العملية. حاول مرة أخرى.' : 'Could not complete this. Try again.';
