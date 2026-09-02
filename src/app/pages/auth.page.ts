@@ -139,7 +139,9 @@ export class AuthPageComponent implements OnInit {
     this.busy = false;
     const code = err instanceof Error ? err.message : '';
     if (code === 'NO_TOKEN') {
-      this.error = this.locale.isAr() ? 'تم الدخول لكن الخادم لم يُرجع التوكن.' : 'Signed in, but the server did not return a token.';
+      this.error = this.locale.isAr()
+        ? 'السيرفر رد بالدخول، من غير توكن. جرّب رقم الجوال بصيغة 01XXXXXXXXX.'
+        : 'The server accepted login without a token. Try the mobile as 01XXXXXXXXX.';
       return;
     }
     if (code && code !== 'LOGIN' && code !== 'REGISTER') {

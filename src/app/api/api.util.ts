@@ -16,20 +16,39 @@ export function isApiRequest(url: string): boolean {
   return !!base && url.startsWith(base);
 }
 
-export function extractToken(body: unknown): string | null {
-  if (!body) return null;
+function stripBearer(value: string): string {
+  return value.replace(/^Bearer\s+/i, '').trim();
+}
+
+export function looksLikeJwt(value: string): boolean {
+  const parts = stripBearer(value).split('.');
+  return parts.length === 3 && parts[0].length > 8 && parts[1].length > 8 && parts[2].length > 8;
+}
+
+export function extractToken(body: unknown, depth = 0): string | null {
+  if (body == null || depth > 8) return null;
   if (typeof body === 'string') {
-    const trimmed = body.trim().replace(/^"|"$/g, '');
+    const trimmed = stripBearer(body.trim().replace(/^"|"$/g, ''));
+    if (looksLikeJwt(trimmed)) return trimmed;
     return looksLikeToken(trimmed) ? trimmed : null;
   }
   if (typeof body !== 'object') return null;
+  if (Array.isArray(body)) {
+    for (const item of body) {
+      const nested = extractToken(item, depth + 1);
+      if (nested) return nested;
+    }
+    return null;
+  }
   const record = body as Record<string, unknown>;
   for (const [key, value] of Object.entries(record)) {
-    if (!isTokenKey(key)) continue;
-    if (typeof value === 'string' && looksLikeToken(value.trim())) return value.trim();
+    if (typeof value !== 'string') continue;
+    const trimmed = stripBearer(value.trim());
+    if (!looksLikeToken(trimmed)) continue;
+    if (isTokenKey(key) || looksLikeJwt(trimmed)) return trimmed;
   }
-  for (const key of ['user', 'data', 'result', 'value', 'payload', 'content']) {
-    const nested = extractToken(record[key]);
+  for (const value of Object.values(record)) {
+    const nested = extractToken(value, depth + 1);
     if (nested) return nested;
   }
   return null;
@@ -37,11 +56,62 @@ export function extractToken(body: unknown): string | null {
 
 function isTokenKey(key: string): boolean {
   const k = key.toLowerCase().replace(/[_-]/g, '');
-  return k === 'token' || k === 'accesstoken' || k === 'jwttoken' || k === 'jwt' || k === 'bearertoken' || k === 'authtoken';
+  return (
+    k === 'token' ||
+    k === 'accesstoken' ||
+    k === 'jwttoken' ||
+    k === 'jwt' ||
+    k === 'bearertoken' ||
+    k === 'authtoken' ||
+    k === 'sessiontoken' ||
+    k === 'idtoken'
+  );
 }
 
 function looksLikeToken(value: string): boolean {
   return value.length > 12;
+}
+
+export function extractAuthMessage(body: unknown): string | null {
+  if (typeof body === 'string') {
+    const text = body.replace(/\s+/g, ' ').trim();
+    if (text && !looksLikeJwt(text) && !/<[a-z!/]/i.test(text)) return text.slice(0, 220);
+    return null;
+  }
+  if (!body || typeof body !== 'object') return null;
+  const record = body as Record<string, unknown>;
+  const failed =
+    record['isSuccess'] === false ||
+    record['success'] === false ||
+    record['isAuthenticated'] === false ||
+    record['authenticated'] === false;
+  const raw = record['message'] ?? record['title'] ?? record['error'] ?? record['detail'];
+  const message = typeof raw === 'string' ? raw.replace(/\s+/g, ' ').trim() : '';
+  if (failed && message) return message.slice(0, 220);
+  if (message && !extractToken(body) && !looksLikeJwt(message)) return message.slice(0, 220);
+  return failed ? 'تعذر تسجيل الدخول.' : null;
+}
+
+export function authPhoneVariants(raw: string): string[] {
+  const trimmed = (raw || '').trim().replace(/\s+/g, '');
+  const canonical = normalizeAuthPhone(raw);
+  const digits = canonical.replace(/\D/g, '');
+  const out: string[] = [];
+  const add = (value: string) => {
+    if (value && !out.includes(value)) out.push(value);
+  };
+  add(canonical);
+  add(trimmed);
+  add(digits);
+  if (/^01\d{9}$/.test(digits)) {
+    add(`20${digits.slice(1)}`);
+    add(`+20${digits.slice(1)}`);
+  }
+  if (/^05\d{8}$/.test(digits)) {
+    add(`966${digits.slice(1)}`);
+    add(`+966${digits.slice(1)}`);
+  }
+  return out;
 }
 
 export function extractBearer(header: string | null | undefined): string | null {
@@ -117,7 +187,7 @@ export function extractRole(body: unknown, depth = 0): string | null {
 
 export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
-    const part = token.split('.')[1];
+    const part = stripBearer(token).split('.')[1];
     if (!part) return null;
     const padded = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(part.length / 4) * 4, '=');
     const parsed = JSON.parse(atob(padded)) as unknown;
@@ -132,13 +202,15 @@ export function extractRoleFromToken(token: string | null | undefined): string |
   return extractRole(decodeJwtPayload(token));
 }
 
-export function isTokenExpired(token: string | null | undefined, skewMs = 20_000): boolean {
+export function isTokenExpired(token: string | null | undefined, skewMs = 5 * 60 * 1000): boolean {
   if (!token) return true;
-  const payload = decodeJwtPayload(token);
-  if (!payload) return true;
-  const exp = payload['exp'];
-  if (typeof exp !== 'number' || !Number.isFinite(exp)) return false;
-  return Date.now() >= exp * 1000 - skewMs;
+  const payload = decodeJwtPayload(stripBearer(token));
+  if (!payload) return false;
+  const raw = payload['exp'];
+  const exp = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : NaN;
+  if (!Number.isFinite(exp)) return false;
+  const expMs = exp > 1e12 ? exp : exp * 1000;
+  return Date.now() >= expMs - skewMs;
 }
 
 export function isAdminRole(role: string | null | undefined): boolean {

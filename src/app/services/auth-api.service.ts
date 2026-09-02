@@ -1,7 +1,17 @@
-import { HttpClient, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, map, of, retry, switchMap, tap, throwError } from 'rxjs';
-import { apiErrorMessage, apiUrl, extractBearer, extractToken, extractUserName, normalizeAuthPhone, pickDisplayName } from '../api/api.util';
+import {
+  apiErrorMessage,
+  apiUrl,
+  authPhoneVariants,
+  extractAuthMessage,
+  extractBearer,
+  extractToken,
+  extractUserName,
+  normalizeAuthPhone,
+  pickDisplayName,
+} from '../api/api.util';
 import { mapProfile } from './account-api.service';
 import { SessionService } from './session.service';
 
@@ -12,9 +22,12 @@ export class AuthApiService {
   login(phone: string, password: string): Observable<void> {
     const mobile = normalizeAuthPhone(phone) || phone.trim();
     return this.authenticate(mobile, password).pipe(
-      switchMap(() => this.hydrateProfile(mobile)),
+      switchMap(() => this.hydrateProfile(this.session.phone() || mobile)),
       catchError((err) => {
         if (err?.message === 'NO_TOKEN') return throwError(() => new Error('NO_TOKEN'));
+        if (err instanceof Error && err.message && err.message !== 'LOGIN') {
+          return throwError(() => err);
+        }
         return throwError(() => new Error(apiErrorMessage(err, 'LOGIN')));
       })
     );
@@ -62,15 +75,37 @@ export class AuthApiService {
   }
 
   private authenticate(phone: string, password: string): Observable<void> {
-    return this.http.post(apiUrl('/api/Auth/login'), { phone, password }, { observe: 'response' }).pipe(
-      map((res) => this.commitSession(res, phone))
-    );
+    return this.tryLoginPhones(authPhoneVariants(phone), password);
   }
 
-  private commitSession(res: HttpResponse<unknown>, phone: string, userName?: string): void {
-    if (!this.tryCommit(res, phone, userName)) {
-      throw new Error('NO_TOKEN');
+  private tryLoginPhones(phones: string[], password: string, index = 0): Observable<void> {
+    const mobile = phones[index];
+    return this.http
+      .post(apiUrl('/api/Auth/login'), { phone: mobile, password }, { observe: 'response', withCredentials: true })
+      .pipe(
+        map((res) => {
+          if (this.tryCommit(res, mobile)) return;
+          throw new Error(extractAuthMessage(res.body) || 'NO_TOKEN');
+        }),
+        catchError((err) => {
+          if (index + 1 < phones.length && this.canRetryLogin(err)) {
+            return this.tryLoginPhones(phones, password, index + 1);
+          }
+          return throwError(() => err);
+        })
+      );
+  }
+
+  private canRetryLogin(err: unknown): boolean {
+    if (err instanceof HttpErrorResponse) {
+      return err.status !== 401 && err.status !== 403;
     }
+    if (err instanceof Error) {
+      const message = err.message || '';
+      if (/غير صحيحة|incorrect|invalid password|wrong password/i.test(message)) return false;
+      return true;
+    }
+    return true;
   }
 
   private tryCommit(res: HttpResponse<unknown>, phone: string, userName?: string): boolean {
@@ -78,6 +113,7 @@ export class AuthApiService {
       extractToken(res.body) ||
       extractBearer(res.headers.get('Authorization')) ||
       extractBearer(res.headers.get('X-Token')) ||
+      extractBearer(res.headers.get('X-Access-Token')) ||
       extractBearer(res.headers.get('token'));
     if (!token) return false;
     const payload =
