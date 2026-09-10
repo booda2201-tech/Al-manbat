@@ -87,7 +87,7 @@ export const reviews: Review[] = [
   author: { ar: 'سارة ع.', en: 'Sarah A.' },
   rating: 5,
   date: '2026-08-02',
-  title: { ar: 'يستحق كل ريال', en: 'Worth every riyal' },
+  title: { ar: 'يستحق كل جنيه', en: 'Worth every pound' },
   body: {
     ar: 'استخدمته أسبوعين والفرق واضح. التغليف ممتاز والتوصيل وصل قبل الموعد بيوم.',
     en: 'Two weeks in and the difference is clear. Excellent packaging and it arrived a day early.'

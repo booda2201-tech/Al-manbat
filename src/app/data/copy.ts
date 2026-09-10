@@ -6,7 +6,7 @@ export const copy: Record<string, Bilingual> = {
   brandTagline: { ar: 'سر الخير', en: 'The Root of Goodness' },
 
   // Announcement + header
-  announcement1: { ar: 'توصيل مجاني للطلبات أكثر من ٢٥٠ ر.س', en: 'Complimentary delivery on orders over SAR 250' },
+  announcement1: { ar: 'توصيل مجاني للطلبات أكثر من ٢٥٠ ج.م', en: 'Complimentary delivery on orders over EGP 250' },
   announcement2: { ar: 'كل دفعة موثّقة بتاريخ حصاد واضح', en: 'Every batch traced with a clear harvest date' },
   announcement3: { ar: 'خدمة العملاء ٢٤/٧', en: 'Client care, 24/7' },
   announcement4: { ar: 'موسم الحصاد ٢٠٢٦ — دفعات محدودة من الجوف', en: 'Harvest 2026 — limited lots from Al-Jouf' },

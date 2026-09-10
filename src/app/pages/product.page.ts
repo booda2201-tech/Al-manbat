@@ -184,7 +184,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
         icon: 'truck',
         stat: formatCount(product.deliveryDays, loc),
         title: ar ? 'توصيل' : 'Delivery',
-        detail: product.freeShipping ? (ar ? 'بدون رسوم' : 'No fee') : ar ? '٢٥ ر.س' : 'SAR 25',
+        detail: product.freeShipping ? (ar ? 'بدون رسوم' : 'No fee') : ar ? '٢٥ ج.م' : 'EGP 25',
       },
       {
         icon: 'lock',
