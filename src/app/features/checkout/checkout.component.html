@@ -18,10 +18,15 @@
         <div class="field"><label>الاسم</label><input name="fn" [(ngModel)]="draft.address.fullName" /><span class="field-error" *ngIf="errors['fullName']">{{ errors['fullName'] }}</span></div>
         <div class="field"><label>الموبايل</label><input name="am" [(ngModel)]="draft.address.mobile" /><span class="field-error" *ngIf="errors['mobile']">{{ errors['mobile'] }}</span></div>
         <div class="field"><label>المحافظة</label>
-          <select name="g" [(ngModel)]="draft.address.governorate">
-            <option value="">اختَر</option>
-            <option *ngFor="let g of govs" [value]="g">{{ g }}</option>
-          </select>
+          <app-menu-select
+            variant="field"
+            [options]="govOptions"
+            [value]="draft.address.governorate"
+          (valueChange)="draft.address.governorate = '' + $event"
+            title="المحافظة"
+            placeholder="اختَر"
+            closeLabel="إغلاق"
+          ></app-menu-select>
           <span class="field-error" *ngIf="errors['governorate']">{{ errors['governorate'] }}</span>
         </div>
         <div class="field"><label>المدينة</label><input name="city" [(ngModel)]="draft.address.city" /><span class="field-error" *ngIf="errors['city']">{{ errors['city'] }}</span></div>

@@ -9,6 +9,7 @@ import { BreadcrumbsComponent } from '../../shared/components/breadcrumbs.compon
 import { ProductCardComponent, ProductSkeletonComponent } from '../../shared/components/product-card.component';
 import { EmptyStateComponent } from '../../shared/components/ui-bits.component';
 import { IconComponent } from '../../shared/components/icon.component';
+import { MenuSelectComponent, type MenuSelectValue } from '../../ui/menu-select.component';
 
 @Component({
   selector: 'app-shop',
@@ -21,6 +22,7 @@ import { IconComponent } from '../../shared/components/icon.component';
     ProductSkeletonComponent,
     EmptyStateComponent,
     IconComponent,
+    MenuSelectComponent,
   ],
   templateUrl: './shop.component.html',
   styleUrls: ['./shop.component.scss'],
@@ -136,6 +138,15 @@ export class ShopComponent implements OnInit {
           this.loading = false;
         },
       });
+  }
+
+  get sortSelectOptions() {
+    return this.sortKeys.map((k) => ({ value: k, label: this.sortLabels[k] }));
+  }
+
+  onSort(next: MenuSelectValue): void {
+    this.sort = String(next) as SortOption;
+    this.apply();
   }
 
   apply(): void {

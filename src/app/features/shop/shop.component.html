@@ -9,9 +9,16 @@
       <span>{{ total }} منتج</span>
       <label>
         <span class="sr-only">الترتيب</span>
-        <select [(ngModel)]="sort" (change)="apply()">
-          <option *ngFor="let k of sortKeys" [value]="k">{{ sortLabels[k] }}</option>
-        </select>
+        <app-menu-select
+          variant="toolbar"
+          icon="sort"
+          [options]="sortSelectOptions"
+          [value]="sort"
+          (valueChange)="onSort($event)"
+          title="الترتيب"
+          kicker="الترتيب"
+          closeLabel="إغلاق"
+        ></app-menu-select>
       </label>
       <button class="btn btn-outline btn-sm mobile" type="button" (click)="ui.openFilters()">
         <app-icon name="filter" [size]="16"></app-icon> الفلاتر

@@ -9,11 +9,12 @@ import { CartService } from '../../core/services/cart.service';
 import { emptyDraft, OrderService } from '../../core/services/order.service';
 import { ToastService } from '../../core/services/toast.service';
 import { EgpPipe } from '../../shared/pipes/egp.pipe';
+import { MenuSelectComponent } from '../../ui/menu-select.component';
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, EgpPipe],
+  imports: [CommonModule, FormsModule, RouterLink, EgpPipe, MenuSelectComponent],
   templateUrl: './checkout.component.html',
   styleUrls: ['./checkout.component.scss'],
 })
@@ -26,6 +27,10 @@ export class CheckoutComponent {
   deliveries = DELIVERY_METHODS;
   payments = PAYMENT_METHODS;
   govs = GOVERNORATES;
+
+  get govOptions() {
+    return this.govs.map((g) => ({ value: g, label: g }));
+  }
 
   constructor(
     public cart: CartService,

@@ -18,7 +18,9 @@ import { parseApiStatus } from '../services/account-api.service';
 import { CountPipe, SarPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
 import { LogoComponent } from '../ui/logo.component';
+import { MenuSelectComponent } from '../ui/menu-select.component';
 import { compressImageForUpload, fileFromRemoteUrl } from '../utils/image-file';
+import { completeProductCopy, type ProductCopySuggestion } from '../services/product-copy.service';
 
 interface ProductImageSlot {
   preview: string;
@@ -71,7 +73,7 @@ interface CategoryDraft {
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent, LogoComponent, SarPipe, CountPipe, PagerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, IconComponent, LogoComponent, SarPipe, CountPipe, PagerComponent, MenuSelectComponent],
   templateUrl: './admin.page.html',
 })
 export class AdminPageComponent implements OnInit, OnDestroy {
@@ -107,6 +109,14 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   uploadingImages = false;
   private dragDepth = 0;
   private galleryPersistQueued = false;
+  botPrompt = '';
+  botBusy = false;
+  botLog: Array<{ role: 'user' | 'bot'; text: string }> = [];
+  botSuggestions: ProductCopySuggestion[] = [];
+
+  get botApplyable(): boolean {
+    return this.botSuggestions.some((item) => item.key !== 'images' && (!!item.extra || item.value != null));
+  }
 
   get dropZoneClass(): string {
     return this.dropActive ? 'admin-drop is-on' : 'admin-drop';
@@ -521,6 +531,14 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     return this.locale.isAr() ? c.nameAr || c.nameEn || c.name || `#${c.id}` : c.nameEn || c.nameAr || c.name || `#${c.id}`;
   }
 
+  get categorySelectOptions() {
+    return this.categories.map((c) => ({ value: c.id, label: this.categoryName(c) }));
+  }
+
+  setProductCategory(id: string | number): void {
+    this.productDraft.categoryId = Number(id) || 0;
+  }
+
   categoryOf(id: number): ApiCategory | undefined {
     return this.categories.find((c) => c.id === id);
   }
@@ -686,6 +704,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       this.toast(this.locale.isAr() ? 'الحد الأقصى ٨ صور. أُضيف المتاح فقط.' : 'Maximum of 8 images. Extra files were skipped.', 'warning');
     }
     this.productDraft.images = [...existing, ...slots];
+    this.botSuggestions = this.botSuggestions.filter((item) => item.key !== 'images');
     if (this.productDraft.id) this.persistGallery();
   }
 
@@ -806,6 +825,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.selectedCategoryId = null;
     this.editingProduct = null;
     this.setProductDraft(emptyProduct(this.categories[0]?.id ?? 0));
+    this.resetProductBot();
     this.productFormOpen = true;
     this.categoryFormOpen = false;
     this.tab = 'products';
@@ -820,6 +840,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.selectedCategoryId = null;
     this.editingProduct = p;
     this.setProductDraft(fromProduct(p));
+    this.resetProductBot(p.nameAr || p.name || '');
     this.productFormOpen = true;
     this.categoryFormOpen = false;
     this.setTab('products', true);
@@ -873,6 +894,75 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.galleryPersistQueued = false;
     this.revokeProductImages();
     this.revokeCategoryImage();
+    this.resetProductBot();
+  }
+
+  sendProductBot(): void {
+    if (this.botBusy) return;
+    const prompt = (this.botPrompt.trim() || this.productDraft.nameAr || this.productDraft.nameEn).trim();
+    if (!prompt) {
+      this.toast(this.locale.isAr() ? 'اكتب الاسم أو الصق بيانات المنتج للبوت.' : 'Enter the product name or paste its details for the bot.', 'warning');
+      return;
+    }
+    const preview = prompt.length > 220 ? `${prompt.slice(0, 220)}…` : prompt;
+    this.botLog = [...this.botLog, { role: 'user' as const, text: preview }].slice(-8);
+    this.botBusy = true;
+    const result = completeProductCopy(this.productDraft, prompt, this.products, this.categories, {
+      hasImages: this.productDraft.images.length > 0,
+    });
+    this.productDraft = { ...this.productDraft, ...result.draft };
+    this.botSuggestions = result.suggestions;
+    this.botPrompt = '';
+    this.botBusy = false;
+    this.botLog = [
+      ...this.botLog,
+      { role: 'bot' as const, text: this.locale.isAr() ? result.summaryAr : result.summaryEn },
+    ].slice(-8);
+    this.scrollBotLog();
+  }
+
+  private scrollBotLog(): void {
+    setTimeout(() => {
+      const log = document.querySelector<HTMLElement>('.admin-bot__log');
+      if (log) log.scrollTop = log.scrollHeight;
+    }, 0);
+  }
+
+  applyBotSuggestion(item: ProductCopySuggestion): void {
+    if (item.key === 'images') {
+      document.getElementById('pr-images')?.click();
+      return;
+    }
+    if (item.extra) {
+      this.productDraft = { ...this.productDraft, ...item.extra };
+    } else if (item.value != null) {
+      this.productDraft = { ...this.productDraft, [item.key]: item.value };
+    } else if (item.key === 'price') {
+      document.getElementById('pr-price')?.focus();
+    }
+    this.botSuggestions = this.botSuggestions.filter((row) => {
+      if (item.key === 'price') return row.key !== 'price';
+      if (item.key === 'sizeAr' || item.key === 'sizeEn') return row.key !== 'sizeAr' && row.key !== 'sizeEn';
+      return row.id !== item.id;
+    });
+  }
+
+  applyAllBotSuggestions(): void {
+    const used = new Set<string>();
+    const batch = this.botSuggestions.filter((item) => {
+      if (item.key === 'images' || (!item.extra && item.value == null)) return false;
+      if (used.has(item.labelAr)) return false;
+      used.add(item.labelAr);
+      return true;
+    });
+    for (const item of batch) this.applyBotSuggestion(item);
+  }
+
+  private resetProductBot(seed = ''): void {
+    this.botPrompt = seed;
+    this.botBusy = false;
+    this.botLog = [];
+    this.botSuggestions = [];
   }
 
   saveProduct(ev: Event): void {

@@ -103,9 +103,17 @@
               <span>{{ locale.isAr() ? 'الموضوع' : 'Topic' }}</span>
               <span>{{ locale.isAr() ? 'Topic' : 'الموضوع' }}</span>
             </label>
-            <select id="s-topic" name="sTopic" class="field-input !mt-1.5 appearance-none" [(ngModel)]="form.topic">
-              <option *ngFor="let t of topics" [ngValue]="t.en">{{ locale.isAr() ? t.ar : t.en }}</option>
-            </select>
+            <app-menu-select
+              id="s-topic"
+              class="mt-1.5"
+              variant="field"
+              [options]="topicOptions"
+              [value]="form.topic"
+              (valueChange)="setTopic($event)"
+              [title]="locale.isAr() ? 'الموضوع' : 'Topic'"
+              [placeholder]="locale.isAr() ? 'اختر الموضوع' : 'Choose a topic'"
+              [closeLabel]="locale.isAr() ? 'إغلاق' : 'Close'"
+            ></app-menu-select>
           </div>
           <div>
             <label class="auth-label" for="s-order">

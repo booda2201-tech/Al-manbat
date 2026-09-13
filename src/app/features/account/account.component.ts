@@ -13,6 +13,7 @@ import { WishlistService } from '../../core/services/wishlist.service';
 import { ProductCardComponent } from '../../shared/components/product-card.component';
 import { EmptyStateComponent } from '../../shared/components/ui-bits.component';
 import { EgpPipe } from '../../shared/pipes/egp.pipe';
+import { MenuSelectComponent } from '../../ui/menu-select.component';
 
 @Component({
   selector: 'app-account-layout',
@@ -199,7 +200,7 @@ export class WishlistPageComponent {
 @Component({
   selector: 'app-addresses',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenuSelectComponent],
   template: `
     <h1>العناوين</h1>
     <p *ngIf="!auth.isLoggedIn()">سجّل الدخول لحفظ العناوين على الحساب.</p>
@@ -213,9 +214,15 @@ export class WishlistPageComponent {
       <div class="field"><label>الاسم</label><input name="fn" [(ngModel)]="form.fullName" required /></div>
       <div class="field"><label>الموبايل</label><input name="m" [(ngModel)]="form.mobile" required /></div>
       <div class="field"><label>المحافظة</label>
-        <select name="g" [(ngModel)]="form.governorate">
-          <option *ngFor="let g of govs" [value]="g">{{ g }}</option>
-        </select>
+        <app-menu-select
+          variant="field"
+          [options]="govOptions"
+          [value]="form.governorate"
+          (valueChange)="form.governorate = '' + $event"
+          title="المحافظة"
+          placeholder="اختَر"
+          closeLabel="إغلاق"
+        ></app-menu-select>
       </div>
       <div class="field"><label>المدينة</label><input name="c" [(ngModel)]="form.city" required /></div>
       <div class="field"><label>المنطقة</label><input name="ar" [(ngModel)]="form.area" required /></div>
@@ -241,6 +248,10 @@ export class AddressesComponent {
   constructor(public auth: AuthService, private toast: ToastService) {}
   get addresses() {
     return this.auth.customer()?.addresses ?? [];
+  }
+
+  get govOptions() {
+    return this.govs.map((g) => ({ value: g, label: g }));
   }
   save(ev: Event): void {
     ev.preventDefault();

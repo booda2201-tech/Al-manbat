@@ -171,7 +171,8 @@
           </button>
         </div>
 
-        <form *ngIf="productFormOpen" class="admin-panel admin-editor mb-5 p-4 sm:p-6" (submit)="saveProduct($event)">
+        <div *ngIf="productFormOpen" class="admin-editor-row">
+        <form class="admin-panel admin-editor mb-0 p-4 sm:p-6" (submit)="saveProduct($event)">
           <p class="text-sm font-semibold text-olive-800">{{ productDraft.id ? locale.ui('adminEditProduct') : locale.ui('adminAddProduct') }}</p>
           <div class="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
@@ -188,9 +189,17 @@
             </div>
             <div>
               <label class="auth-label" for="pr-cat"><span>القسم</span><span>Category</span></label>
-              <select id="pr-cat" name="categoryId" class="field-input !mt-1.5 appearance-none" [(ngModel)]="productDraft.categoryId">
-                <option *ngFor="let c of categories" [ngValue]="c.id">{{ categoryName(c) }}</option>
-              </select>
+              <app-menu-select
+                id="pr-cat"
+                class="mt-1.5"
+                variant="field"
+                [options]="categorySelectOptions"
+                [value]="productDraft.categoryId"
+                (valueChange)="setProductCategory($event)"
+                [title]="locale.isAr() ? 'القسم' : 'Category'"
+                [placeholder]="locale.isAr() ? 'اختر القسم' : 'Choose category'"
+                [closeLabel]="locale.isAr() ? 'إغلاق' : 'Close'"
+              ></app-menu-select>
             </div>
             <div class="sm:col-span-2">
               <p class="auth-label"><span>صور المنتج</span><span>Product images</span></p>
@@ -222,7 +231,7 @@
                   <span class="text-sm font-medium">{{ dropActive ? (locale.isAr() ? 'أفلت الصور هنا' : 'Drop images here') : (locale.isAr() ? 'اسحب الصور هنا أو اضغط للاختيار' : 'Drag images here or click to browse') }}</span>
                   <span class="text-xs">{{ locale.isAr() ? 'أضف حتى ٨ صور. الجديدة تنضم للمعرض بدون مسح القديمة. الأولى هي الرئيسية.' : 'Add up to 8 photos. New ones join the gallery without replacing the rest. The first is the cover.' }}</span>
                 </button>
-                <input #imageInput type="file" accept="image/*" multiple class="hidden" (change)="onProductImagesPicked($event)" />
+                <input #imageInput id="pr-images" type="file" accept="image/*" multiple class="hidden" (change)="onProductImagesPicked($event)" />
               </div>
               <p *ngIf="uploadingImages" class="mt-2 text-xs text-ink-muted">{{ locale.isAr() ? 'جاري حفظ الصور…' : 'Saving images…' }}</p>
             </div>
@@ -305,6 +314,45 @@
             <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl border border-olive-800/20 px-5 text-sm font-medium text-olive-800" (click)="closeForms()">{{ locale.ui('adminCancel') }}</button>
           </div>
         </form>
+        <aside class="admin-bot" [attr.aria-label]="locale.isAr() ? 'بوت المنبت' : 'Almanbat bot'">
+          <div class="admin-bot__head">
+            <span class="admin-bot__avatar">
+              <app-icon name="chat" [size]="16"></app-icon>
+            </span>
+            <div>
+              <p>{{ locale.isAr() ? 'بوت المنبت' : 'Almanbat bot' }}</p>
+              <small>{{ locale.isAr() ? 'الاسم فقط، أو الصق كل البيانات' : 'A name, or paste the full details' }}</small>
+            </div>
+          </div>
+          <div class="admin-bot__log">
+            <p *ngIf="!botLog.length" class="admin-bot__hint">{{ locale.isAr() ? 'اكتب الاسم، أو الصق البيانات: السعر، الوصف، الحجم، المنشأ، الصنف…' : 'Send the name, or paste price, copy, size, origin, variety…' }}</p>
+            <div *ngFor="let msg of botLog" class="admin-bot__msg" [class.is-user]="msg.role === 'user'" [class.is-bot]="msg.role === 'bot'">{{ msg.text }}</div>
+          </div>
+          <div class="admin-bot__suggest" *ngIf="botSuggestions.length">
+            <p>{{ locale.isAr() ? 'ناقص — اضغط عشان تكمّل:' : 'Still missing — tap to fill:' }}</p>
+            <div class="admin-bot__chips">
+              <button type="button" *ngFor="let s of botSuggestions" (click)="applyBotSuggestion(s)">
+                {{ locale.isAr() ? s.previewAr : s.previewEn }}
+              </button>
+            </div>
+            <button type="button" class="admin-bot__apply-all" *ngIf="botApplyable" (click)="applyAllBotSuggestions()">
+              {{ locale.isAr() ? 'طبّق المقترحات' : 'Apply suggestions' }}
+            </button>
+          </div>
+          <div class="admin-bot__composer">
+            <textarea
+              name="botPrompt"
+              rows="3"
+              [(ngModel)]="botPrompt"
+              [ngModelOptions]="{standalone: true}"
+              [placeholder]="locale.isAr() ? 'الاسم أو الصق البيانات هنا…' : 'Name or paste the details…'"
+              (keydown.control.enter)="$event.preventDefault(); sendProductBot()"
+              (keydown.meta.enter)="$event.preventDefault(); sendProductBot()"
+            ></textarea>
+            <button type="button" [disabled]="botBusy" (click)="sendProductBot()">{{ locale.isAr() ? 'أكمل' : 'Fill' }}</button>
+          </div>
+        </aside>
+        </div>
 
         <nav class="admin-cats" [attr.aria-label]="locale.ui('adminCategories')">
           <button type="button" [ngClass]="categoryChipClass(0)" (click)="setCategory(0, $event)">

@@ -9,6 +9,7 @@ import { CatalogService } from '../services/catalog.service';
 import { StoreService } from '../services/store.service';
 import { IconComponent } from '../ui/icon.component';
 import { LogoComponent } from '../ui/logo.component';
+import { MenuSelectComponent } from '../ui/menu-select.component';
 import { ScrollOpenDirective } from '../ui/scroll-open.directive';
 import { ProductRailComponent, SectionHeaderComponent, TrustStripComponent } from '../commerce/commerce.component';
 import { CrumbsComponent } from '../commerce/crumbs.component';
@@ -123,7 +124,7 @@ export class AboutPageComponent {
 @Component({
   selector: 'app-support',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent, CrumbsComponent],
+  imports: [CommonModule, FormsModule, RouterLink, IconComponent, CrumbsComponent, MenuSelectComponent],
   templateUrl: './support.page.html',
 })
 export class SupportPageComponent {
@@ -151,6 +152,14 @@ export class SupportPageComponent {
 
   get trail() {
     return [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.ui('support') }];
+  }
+
+  get topicOptions() {
+    return this.topics.map((t) => ({ value: t.en, label: this.locale.isAr() ? t.ar : t.en }));
+  }
+
+  setTopic(next: string | number): void {
+    this.form.topic = String(next);
   }
 
   send(ev: Event): void {
