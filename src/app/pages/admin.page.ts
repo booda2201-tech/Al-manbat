@@ -63,6 +63,9 @@ interface CategoryDraft {
   descriptionAr: string;
   descriptionEn: string;
   imageUrl: string;
+  imageFile?: File;
+  imagePreview?: string;
+  imageBroken?: boolean;
 }
 
 @Component({
@@ -109,6 +112,10 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     return this.dropActive ? 'admin-drop is-on' : 'admin-drop';
   }
 
+  get categoryImageSrc(): string {
+    return this.categoryDraft.imagePreview || this.categoryDraft.imageUrl;
+  }
+
   constructor(
     public locale: LocaleService,
     public session: SessionService,
@@ -135,6 +142,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.statusMenuId = '';
     this.revokeProductImages();
+    this.revokeCategoryImage();
   }
 
   readonly navItems = [
@@ -601,7 +609,26 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     ev.preventDefault();
     this.dragDepth = 0;
     this.dropActive = false;
-    this.addProductFiles(ev.dataTransfer?.files);
+    if (this.categoryFormOpen) this.setCategoryFile(firstImageFile(ev.dataTransfer?.files));
+    else this.addProductFiles(ev.dataTransfer?.files);
+  }
+
+  onCategoryImagePicked(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    this.setCategoryFile(firstImageFile(input.files));
+    input.value = '';
+  }
+
+  removeCategoryImage(ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    this.revokeCategoryImage();
+    this.categoryDraft = { ...this.categoryDraft, imageUrl: '', imageFile: undefined, imagePreview: '', imageBroken: false };
+  }
+
+  onCategoryImageError(): void {
+    if (this.categoryDraft.imageBroken) return;
+    this.categoryDraft = { ...this.categoryDraft, imageBroken: true };
   }
 
   onProductImagesPicked(ev: Event): void {
@@ -735,6 +762,30 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     for (const slot of this.productDraft.images) this.revokeSlot(slot);
   }
 
+  private revokeCategoryImage(): void {
+    const preview = this.categoryDraft.imagePreview;
+    if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
+  }
+
+  private setCategoryDraft(next: CategoryDraft): void {
+    this.revokeCategoryImage();
+    this.categoryDraft = next;
+  }
+
+  private setCategoryFile(file: File | null): void {
+    if (!file) {
+      this.toast(this.locale.isAr() ? 'اختَر صورة صالحة.' : 'Choose a valid image.', 'warning');
+      return;
+    }
+    this.revokeCategoryImage();
+    this.categoryDraft = {
+      ...this.categoryDraft,
+      imageFile: file,
+      imagePreview: URL.createObjectURL(file),
+      imageBroken: false,
+    };
+  }
+
   private setProductDraft(next: ProductDraft): void {
     this.revokeProductImages();
     this.productDraft = next;
@@ -780,7 +831,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.selectedProductId = null;
     this.selectedCategoryId = null;
     this.editingCategory = null;
-    this.categoryDraft = emptyCategory();
+    this.setCategoryDraft(emptyCategory());
     this.categoryFormOpen = true;
     this.productFormOpen = false;
     this.page = 1;
@@ -793,7 +844,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.selectedProductId = null;
     this.selectedCategoryId = null;
     this.editingCategory = c;
-    this.categoryDraft = fromCategory(c);
+    this.setCategoryDraft(fromCategory(c));
     this.categoryFormOpen = true;
     this.revealAdminForm();
   }
@@ -821,6 +872,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.uploadingImages = false;
     this.galleryPersistQueued = false;
     this.revokeProductImages();
+    this.revokeCategoryImage();
   }
 
   saveProduct(ev: Event): void {
@@ -855,11 +907,16 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     }
     const dto = this.toCategoryDto();
     this.saving = true;
-    const req = this.categoryDraft.id ? this.admin.updateCategory(dto) : this.admin.addCategory(dto);
-    req.subscribe({
-      next: () => this.afterSave(this.locale.isAr() ? 'تم حفظ القسم' : 'Category saved'),
-      error: (err) => this.fail(err),
-    });
+    from(this.resolveCategoryFile())
+      .pipe(
+        switchMap((file) =>
+          this.categoryDraft.id ? this.admin.updateCategory(dto, file) : this.admin.addCategory(dto, file)
+        )
+      )
+      .subscribe({
+        next: () => this.afterSave(this.locale.isAr() ? 'تم حفظ القسم' : 'Category saved'),
+        error: (err) => this.fail(err),
+      });
   }
 
   saveOffer(p: ApiProduct): void {
@@ -1162,8 +1219,13 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       nameEn: this.categoryDraft.nameEn.trim(),
       descriptionAr: this.categoryDraft.descriptionAr.trim(),
       descriptionEn: this.categoryDraft.descriptionEn.trim(),
-      imageUrl: this.categoryDraft.imageUrl.trim() || null,
     };
+  }
+
+  private async resolveCategoryFile(): Promise<File | null> {
+    const file = this.categoryDraft.imageFile;
+    if (!file) return null;
+    return compressImageForUpload(file);
   }
 }
 
@@ -1239,6 +1301,10 @@ function joinHighlights(value?: string[] | null, fallback?: string[] | null): st
 
 function splitHighlights(text: string): string[] {
   return text.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function firstImageFile(list: FileList | File[] | null | undefined): File | null {
+  return Array.from(list ?? []).find((file) => file.type.startsWith('image/')) || null;
 }
 
 function emptyCategory(): CategoryDraft {

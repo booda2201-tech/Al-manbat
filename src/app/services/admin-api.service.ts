@@ -44,16 +44,16 @@ export class AdminApiService {
     return this.http.delete(apiUrl(`/api/Products/DeleteProduct/${id}`)).pipe(this.fail('DELETE_PRODUCT'));
   }
 
-  addCategory(dto: Partial<ApiCategory>): Observable<unknown> {
-    return this.http.post(apiUrl('/api/Categories/AddCategory'), dto).pipe(this.fail('ADD_CATEGORY'));
+  addCategory(dto: Partial<ApiCategory>, image?: File | null): Observable<unknown> {
+    return this.http.post(apiUrl('/api/Categories/AddCategory'), toCategoryFormData(dto, image)).pipe(this.fail('ADD_CATEGORY'));
   }
 
-  updateCategory(dto: Partial<ApiCategory>): Observable<unknown> {
+  updateCategory(dto: Partial<ApiCategory>, image?: File | null): Observable<unknown> {
     const id = dto.id;
     if (id == null) {
       return throwError(() => new Error('UPDATE_CATEGORY'));
     }
-    return this.http.put(apiUrl(`/api/Categories/UpdateCategory/${id}`), dto).pipe(this.fail('UPDATE_CATEGORY'));
+    return this.http.put(apiUrl(`/api/Categories/UpdateCategory/${id}`), toCategoryFormData(dto, image)).pipe(this.fail('UPDATE_CATEGORY'));
   }
 
   deleteCategory(id: number): Observable<unknown> {
@@ -216,6 +216,25 @@ function toProductFormData(dto: Partial<ApiProduct>, images?: File | File[] | nu
   }
   if (files.length === 1) {
     form.append('Image', files[0], files[0].name);
+  }
+  return form;
+}
+
+function toCategoryFormData(dto: Partial<ApiCategory>, image?: File | null): FormData {
+  const form = new FormData();
+  const nameAr = (dto.nameAr || dto.name || '').trim();
+  const nameEn = (dto.nameEn || '').trim();
+  const descriptionAr = (dto.descriptionAr || dto.description || '').trim();
+  const descriptionEn = (dto.descriptionEn || '').trim();
+  appendValue(form, 'nameAr', nameAr);
+  appendValue(form, 'nameEn', nameEn);
+  appendValue(form, 'name', nameAr);
+  appendValue(form, 'descriptionAr', descriptionAr);
+  appendValue(form, 'descriptionEn', descriptionEn);
+  appendValue(form, 'description', descriptionAr || descriptionEn);
+  if (image) {
+    form.append('image', image, image.name);
+    form.append('Image', image, image.name);
   }
   return form;
 }

@@ -372,8 +372,33 @@
               <input id="cat-en" name="catNameEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="categoryDraft.nameEn" />
             </div>
             <div class="sm:col-span-2">
-              <label class="auth-label" for="cat-img"><span>رابط الصورة</span><span>Image URL</span></label>
-              <input id="cat-img" name="catImage" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="categoryDraft.imageUrl" />
+              <p class="auth-label"><span>صورة القسم</span><span>Category image</span></p>
+              <div
+                class="mt-1.5 rounded-xl border-2 border-dashed p-3 transition-colors duration-200 sm:p-4"
+                [ngClass]="dropZoneClass"
+                (dragenter)="onDragEnter($event)"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onDrop($event)"
+              >
+                <div *ngIf="categoryImageSrc" class="relative mx-auto mb-3 aspect-square w-full max-w-[220px] overflow-hidden rounded-lg bg-sand-100 ring-1 ring-olive-800/10">
+                  <img *ngIf="!categoryDraft.imageBroken" [src]="categoryImageSrc" alt="" class="h-full w-full object-cover" (error)="onCategoryImageError()" />
+                  <span *ngIf="categoryDraft.imageBroken" class="flex h-full items-center justify-center text-ink-muted">
+                    <app-icon name="image" [size]="22"></app-icon>
+                  </span>
+                  <button type="button" class="absolute end-1.5 top-1.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-sand-100 text-state-danger shadow-sm" (click)="removeCategoryImage($event)" [attr.aria-label]="locale.ui('adminDelete')">
+                    <app-icon name="trash" [size]="14"></app-icon>
+                  </button>
+                </div>
+                <button type="button" class="flex w-full flex-col items-center justify-center gap-2 rounded-lg py-7 text-ink-muted transition-colors hover:text-olive-800" (click)="categoryImageInput.click()">
+                  <span class="flex h-11 w-11 items-center justify-center rounded-full bg-sand-100 ring-1 ring-olive-800/10">
+                    <app-icon name="image" [size]="20" class="text-gold-400"></app-icon>
+                  </span>
+                  <span class="text-sm font-medium">{{ dropActive ? (locale.isAr() ? 'أفلت الصورة هنا' : 'Drop the image here') : (locale.isAr() ? 'اسحب الصورة هنا أو اضغط للاختيار' : 'Drag an image here or click to browse') }}</span>
+                  <span class="text-xs">{{ locale.isAr() ? 'JPG أو PNG أو WEBP — حد أقصى ٥ ميجا. صورة واحدة للقسم.' : 'JPG, PNG or WEBP — max 5 MB. One image per category.' }}</span>
+                </button>
+                <input #categoryImageInput type="file" accept="image/*" class="hidden" (change)="onCategoryImagePicked($event)" />
+              </div>
             </div>
             <div>
               <label class="auth-label" for="cat-desc-ar"><span>الوصف عربي</span><span>Arabic description</span></label>
