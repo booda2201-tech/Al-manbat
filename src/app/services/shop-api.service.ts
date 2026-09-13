@@ -49,21 +49,21 @@ export class ShopApiService {
   }
 
   addToCart(productId: string, quantity: number): Observable<unknown> {
-    return this.http
-      .post(apiUrl('/api/Cart/items/AddToCart'), { productId: Number(productId), quantity })
-      .pipe(catchError(() => of(null)));
+    return this.http.post(apiUrl('/api/Cart/items/AddToCart'), {
+      productId: Number(productId),
+      quantity,
+    });
   }
 
   updateItem(productId: string, quantity: number): Observable<unknown> {
-    return this.http
-      .put(apiUrl('/api/Cart/items/UpdateItem'), { productId: Number(productId), quantity })
-      .pipe(catchError(() => of(null)));
+    return this.http.put(apiUrl('/api/Cart/items/UpdateItem'), {
+      productId: Number(productId),
+      quantity,
+    });
   }
 
   removeItem(productId: string): Observable<unknown> {
-    return this.http
-      .delete(apiUrl('/api/Cart/items/RemoveItem'), { params: { productId } })
-      .pipe(catchError(() => of(null)));
+    return this.http.delete(apiUrl('/api/Cart/items/RemoveItem'), { params: { productId } });
   }
 
   checkout(dto: { addressId: number; paymentMethod: 'Cash' | 'Visa'; notes?: string }): Observable<{ id: string }> {

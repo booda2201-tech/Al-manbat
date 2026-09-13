@@ -96,7 +96,7 @@ export class StoreService {
     });
     this.lastAdded.set(this.catalog.byId(productId) ?? null);
     if (openCart) this.cartOpen.set(true);
-    if (!this.session.isAdmin()) this.shop.addToCart(productId, qty).subscribe();
+    if (!this.session.isAdmin()) this.shop.addToCart(productId, qty).subscribe({ error: () => undefined });
     return true;
   }
 
@@ -107,20 +107,22 @@ export class StoreService {
         : lines.map((l) => (l.productId === productId ? { ...l, qty } : l))
     );
     if (!this.session.isLoggedIn() || this.session.isAdmin()) return;
-    if (qty <= 0) this.shop.removeItem(productId).subscribe();
-    else this.shop.updateItem(productId, qty).subscribe();
+    if (qty <= 0) this.shop.removeItem(productId).subscribe({ error: () => undefined });
+    else this.shop.updateItem(productId, qty).subscribe({ error: () => undefined });
   }
 
   removeLine(productId: string): void {
     this.lines.update((lines) => lines.filter((l) => l.productId !== productId));
-    if (this.session.isLoggedIn() && !this.session.isAdmin()) this.shop.removeItem(productId).subscribe();
+    if (this.session.isLoggedIn() && !this.session.isAdmin()) {
+      this.shop.removeItem(productId).subscribe({ error: () => undefined });
+    }
   }
 
   clearCart(localOnly = false): void {
     const ids = this.lines().map((l) => l.productId);
     this.lines.set([]);
     if (localOnly || !this.session.isLoggedIn() || this.session.isAdmin()) return;
-    ids.forEach((id) => this.shop.removeItem(id).subscribe());
+    ids.forEach((id) => this.shop.removeItem(id).subscribe({ error: () => undefined }));
   }
 
   syncCartToServer(): Observable<unknown> {

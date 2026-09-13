@@ -3,7 +3,7 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, interval, of, Subscription, switchMap } from 'rxjs';
-import { apiErrorMessage, pickDisplayName } from '../api/api.util';
+import { apiErrorMessage, isDeniedAccess, pickDisplayName } from '../api/api.util';
 import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
 import { StoreService } from '../services/store.service';
@@ -313,7 +313,7 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
           this.store.pushToast({
             tone: 'warning',
             title: this.locale.isAr() ? 'تعذر إتمام الطلب' : 'Could not place the order',
-            description: apiErrorMessage(err, this.locale.isAr() ? 'حاول مرة أخرى.' : 'Please try again.'),
+            description: this.checkoutError(err),
           });
         },
       });
@@ -343,6 +343,14 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       return false;
     }
     return true;
+  }
+
+  private checkoutError(err: unknown): string {
+    const ar = this.locale.isAr();
+    if (isDeniedAccess(err)) {
+      return ar ? 'الجلسة انتهت. ادخل تاني وبعدين أتمّ الطلب.' : 'Your session expired. Sign in again, then place the order.';
+    }
+    return apiErrorMessage(err, ar ? 'السلة على السيرفر فارغة أو العنوان غير صالح. حاول مرة أخرى.' : 'The server cart is empty or the address is invalid. Try again.');
   }
 
   private composeCheckoutNotes(): string | undefined {
