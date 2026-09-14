@@ -136,9 +136,10 @@ export class QtyComponent {
         </div>
         <div *ngIf="soldOut" class="absolute inset-x-3 bottom-3 rounded bg-olive-800/90 py-2.5 text-center text-xs font-medium text-sand-100">{{ locale.ui('outOfStock') }}</div>
         <div *ngIf="!soldOut" class="quick-add absolute inset-x-3 bottom-3 translate-y-2 opacity-0 transition-[opacity,transform] duration-300 ease-premium">
-          <button type="button" (click)="add($event)" class="relative flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded bg-olive-800 text-[13px] font-medium text-sand-50 shadow-lg transition-colors duration-200 ease-premium hover:bg-olive-900">
-            <app-icon [name]="justAdded ? 'check' : 'cart'" [size]="16"></app-icon>
-            {{ justAdded ? locale.ui('addedToCart') : locale.ui('quickAdd') }}
+          <button type="button" (click)="add($event)" class="quick-add__btn relative flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded bg-olive-800 text-[13px] font-medium text-sand-50 shadow-lg transition-colors duration-200 ease-premium hover:bg-olive-900" [attr.aria-label]="justAdded ? locale.ui('addedToCart') : locale.ui('quickAdd')">
+            <app-icon class="quick-add__icon-cart" [name]="justAdded ? 'check' : 'cart'" [size]="16"></app-icon>
+            <app-icon class="quick-add__icon-plus" [name]="justAdded ? 'check' : 'plus'" [size]="18"></app-icon>
+            <span class="quick-add__label">{{ justAdded ? locale.ui('addedToCart') : locale.ui('quickAdd') }}</span>
           </button>
         </div>
       </div>

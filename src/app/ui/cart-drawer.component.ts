@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, computed, effect } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, computed, effect, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LocaleService } from '../services/locale.service';
 import { SessionService } from '../services/session.service';
@@ -16,6 +16,7 @@ import { IconComponent } from './icon.component';
   templateUrl: './cart-drawer.component.html',
 })
 export class CartDrawerComponent {
+  readonly session = inject(SessionService);
   rows = computed(() =>
     this.store
       .lines()
@@ -29,7 +30,6 @@ export class CartDrawerComponent {
   constructor(
     public locale: LocaleService,
     public store: StoreService,
-    public session: SessionService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {

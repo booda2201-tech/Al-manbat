@@ -6,18 +6,23 @@ import {
   apiUrl,
   extractAuthMessage,
   extractBearer,
+  extractNameFromToken,
   extractToken,
   extractUserName,
   normalizeAuthPhone,
   parseAuthBody,
   pickDisplayName,
 } from '../api/api.util';
-import { mapProfile } from './account-api.service';
+import { AccountApiService, mapProfile } from './account-api.service';
 import { SessionService } from './session.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
-  constructor(private http: HttpClient, private session: SessionService) {}
+  constructor(
+    private http: HttpClient,
+    private session: SessionService,
+    private account: AccountApiService
+  ) {}
 
   login(phone: string, password: string): Observable<void> {
     const mobile = normalizeAuthPhone(phone) || phone.trim();
@@ -104,7 +109,8 @@ export class AuthApiService {
         ? { ...(body as Record<string, unknown>), token }
         : { token };
     const ok = this.session.applyLogin(payload, phone);
-    if (ok && userName) this.session.setProfile({ userName, phone });
+    const shown = pickDisplayName(userName, extractNameFromToken(token), extractUserName(payload));
+    if (ok && shown) this.session.setProfile({ userName: shown, phone });
     return ok;
   }
 
@@ -121,27 +127,47 @@ export class AuthApiService {
 
   private hydrateProfile(phone: string, fallbackName?: string): Observable<void> {
     if (this.session.isAdmin()) return of(undefined);
-    if (fallbackName) this.session.setProfile({ userName: fallbackName, phone });
+    const kept = pickDisplayName(
+      fallbackName,
+      this.session.userName(),
+      extractNameFromToken(this.session.token())
+    );
+    if (kept) this.session.setProfile({ userName: kept, phone });
     return this.http.get(apiUrl('/api/Profile'), { responseType: 'text' }).pipe(
-      tap((raw) => {
+      map((raw) => {
         const body = parseAuthBody(raw);
         const mapped = mapProfile(body);
         const name = pickDisplayName(
           mapped ? `${mapped.firstName} ${mapped.lastName}` : '',
           mapped?.userName,
           extractUserName(body),
-          fallbackName
+          kept
         );
-        if (name) {
-          this.session.setProfile({
-            userName: name,
-            phone: mapped?.phone || phone,
-            email: mapped?.email,
-          });
-        }
+        this.session.setProfile({
+          userName: name || kept || undefined,
+          phone: mapped?.phone || phone,
+          email: mapped?.email,
+        });
+        return name || kept || '';
       }),
-      catchError(() => of(null)),
+      switchMap((name) => (name ? of(undefined) : this.recoverLegacyName(phone))),
+      catchError(() => this.recoverLegacyName(phone)),
       map(() => undefined)
+    );
+  }
+
+  private recoverLegacyName(phone: string): Observable<void> {
+    return this.account.getMyOrders().pipe(
+      catchError(() => of([])),
+      map((orders) => {
+        for (const order of orders) {
+          const name = pickDisplayName(order.customerName);
+          if (name) return name;
+        }
+        return '';
+      }),
+      switchMap((name) => (name ? this.saveFullName(name, phone) : of(undefined))),
+      catchError(() => of(undefined))
     );
   }
 }

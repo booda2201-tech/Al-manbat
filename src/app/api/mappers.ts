@@ -46,15 +46,36 @@ function zipHighlights(ar?: string[] | null, en?: string[] | null): Product['hig
   return out;
 }
 
+function readNum(dto: object, keys: string[]): number {
+  const rec = dto as Record<string, unknown>;
+  for (const key of keys) {
+    const raw = rec[key];
+    if (raw == null || raw === '') continue;
+    const n = Number(raw);
+    if (Number.isFinite(n)) return n;
+  }
+  return 0;
+}
+
 export function mapProduct(
   dto: ApiProduct,
   categorySlug: string,
   extras?: { bestSellerIds?: Set<number> }
 ): Product {
   const name = bilingual(dto.nameAr, dto.nameEn, dto.name || `Product ${dto.id}`);
-  const finalPrice = dto.finalPrice ?? dto.price;
-  const listPrice = dto.price;
-  const onOffer = !!dto.hasOffer && listPrice > finalPrice;
+  const listPrice = readNum(dto, ['price', 'Price']);
+  const percent = Math.min(90, Math.max(0, readNum(dto, ['discountPercent', 'DiscountPercent'])));
+  const computedSale = percent > 0 ? Math.round(listPrice * (1 - percent / 100) * 100) / 100 : listPrice;
+  const hasFinal = dto.finalPrice != null || (dto as { FinalPrice?: number | null }).FinalPrice != null;
+  const apiFinal = hasFinal ? readNum(dto, ['finalPrice', 'FinalPrice']) : listPrice;
+  const onOffer = percent > 0;
+  const finalPrice = onOffer
+    ? hasFinal && apiFinal > 0 && (listPrice <= 0 || apiFinal < listPrice)
+      ? apiFinal
+      : computedSale
+    : hasFinal
+      ? apiFinal
+      : listPrice;
   const images = (dto.imageUrls ?? []).filter(Boolean);
   const image = images[0] || FALLBACK_IMAGE;
   const varietySlug = slugify(dto.varietyEn || dto.varietyAr || dto.sizeEn || 'all');
@@ -93,7 +114,7 @@ export function mapProduct(
     category: categorySlug,
     subcategory: varietySlug,
     price: finalPrice,
-    compareAt: onOffer ? listPrice : undefined,
+    compareAt: onOffer && listPrice > 0 ? listPrice : undefined,
     rating: dto.averageRating ?? 0,
     reviews: dto.reviewsCount ?? 0,
     stock: dto.isAvailable === false ? 0 : 24,

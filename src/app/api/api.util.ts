@@ -258,6 +258,21 @@ export function isAdminRole(role: string | null | undefined): boolean {
   return /\b(admin|administrator|superadmin|owner|مدير|مشرف)\b/i.test(role);
 }
 
+export function extractNameFromToken(token: string | null | undefined): string {
+  if (!token) return '';
+  const payload = decodeJwtPayload(token);
+  if (!payload) return '';
+  const given = pickDisplayName(String(payload['given_name'] ?? payload['givenName'] ?? ''));
+  const family = pickDisplayName(String(payload['family_name'] ?? payload['familyName'] ?? ''));
+  return pickDisplayName(
+    extractUserName(payload),
+    `${given} ${family}`.trim(),
+    typeof payload['name'] === 'string' ? payload['name'] : '',
+    typeof payload['fullName'] === 'string' ? payload['fullName'] : '',
+    typeof payload['unique_name'] === 'string' ? payload['unique_name'] : ''
+  );
+}
+
 export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const part = cleanAuthToken(token).split('.')[1];

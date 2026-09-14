@@ -37,7 +37,7 @@ export const products: Product[] = [
     ],
     specs: [
       spec('الحجم', 'Volume', '٥٠٠ مل', '500 ml'),
-      spec('المنشأ', 'Origin', 'الجوف، السعودية', 'Al-Jouf, Saudi Arabia'),
+      spec('المنشأ', 'Origin', 'مصر', 'Egypt'),
       spec('الصنف', 'Varietal', 'أربيكينا', 'Arbequina'),
       spec('الحموضة', 'Acidity', '٠٫٢٪', '0.2%'),
       spec('الحصاد', 'Harvest', 'نوفمبر ٢٠٢٥', 'November 2025'),

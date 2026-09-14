@@ -30,6 +30,7 @@ export class AccountPageComponent implements OnInit, OnDestroy {
   loading = true;
   loadError = '';
   private probedAdmin = false;
+  private nameSynced = false;
   saving = false;
   private pollSub?: Subscription;
   private sawRoute = false;
@@ -155,19 +156,28 @@ export class AccountPageComponent implements OnInit, OnDestroy {
       this.orders = orders;
       const fromOrders = orders.flatMap((o) => o.itemIds);
       this.reorderIds = [...new Set(fromOrders)].slice(0, 2);
+      this.syncLegacyProfile(profile);
       this.loading = false;
     });
   }
 
   private applyProfile(profile: AccountProfile): void {
-    const phone = profile.phone || this.session.phone() || '';
-    const shown = pickDisplayName(`${profile.firstName} ${profile.lastName}`.trim(), profile.userName);
+    const phone = profile.phone || this.session.phone() || this.phone || '';
+    const shown = pickDisplayName(
+      `${profile.firstName} ${profile.lastName}`.trim(),
+      profile.userName,
+      this.session.userName(),
+      `${this.firstName} ${this.lastName}`.trim()
+    );
     const parts = shown.split(/\s+/).filter(Boolean);
-    this.firstName = profile.firstName || parts[0] || '';
-    this.lastName = profile.lastName || parts.slice(1).join(' ');
-    this.email = profile.email;
+    this.firstName = pickDisplayName(profile.firstName, this.firstName, parts[0]) || parts[0] || this.firstName;
+    this.lastName =
+      pickDisplayName(profile.lastName, this.lastName, parts.slice(1).join(' ')) ||
+      parts.slice(1).join(' ') ||
+      this.lastName;
+    this.email = profile.email || this.email;
     this.phone = phone;
-    this.joinedYear = yearOf(profile.createdAt);
+    this.joinedYear = yearOf(profile.createdAt) || this.joinedYear;
     if (profile.addresses.length && !this.addressList.length) this.addressList = profile.addresses;
     this.session.setProfile({
       userName: shown || undefined,
@@ -177,8 +187,65 @@ export class AccountPageComponent implements OnInit, OnDestroy {
   }
 
   private applySessionFallback(): void {
-    this.phone = this.session.phone() || '';
-    this.email = this.session.email() || '';
+    this.phone = this.session.phone() || this.phone;
+    this.email = this.session.email() || this.email;
+    const name = pickDisplayName(this.session.userName(), `${this.firstName} ${this.lastName}`.trim());
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (!this.firstName) this.firstName = parts[0] || '';
+    if (!this.lastName) this.lastName = parts.slice(1).join(' ');
+  }
+
+  private syncLegacyProfile(profile: AccountProfile | null): void {
+    if (this.nameSynced || this.session.isAdmin()) return;
+    const fromProfile = pickDisplayName(
+      profile ? `${profile.firstName} ${profile.lastName}`.trim() : '',
+      profile?.userName
+    );
+    const recovered = pickDisplayName(
+      fromProfile,
+      this.session.userName(),
+      `${this.firstName} ${this.lastName}`.trim(),
+      ...this.orders.map((order) => order.customerName || ''),
+      ...this.addressList.map((address) => this.usableAddressName(address))
+    );
+    if (!recovered) return;
+    const parts = recovered.split(/\s+/).filter(Boolean);
+    if (!this.firstName) this.firstName = parts[0] || '';
+    if (!this.lastName) this.lastName = parts.slice(1).join(' ');
+    this.session.setProfile({
+      userName: recovered,
+      phone: this.phone,
+      email: this.email,
+    });
+    this.nameSynced = true;
+    if (fromProfile) return;
+    this.accountApi
+      .updateProfile({
+        userName: recovered,
+        firstName: this.firstName,
+        lastName: this.lastName,
+        email: this.email,
+        phone: this.phone,
+        addresses: this.addressList,
+      })
+      .subscribe({
+        error: () => {
+          this.nameSynced = false;
+        },
+      });
+  }
+
+  private usableAddressName(address: Address): string {
+    const label = pickDisplayName(this.locale.tr(address.label));
+    if (!label) return '';
+    if (
+      /^(home|work|office|address|default|المنزل|البيت|العمل|المكتب|عنوان|افتراضي|الافتراضي)$/i.test(
+        label
+      )
+    ) {
+      return '';
+    }
+    return label;
   }
 
   ngOnDestroy(): void {
@@ -222,8 +289,12 @@ export class AccountPageComponent implements OnInit, OnDestroy {
   }
 
   get greeting(): string {
-    if (this.firstName) {
-      return this.locale.isAr() ? `أهلاً ${this.firstName}` : `Welcome back, ${this.firstName}`;
+    const name =
+      this.firstName.trim() ||
+      pickDisplayName(this.session.userName()).split(/\s+/).filter(Boolean)[0] ||
+      '';
+    if (name) {
+      return this.locale.isAr() ? `أهلاً ${name}` : `Welcome back, ${name}`;
     }
     return this.locale.isAr() ? 'أهلاً بك' : 'Welcome back';
   }
@@ -406,7 +477,7 @@ export class AccountPageComponent implements OnInit, OnDestroy {
     this.addrDraft = {
       label: '',
       line: '',
-      city: this.locale.isAr() ? 'الرياض' : 'Riyadh',
+      city: this.locale.isAr() ? 'القاهرة' : 'Cairo',
       governorate: '',
       postalCode: '',
       phone: this.phone,

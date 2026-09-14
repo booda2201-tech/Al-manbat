@@ -146,8 +146,10 @@ function productWriteBody(dto: Partial<ApiProduct>): Record<string, unknown> {
   const nameEn = text(dto.nameEn, dto.name);
   const descriptionAr = text(dto.descriptionAr, dto.description);
   const descriptionEn = text(dto.descriptionEn, dto.description);
-  const percent = Number(dto.discountPercent);
-  const days = Number(dto.discountDays ?? dto.discountDaysRemaining);
+  const percent = Math.min(100, Math.max(0, Number(dto.discountPercent) || 0));
+  const active = percent > 0;
+  const daysRaw = Number(dto.discountDays ?? dto.discountDaysRemaining);
+  const days = active ? (Number.isFinite(daysRaw) && daysRaw > 0 ? Math.round(daysRaw) : 7) : 0;
   const acidity = dto.acidity == null ? null : Number(dto.acidity);
   return {
     name: nameEn || nameAr,
@@ -158,8 +160,9 @@ function productWriteBody(dto: Partial<ApiProduct>): Record<string, unknown> {
     descriptionAr,
     descriptionEn,
     price: Number(dto.price) || 0,
-    discountPercent: Number.isFinite(percent) && percent > 0 ? Math.min(100, percent) : null,
-    discountDays: Number.isFinite(days) && days > 0 ? days : null,
+    hasOffer: active,
+    discountPercent: active ? percent : 0,
+    discountDays: days,
     isNew: !!dto.isNew,
     isAvailable: dto.isAvailable !== false,
     delivery: text(dto.deliveryEn, dto.deliveryAr || dto.delivery) || null,
@@ -185,7 +188,7 @@ function productWriteBody(dto: Partial<ApiProduct>): Record<string, unknown> {
 }
 
 function appendValue(form: FormData, key: string, value: unknown): void {
-  if (value == null) return;
+  if (value == null || value === '') return;
     if (Array.isArray(value)) {
       for (const item of value) {
         if (item == null || item === '') continue;
@@ -207,9 +210,14 @@ function asFiles(images?: File | File[] | null): File[] {
 
 function toProductFormData(dto: Partial<ApiProduct>, images?: File | File[] | null): FormData {
   const form = new FormData();
-  for (const [key, value] of Object.entries(productWriteBody(dto))) {
+  const body = productWriteBody(dto);
+  for (const [key, value] of Object.entries(body)) {
     appendValue(form, key, value);
   }
+  appendValue(form, 'Price', body['price']);
+  appendValue(form, 'HasOffer', body['hasOffer']);
+  appendValue(form, 'DiscountPercent', body['discountPercent']);
+  appendValue(form, 'DiscountDays', body['discountDays']);
   const files = asFiles(images);
   for (const file of files) {
     form.append('Images', file, file.name);

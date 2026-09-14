@@ -20,9 +20,12 @@ export class CatalogService {
 
   load(): Observable<void> {
     return forkJoin({
-      products: this.http.get<ApiProduct[]>(apiUrl('/api/Products/GetAllProducts')),
-      categories: this.http.get<ApiCategory[]>(apiUrl('/api/Categories/GetAllCategories')),
-      best: this.http.get<ApiProduct[]>(apiUrl('/api/Products/GetBestSellers')).pipe(catchError(() => of([] as ApiProduct[]))),
+      products: this.http.get(apiUrl('/api/Products/GetAllProducts')).pipe(map((body) => unwrapList(body) as ApiProduct[])),
+      categories: this.http.get(apiUrl('/api/Categories/GetAllCategories')).pipe(map((body) => unwrapList(body) as ApiCategory[])),
+      best: this.http.get(apiUrl('/api/Products/GetBestSellers')).pipe(
+        map((body) => unwrapList(body) as ApiProduct[]),
+        catchError(() => of([] as ApiProduct[]))
+      ),
     }).pipe(
       tap(({ products, categories, best }) => {
         const hydrated = hydrateCatalog(products ?? [], categories ?? [], best ?? []);

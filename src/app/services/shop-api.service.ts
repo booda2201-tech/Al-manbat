@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
-import { apiUrl, extractEntityId, parseAuthBody, unwrapList } from '../api/api.util';
+import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import { apiErrorMessage, apiUrl, extractEntityId, isDeniedAccess, parseAuthBody, unwrapList } from '../api/api.util';
 import type { ApiCartItem } from '../api/api.models';
 
 export interface RemoteLine {
@@ -44,20 +44,28 @@ export class ShopApiService {
   getCart(): Observable<RemoteLine[]> {
     return this.http.get(apiUrl('/api/Cart'), { responseType: 'text' }).pipe(
       map((body) => asLines(parseAuthBody(body))),
-      catchError(() => of([]))
+      catchError((err) => (isDeniedAccess(err) ? throwError(() => err) : of([])))
     );
   }
 
   addToCart(productId: string, quantity: number): Observable<unknown> {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0 || quantity <= 0) {
+      return throwError(() => new Error('CART'));
+    }
     return this.http.post(apiUrl('/api/Cart/items/AddToCart'), {
-      productId: Number(productId),
+      productId: id,
       quantity,
     });
   }
 
   updateItem(productId: string, quantity: number): Observable<unknown> {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0) {
+      return throwError(() => new Error('CART'));
+    }
     return this.http.put(apiUrl('/api/Cart/items/UpdateItem'), {
-      productId: Number(productId),
+      productId: id,
       quantity,
     });
   }
@@ -67,9 +75,15 @@ export class ShopApiService {
   }
 
   checkout(dto: { addressId: number; paymentMethod: 'Cash' | 'Visa'; notes?: string }): Observable<{ id: string }> {
-    return this.http.post(apiUrl('/api/Orders/Checkout'), dto).pipe(
-      map((body) => ({ id: extractEntityId(body) }))
-    );
+    if (!dto.addressId || !Number.isFinite(dto.addressId)) {
+      return throwError(() => new Error('ADDRESS'));
+    }
+    return this.http
+      .post(apiUrl('/api/Orders/Checkout'), dto, { observe: 'response', responseType: 'text' })
+      .pipe(
+        map((res) => ({ id: extractEntityId(parseAuthBody(res.body)) })),
+        catchError((err) => throwError(() => new Error(apiErrorMessage(err, 'CHECKOUT'))))
+      );
   }
 
   syncCart(lines: RemoteLine[]): Observable<unknown> {

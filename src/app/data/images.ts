@@ -2,6 +2,12 @@ export const images = {
   hero: 'assets/c0fbf1eb-6fbd-4582-a380-53ea03b4e0ef.jpg',
   campaign: 'assets/4fb00a40-8be3-436e-bdda-7f735397b200.jpg',
   pantry: 'assets/8e8e9939-171b-404b-ad5c-dcd143cb7f03.jpg',
+  heroDesktop: {
+    pickles: 'assets/hero/pickles-mixed.png',
+    grape: 'assets/hero/grape-leaves.png',
+    olives: 'assets/hero/olives.png',
+    picklesRange: 'assets/hero/pickles-range.png',
+  },
   cat: {
     'olive-oil': 'assets/catalog/cat-oil-banner.png',
     'table-olives': 'assets/catalog/cat-olives-banner.png',

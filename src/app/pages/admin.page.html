@@ -289,7 +289,7 @@
             </div>
             <div>
               <label class="auth-label" for="pr-disc"><span>نسبة العرض ٪</span><span>Offer %</span></label>
-              <input id="pr-disc" name="discountPercent" type="number" min="0" max="100" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.discountPercent" />
+              <input id="pr-disc" name="discountPercent" type="number" min="0" max="100" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.discountPercent" (ngModelChange)="onDraftDiscount($event)" />
             </div>
             <div>
               <label class="auth-label" for="pr-disc-days"><span>مدة العرض بالأيام</span><span>Offer days</span></label>
@@ -298,7 +298,7 @@
             <div class="grid grid-cols-3 gap-2 sm:items-end">
               <button type="button" class="h-12 rounded-xl text-xs font-medium" [ngClass]="productDraft.isAvailable ? 'bg-olive-800 text-sand-50' : 'bg-sand-100 text-olive-800 ring-1 ring-olive-800/15'" (click)="productDraft.isAvailable = !productDraft.isAvailable">{{ locale.isAr() ? 'متوفر' : 'In stock' }}</button>
               <button type="button" class="h-12 rounded-xl text-xs font-medium" [ngClass]="productDraft.isNew ? 'bg-olive-800 text-sand-50' : 'bg-sand-100 text-olive-800 ring-1 ring-olive-800/15'" (click)="productDraft.isNew = !productDraft.isNew">{{ locale.isAr() ? 'جديد' : 'New' }}</button>
-              <button type="button" class="h-12 rounded-xl text-xs font-medium" [ngClass]="productDraft.hasOffer ? 'bg-olive-800 text-sand-50' : 'bg-sand-100 text-olive-800 ring-1 ring-olive-800/15'" (click)="productDraft.hasOffer = !productDraft.hasOffer">{{ locale.isAr() ? 'عرض' : 'Offer' }}</button>
+              <button type="button" class="h-12 rounded-xl text-xs font-medium" [ngClass]="productDraft.hasOffer ? 'bg-olive-800 text-sand-50' : 'bg-sand-100 text-olive-800 ring-1 ring-olive-800/15'" (click)="toggleDraftOffer()">{{ locale.isAr() ? 'عرض' : 'Offer' }}</button>
             </div>
             <div>
               <label class="auth-label" for="pr-hi-ar"><span>المميزات عربي</span><span>Arabic highlights</span></label>
@@ -502,8 +502,8 @@
             <input name="offerQuery" [(ngModel)]="query" (ngModelChange)="onQuery()" [placeholder]="locale.ui('adminSearchProducts')" />
           </div>
           <p class="admin-bar__note">
-            {{ filteredOffers.length | countLoc }}
-            {{ locale.isAr() ? 'عرض نشط' : 'active offers' }}
+            {{ offerList.length | countLoc }}
+            {{ locale.isAr() ? 'عرض نشط — اضغط المنتج لتعديل الخصم أو إيقافه' : 'active offers — tap a product to edit or stop the discount' }}
           </p>
         </div>
         <nav class="admin-cats">
@@ -516,11 +516,11 @@
             <i>{{ categoryCount(c.id) | countLoc }}</i>
           </button>
         </nav>
-        <p *ngIf="!filteredOffers.length" class="admin-empty">{{ locale.isAr() ? 'لا توجد عروض في هذا القسم.' : 'No offers in this category.' }}</p>
+        <p *ngIf="!filteredOffers.length" class="admin-empty">{{ locale.isAr() ? 'لا توجد عروض نشطة في هذا القسم.' : 'No active offers in this category.' }}</p>
         <ul *ngIf="filteredOffers.length" class="admin-catalog admin-catalog--offers">
           <li *ngFor="let p of pagedOffers; trackBy: trackProduct">
             <article class="admin-tile" [class.is-picked]="selectedOfferId === p.id" (click)="selectOffer(p, $event)">
-              <span class="admin-tile__tag">{{ p.discountPercent || 0 }}%</span>
+              <span *ngIf="productOnOffer(p)" class="admin-tile__tag">{{ p.discountPercent || 0 }}%</span>
               <span class="admin-tile__shot">
                 <span class="admin-tile__ph" aria-hidden="true">
                   <app-icon name="image" [size]="22"></app-icon>

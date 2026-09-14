@@ -1,14 +1,23 @@
 <section class="relative">
   <div
     class="hero-stage"
+    [class.hero-stage--banners]="desktopHero"
     role="region"
     [attr.aria-roledescription]="locale.isAr() ? 'معرض إعلانات' : 'advertisement carousel'"
     [attr.aria-label]="locale.isAr() ? 'حملات المنبت' : 'Almanbat campaigns'"
     (mouseenter)="pauseHero()"
     (mouseleave)="resumeHero()"
   >
-    <div class="absolute inset-0">
+    <div class="hero-visual overflow-hidden bg-[#20240b]">
       <ng-container *ngFor="let ad of ads; trackBy: trackAd; let i = index">
+        <img
+          *ngIf="heroShows(i)"
+          [src]="ad.image"
+          alt=""
+          class="hero-photo-bg"
+          [class.is-on]="i === heroIndex"
+          aria-hidden="true"
+        />
         <img
           *ngIf="heroShows(i)"
           [src]="ad.image"
@@ -17,17 +26,13 @@
           [attr.loading]="i === heroIndex ? 'eager' : 'lazy'"
           decoding="async"
           [ngClass]="heroImgClass(i === heroIndex)"
-          [style.animation-play-state]="heroPlayState()"
         />
       </ng-container>
-    </div>
-    <div class="hero-grain pointer-events-none absolute inset-0"></div>
-    <div class="hero-scrim-mobile pointer-events-none absolute inset-0 lg:hidden"></div>
-    <div class="pointer-events-none absolute inset-0 hidden lg:block" [ngClass]="heroScrimClass()"></div>
-    <div class="pointer-events-none absolute inset-x-0 bottom-0 hidden h-40 bg-gradient-to-t from-olive-900/80 to-transparent lg:block"></div>
+      <div class="hero-grain pointer-events-none absolute inset-0"></div>
+      <div class="hero-scrim-mobile pointer-events-none absolute inset-0 lg:hidden"></div>
 
-    <div class="absolute inset-0 flex items-end lg:items-center">
-      <div class="mx-auto w-full max-w-shell px-4 pb-[5.25rem] pt-10 lg:px-10 lg:pb-0 lg:pt-0">
+      <div class="hero-copy-wrap flex items-end lg:items-center">
+      <div class="hero-copy-inner mx-auto w-full max-w-shell px-4 lg:px-10 lg:pb-0 lg:pt-0">
         <div *ngFor="let ad of ads; trackBy: trackAd; let i = index">
           <div *ngIf="i === heroIndex" class="hero-copy-in hero-copy max-w-xl">
             <span *ngIf="ad.badge" class="inline-flex items-center gap-2 rounded-full border border-gold-300/50 bg-olive-900/55 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-gold-300 backdrop-blur-sm lg:px-3 lg:text-2xs lg:tracking-[0.22em]">
@@ -49,24 +54,9 @@
           </div>
         </div>
       </div>
-    </div>
+      </div>
 
-    <a
-      [routerLink]="nextAd.primary.to"
-      class="group absolute bottom-28 end-6 z-10 hidden w-[240px] overflow-hidden rounded-xl border border-sand-100/20 bg-sand-50/10 shadow-lg backdrop-blur-md transition-[transform,border-color] duration-300 ease-premium hover:-translate-y-0.5 hover:border-gold-300/50 lg:block"
-    >
-      <span class="flex gap-3 p-3">
-        <span class="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
-          <img [src]="nextAd.image" alt="" class="h-full w-full object-cover" />
-        </span>
-        <span class="min-w-0 self-center">
-          <span class="block text-2xs uppercase tracking-[0.2em] text-gold-300">{{ locale.isAr() ? 'التالي' : 'Up next' }}</span>
-          <span class="mt-1 block truncate text-[13px] font-medium text-sand-50">{{ locale.tr(nextAd.eyebrow) }}</span>
-        </span>
-      </span>
-    </a>
-
-    <div class="absolute inset-x-0 bottom-0 z-10">
+      <div class="hero-controls z-10">
       <div class="mx-auto flex w-full max-w-shell items-center justify-between gap-3 px-4 pb-4 lg:items-end lg:gap-6 lg:px-10 lg:pb-6">
         <div class="min-w-0 flex-1">
           <div class="mb-2 flex items-baseline gap-2 font-display text-[12px] tabular-nums text-sand-100/80 lg:mb-3 lg:text-[13px]">
@@ -120,7 +110,25 @@
           </button>
         </div>
       </div>
+      </div>
     </div>
+    <div class="pointer-events-none absolute inset-0 hidden lg:block" [ngClass]="heroScrimClass()"></div>
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 hidden h-24 bg-gradient-to-t from-olive-900/45 to-transparent lg:block"></div>
+
+    <a
+      [routerLink]="nextAd.primary.to"
+      class="group absolute bottom-28 end-6 z-10 hidden w-[240px] overflow-hidden rounded-xl border border-sand-100/20 bg-sand-50/10 shadow-lg backdrop-blur-md transition-[transform,border-color] duration-300 ease-premium hover:-translate-y-0.5 hover:border-gold-300/50 lg:block"
+    >
+      <span class="flex gap-3 p-3">
+        <span class="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+          <img [src]="nextAd.image" alt="" class="h-full w-full object-cover" />
+        </span>
+        <span class="min-w-0 self-center">
+          <span class="block text-2xs uppercase tracking-[0.2em] text-gold-300">{{ locale.isAr() ? 'التالي' : 'Up next' }}</span>
+          <span class="mt-1 block truncate text-[13px] font-medium text-sand-50">{{ locale.tr(nextAd.eyebrow) }}</span>
+        </span>
+      </span>
+    </a>
   </div>
   <div class="border-b border-olive-800/10 bg-sand-100/60">
     <div class="mx-auto max-w-shell px-4 py-3.5 lg:px-10 lg:py-8">
@@ -134,7 +142,7 @@
 
   <ul class="menu-cats home-cats lg:hidden" [class.is-few]="catsFew()">
     <li *ngFor="let c of categories(); let last = last; trackBy: trackCat" class="menu-tile" [class.is-wide]="last && catsOdd()">
-      <a [routerLink]="['/category', c.slug]" appScrollOpen class="menu-cat">
+      <a [routerLink]="['/category', c.slug]" appScrollOpen="fit" class="menu-cat">
         <span class="scroll-open__media">
           <img [src]="c.image" alt="" loading="lazy" decoding="async" />
         </span>
@@ -150,13 +158,13 @@
     </li>
   </ul>
 
-  <div *ngIf="lead() as leadCat" class="hidden gap-4 lg:grid lg:grid-cols-3 lg:grid-rows-2">
-    <a [routerLink]="['/category', leadCat.slug]" appScrollOpen class="group relative flex h-full min-h-[520px] flex-col justify-end overflow-hidden rounded-xl p-10 lg:col-span-2 lg:row-span-2">
-      <span class="scroll-open__media absolute inset-0">
-        <img [src]="leadCat.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.04]" />
+  <div *ngIf="lead() as leadCat" class="home-cat-mosaic">
+    <a [routerLink]="['/category', leadCat.slug]" appScrollOpen="fit" class="home-cat home-cat--lead">
+      <span class="scroll-open__media">
+        <img [src]="leadCat.image" alt="" class="home-cat__img" />
       </span>
-      <span class="absolute inset-0 bg-olive-900/55 transition-colors duration-500 ease-premium group-hover:bg-olive-900/45"></span>
-      <span class="relative">
+      <span class="home-cat__scrim" aria-hidden="true"></span>
+      <span class="home-cat__copy">
         <span class="text-2xs uppercase tracking-[0.24em] text-gold-300">{{ catCount(leadCat) | countLoc }} {{ locale.isAr() ? 'منتج' : 'products' }}</span>
         <span class="mt-3 block font-displayAr text-5xl leading-tight text-sand-50">{{ locale.tr(leadCat.name) }}</span>
         <span class="mt-3 block max-w-md text-sm leading-relaxed text-sand-100/80">{{ locale.tr(leadCat.tagline) }}</span>
@@ -166,16 +174,18 @@
         </span>
       </span>
     </a>
-    <a *ngFor="let c of rest(); trackBy: trackCat" [routerLink]="['/category', c.slug]" appScrollOpen class="group relative flex h-full min-h-[170px] items-end overflow-hidden rounded-xl p-6">
-      <span class="scroll-open__media absolute inset-0">
-        <img [src]="c.image" alt="" class="h-full w-full object-cover transition-transform duration-[700ms] ease-premium group-hover:scale-[1.05]" />
-      </span>
-      <span class="absolute inset-0 bg-olive-900/55 transition-colors duration-500 ease-premium group-hover:bg-olive-900/40"></span>
-      <span class="relative">
-        <span class="block font-displayAr text-2xl leading-tight text-sand-50">{{ locale.tr(c.name) }}</span>
-        <span class="mt-1 block text-xs text-sand-100/75">{{ locale.tr(c.tagline) }}</span>
-      </span>
-    </a>
+    <div class="home-cat-mosaic__side">
+      <a *ngFor="let c of rest(); trackBy: trackCat" [routerLink]="['/category', c.slug]" appScrollOpen="fit" class="home-cat">
+        <span class="scroll-open__media">
+          <img [src]="c.image" alt="" class="home-cat__img" />
+        </span>
+        <span class="home-cat__scrim" aria-hidden="true"></span>
+        <span class="home-cat__copy">
+          <span class="block font-displayAr text-2xl leading-tight text-sand-50">{{ locale.tr(c.name) }}</span>
+          <span class="mt-1 block text-xs text-sand-100/75">{{ locale.tr(c.tagline) }}</span>
+        </span>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -218,13 +228,13 @@
           <img [src]="images.campaign" alt="" class="h-full w-full object-cover" />
         </span>
         <span class="absolute bottom-5 start-5 rounded bg-sand-50/95 px-4 py-3">
-          <span class="block text-2xs uppercase tracking-[0.2em] text-gold-400">{{ locale.isAr() ? 'الجوف · السعودية' : 'Al-Jouf · Saudi Arabia' }}</span>
+          <span class="block text-2xs uppercase tracking-[0.2em] text-gold-400">{{ locale.isAr() ? 'مصر' : 'Egypt' }}</span>
           <span class="mt-1 block text-[13px] font-medium text-olive-800">{{ locale.isAr() ? 'بستان المنبت الأول' : 'The first Almanbat grove' }}</span>
         </span>
       </div>
       <div class="grain relative flex flex-col justify-center bg-olive-800 px-8 py-12 lg:px-14 lg:py-16">
         <p class="text-2xs uppercase tracking-[0.28em] text-gold-300">{{ locale.isAr() ? 'قصة المنبت' : 'The Almanbat story' }}</p>
-        <h2 class="mt-5 font-displayAr text-[40px] leading-[1.05] text-sand-50 lg:text-[56px]">{{ locale.isAr() ? 'من الجوف إلى مائدتك' : 'From the grove to your table' }}</h2>
+        <h2 class="mt-5 font-displayAr text-[40px] leading-[1.05] text-sand-50 lg:text-[56px]">{{ locale.isAr() ? 'من مصر إلى مائدتك' : 'From Egypt to your table' }}</h2>
         <p class="mt-6 max-w-md text-[15px] leading-relaxed text-sand-100/80">{{ locale.isAr() ? 'كل منتج له مصدر نعرفه بالاسم. بدأنا من بستان واحد، وما زلنا نختار كما لو كنا نضع الطعام على مائدتنا.' : 'Every product has a source we know by name. We began with one grove, and we still choose as if we were setting our own table.' }}</p>
         <a routerLink="/about" class="group mt-10 inline-flex w-fit items-center gap-2 border-b border-sand-100/25 pb-1 text-sm font-medium text-sand-50 transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300">
           {{ locale.ui('aboutBrand') }}

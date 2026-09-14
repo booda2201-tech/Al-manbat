@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild, effect } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, NavigationStart, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -33,6 +33,7 @@ import type { Bilingual, Category, Product } from './types';
   templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
+  readonly session = inject(SessionService);
   @ViewChild('catRow') catRow?: ElementRef<HTMLElement>;
   @ViewChild('catMeasure') catMeasure?: ElementRef<HTMLElement>;
   openMenu: string | null = null;
@@ -79,12 +80,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   bareLayout = false;
   focusLayout = false;
   heroBleed = false;
+  navHidden = false;
+  private lastScrollY = 0;
+  private removeScroll?: () => void;
 
   constructor(
     public locale: LocaleService,
     public store: StoreService,
     public catalog: CatalogService,
-    public session: SessionService,
     private auth: AuthApiService,
     private router: Router,
     private zone: NgZone
@@ -141,7 +144,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!stayOnAdmin) {
         window.scrollTo(0, 0);
       }
+      this.navHidden = false;
+      this.lastScrollY = 0;
     });
+    this.bindNavScroll();
   }
 
   private syncLayout(url: string): void {
@@ -175,6 +181,39 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.navObserver?.disconnect();
+    this.removeScroll?.();
+  }
+
+  private bindNavScroll(): void {
+    if (typeof window === 'undefined') return;
+    this.zone.runOutsideAngular(() => {
+      const onScroll = () => this.syncNavVisibility();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      this.removeScroll = () => window.removeEventListener('scroll', onScroll);
+    });
+  }
+
+  private syncNavVisibility(): void {
+    if (this.bareLayout || this.focusLayout) return;
+    const locked = this.store.menuOpen() || this.store.searchOpen() || this.store.cartOpen() || !!this.openMenu || this.openMore;
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    let hidden = this.navHidden;
+    if (locked || y < 24) {
+      hidden = false;
+    } else if (y > this.lastScrollY + 10) {
+      hidden = true;
+    } else if (y < this.lastScrollY - 10) {
+      hidden = false;
+    }
+    this.lastScrollY = y;
+    if (hidden === this.navHidden) return;
+    this.zone.run(() => {
+      this.navHidden = hidden;
+      if (hidden) {
+        this.openMenu = null;
+        this.openMore = false;
+      }
+    });
   }
 
   private fitCats(): void {

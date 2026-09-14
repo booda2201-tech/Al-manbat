@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { Category, Product, Subcategory } from '../types';
@@ -323,7 +323,7 @@ export class CategoryComponent implements OnInit {
         return;
       }
       this.items = this.catalog.byCategory(slug);
-      this.deals = this.items.filter((p) => !!p.compareAt);
+      this.deals = this.items.filter((p) => p.badges.includes('deal') || !!p.compareAt);
       this.featured = this.items.slice(0, 8);
       this.totalCount = this.category.subcategories.reduce((s, x) => s + x.count, 0) || this.items.length;
       this.trail = [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.tr(this.category.name) }];
@@ -495,14 +495,20 @@ export class OffersComponent implements OnInit, OnDestroy {
   drawer = false;
   subs: Subcategory[] = [];
 
-  constructor(public locale: LocaleService, public catalog: CatalogService, private route: ActivatedRoute) {}
+  constructor(public locale: LocaleService, public catalog: CatalogService, private route: ActivatedRoute) {
+    effect(() => {
+      this.catalog.products();
+      this.catalog.ready();
+      this.refresh();
+    });
+  }
 
   get allCategories() {
     return this.catalog.categories();
   }
 
   get pool(): Product[] {
-    return this.isNew ? this.catalog.withBadge('new') : this.catalog.all().filter((p) => !!p.compareAt);
+    return this.isNew ? this.catalog.withBadge('new') : this.catalog.withBadge('deal');
   }
 
   get panelSource(): Product[] {

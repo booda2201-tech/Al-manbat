@@ -194,7 +194,7 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
       },
       {
         icon: 'pin',
-        stat: ar ? 'الرياض' : 'Riyadh',
+        stat: ar ? 'القاهرة' : 'Cairo',
         title: ar ? 'المدينة' : 'City',
         detail: ar ? 'يمكن تغييرها' : 'Change anytime',
       },

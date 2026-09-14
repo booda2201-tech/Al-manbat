@@ -22,7 +22,7 @@ export const heroAds: HeroAd[] = [
     image: images.cat['olive-oil'],
     badge: { ar: 'موسم العصرة', en: 'Press season' },
     eyebrow: { ar: 'زيوت الزيتون', en: 'Olive oils' },
-    heading: { ar: 'معصور على البارد\nمن بستان الجوف', en: 'Cold-pressed\nfrom Al-Jouf' },
+    heading: { ar: 'معصور على البارد\nمن بستان مصري', en: 'Cold-pressed\nfrom Egypt' },
     body: {
       ar: 'حموضة منخفضة، زجاج داكن، ودفعة محدودة لكل حصاد. الزيت كما يخرج من المعصرة.',
       en: 'Low acidity, dark glass, a limited lot each harvest. Oil as it leaves the press.',
@@ -55,5 +55,60 @@ export const heroAds: HeroAd[] = [
     },
     primary: { label: { ar: 'شاهدي العروض', en: 'See offers' }, to: '/offers' },
     secondary: { label: { ar: 'الأكثر مبيعاً', en: 'Best sellers' }, to: '/listing/all' },
+  },
+];
+
+export const desktopHeroAds: HeroAd[] = [
+  {
+    id: 'desktop-pickles',
+    image: images.heroDesktop.pickles,
+    badge: { ar: 'مونة البيت', en: 'House pantry' },
+    eyebrow: { ar: 'المخللات', en: 'Pickles' },
+    heading: { ar: 'مخلل يقرمش\nكما يُعمل في البيت', en: 'Pickle that crunches\nlike home' },
+    body: {
+      ar: 'مشكل وكورنيشون بملوحة متوازنة وتاريخ دفعة على كل برطمان.',
+      en: 'Mixed pickles and cornichons — a balanced brine, every jar dated by batch.',
+    },
+    primary: { label: { ar: 'تسوق المخللات', en: 'Shop pickles' }, to: '/listing/pickles' },
+    secondary: { label: { ar: 'كل الأقسام', en: 'All categories' }, to: '/listing/all' },
+  },
+  {
+    id: 'desktop-grape',
+    image: images.heroDesktop.grape,
+    badge: { ar: 'من المطبخ', en: 'From the kitchen' },
+    eyebrow: { ar: 'ورق العنب', en: 'Grape leaves' },
+    heading: { ar: 'ورق عنب جاهز\nللحشو والمائدة', en: 'Grape leaves ready\nfor the table' },
+    body: {
+      ar: 'أوراق مختارة ومحفوظة بعناية — قوام طري ونكهة صافية للوصفات البيتية.',
+      en: 'Selected leaves, carefully packed — tender texture and a clean flavour for home recipes.',
+    },
+    primary: { label: { ar: 'تسوق ورق العنب', en: 'Shop grape leaves' }, to: '/listing/grape-leaves' },
+    secondary: { label: { ar: 'كل الأقسام', en: 'All categories' }, to: '/listing/all' },
+  },
+  {
+    id: 'desktop-olives',
+    image: images.heroDesktop.olives,
+    badge: { ar: 'من البستان', en: 'From the grove' },
+    eyebrow: { ar: 'الزيتون', en: 'Olives' },
+    heading: { ar: 'أخضر، أسود،\nوكالاماتا', en: 'Green, black,\nand Kalamata' },
+    body: {
+      ar: 'ثلاث طرق لنفس الثمرة — كامل، شرائح، وكالاماتا على مائدتك.',
+      en: 'Three ways with the same fruit — whole, sliced, and Kalamata on your table.',
+    },
+    primary: { label: { ar: 'تسوق الزيتون', en: 'Shop olives' }, to: '/listing/olives' },
+    secondary: { label: { ar: 'كل الأقسام', en: 'All categories' }, to: '/listing/all' },
+  },
+  {
+    id: 'desktop-pickles-range',
+    image: images.heroDesktop.picklesRange,
+    badge: { ar: 'تشكيلة المخلل', en: 'The pickle range' },
+    eyebrow: { ar: 'المخللات', en: 'Pickles' },
+    heading: { ar: 'من البرطمان\nإلى الدلو', en: 'From the jar\nto the tub' },
+    body: {
+      ar: 'كورنيشون، خيار سليم، وخيار شاورما — نفس المعيار، أحجام تناسب البيت والمطبخ.',
+      en: 'Cornichons, whole cucumber, and shawarma pickle — the same standard, sizes for home and kitchen.',
+    },
+    primary: { label: { ar: 'تسوق المخللات', en: 'Shop pickles' }, to: '/listing/pickles' },
+    secondary: { label: { ar: 'وصل حديثاً', en: 'New arrivals' }, to: '/new' },
   },
 ];

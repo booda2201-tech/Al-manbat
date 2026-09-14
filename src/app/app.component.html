@@ -2,13 +2,14 @@
 <div class="flex min-h-screen w-full min-w-0 flex-col bg-sand-50" [attr.dir]="locale.dir()" [class.font-ar]="locale.isAr()">
   <div
     *ngIf="!bareLayout && !focusLayout"
-    class="site-chrome z-50 max-lg:absolute max-lg:inset-x-0 max-lg:top-0 lg:sticky lg:top-0"
+    class="site-chrome sticky top-0 z-50"
+    [class.is-away]="navHidden"
   >
   <div class="grain relative bg-olive-800 text-sand-100">
     <div class="mx-auto flex h-10 max-w-shell items-center gap-4 px-4 text-[11px] lg:px-10 lg:text-xs">
       <div class="hidden shrink-0 items-center gap-2 lg:flex">
         <app-icon name="pin" [size]="14" class="text-gold-300"></app-icon>
-        <span class="text-sand-100/80">{{ locale.isAr() ? 'التوصيل إلى الرياض' : 'Delivering to Riyadh' }}</span>
+        <span class="text-sand-100/80">{{ locale.isAr() ? 'التوصيل إلى القاهرة' : 'Delivering to Cairo' }}</span>
       </div>
       <div
         class="ticker min-w-0 flex-1"
@@ -37,12 +38,11 @@
     </div>
   </div>
 
-  <header class="bg-transparent shadow-none lg:bg-sand-50/95 lg:backdrop-blur lg:shadow-md" (mouseleave)="openMenu = null; openMore = false">
+  <header class="bg-sand-50/95 shadow-none backdrop-blur lg:shadow-md" (mouseleave)="openMenu = null; openMore = false">
     <div class="mx-auto flex h-[72px] max-w-shell items-center gap-3 px-4 lg:gap-4 lg:px-10">
       <button
         type="button"
-        class="-ms-2 rounded p-2 lg:hidden"
-        [ngClass]="heroBleed ? 'text-sand-50' : 'text-olive-700'"
+        class="-ms-2 rounded p-2 text-olive-700 lg:hidden"
         (click)="store.menuOpen.set(true)"
         [attr.aria-label]="locale.ui('menu')"
       >
@@ -204,7 +204,6 @@
   <main
     id="main"
     class="site-main min-w-0 flex-1"
-    [class.max-lg:pt-[7rem]]="!bareLayout && !focusLayout && !heroBleed"
   >
     <router-outlet></router-outlet>
   </main>
@@ -214,7 +213,7 @@
       <div class="grid gap-8 border-b border-sand-100/10 py-9 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-10 lg:py-14">
         <div>
           <app-logo tone="light" size="md"></app-logo>
-          <p class="mt-5 max-w-xs text-[13px] leading-relaxed text-sand-100/70">{{ locale.isAr() ? 'متجر الزيتون والمخللات — من بستان الجوف إلى مائدة بيتك، باختيار دقيق لكل دفعة.' : 'An olive and pickle house — from the Al-Jouf grove to your table, every batch chosen with care.' }}</p>
+          <p class="mt-5 max-w-xs text-[13px] leading-relaxed text-sand-100/70">{{ locale.isAr() ? 'متجر الزيتون والمخللات — علامة مصرية، من البستان إلى مائدة بيتك، باختيار دقيق لكل دفعة.' : 'An olive and pickle house — an Egyptian brand, from the grove to your table, every batch chosen with care.' }}</p>
         </div>
         <div>
           <h3 class="mb-4 text-2xs uppercase tracking-[0.2em] text-gold-300">{{ locale.ui('allCategories') }}</h3>

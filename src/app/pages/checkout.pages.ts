@@ -62,13 +62,13 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
   pay = 'cod';
   placing = false;
   shippingOptions = [
-    { id: 'sameday', title: { ar: 'توصيل في نفس اليوم', en: 'Same-day delivery' }, detail: { ar: 'قبل ١١ مساءً · الرياض فقط', en: 'Before 11pm · Riyadh only' }, price: 35 },
+    { id: 'sameday', title: { ar: 'توصيل في نفس اليوم', en: 'Same-day delivery' }, detail: { ar: 'قبل ١١ مساءً · القاهرة والجيزة', en: 'Before 11pm · Cairo and Giza' }, price: 35 },
     { id: 'standard', title: { ar: 'التوصيل القياسي', en: 'Standard delivery' }, detail: { ar: 'من يومين إلى ٤ أيام عمل', en: '2 – 4 working days' }, price: 0 },
-    { id: 'pickup', title: { ar: 'الاستلام من المعرض', en: 'Collect in store' }, detail: { ar: 'جاهز خلال ساعتين · حي الياسمين', en: 'Ready in 2 hours · Al Yasmin' }, price: 0 },
+    { id: 'pickup', title: { ar: 'الاستلام من المعرض', en: 'Collect in store' }, detail: { ar: 'جاهز خلال ساعتين · المعادي', en: 'Ready in 2 hours · Maadi' }, price: 0 },
   ];
   payOptions = [
     { id: 'cod', label: { ar: 'الدفع عند الاستلام', en: 'Cash on delivery' } },
-    { id: 'card', label: { ar: 'فيزا / مدى', en: 'Visa / Mada' } },
+    { id: 'card', label: { ar: 'فيزا / ماستركارد', en: 'Visa / Mastercard' } },
   ];
 
   constructor(
@@ -83,7 +83,7 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.guest = !this.session.isLoggedIn();
-    this.city = this.locale.isAr() ? 'الرياض' : 'Riyadh';
+    this.city = this.locale.isAr() ? 'القاهرة' : 'Cairo';
     this.restoreDraft();
     this.prefillFromSession();
     if (this.session.isLoggedIn()) {
@@ -150,7 +150,7 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
     this.store.requestCartOpen();
   }
   get cities() {
-    return this.locale.isAr() ? ['الرياض', 'جدة', 'الدمام'] : ['Riyadh', 'Jeddah', 'Dammam'];
+    return this.locale.isAr() ? ['القاهرة', 'الجيزة', 'الإسكندرية'] : ['Cairo', 'Giza', 'Alexandria'];
   }
   get shipIndex() {
     return Math.max(0, this.shippingOptions.findIndex((o) => o.id === this.ship));
@@ -347,7 +347,19 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
 
   private checkoutError(err: unknown): string {
     const ar = this.locale.isAr();
-    if (isDeniedAccess(err)) {
+    const code = err instanceof Error ? err.message : '';
+    if (code === 'CART_EMPTY') {
+      return ar ? 'السلة فارغة.' : 'Your cart is empty.';
+    }
+    if (code === 'CART_SYNC') {
+      return ar
+        ? 'المنتجات ما اتحفظتش في سلة السيرفر. ادخل تاني وحاول مرة أخرى.'
+        : 'The items did not save to the server cart. Sign in again and retry.';
+    }
+    if (code === 'ADDRESS') {
+      return ar ? 'العنوان غير صالح. احفظ عنواناً ثم أتمّ الطلب.' : 'The address is invalid. Save an address, then place the order.';
+    }
+    if (isDeniedAccess(err) || code === 'LOGIN') {
       return ar ? 'الجلسة انتهت. ادخل تاني وبعدين أتمّ الطلب.' : 'Your session expired. Sign in again, then place the order.';
     }
     return apiErrorMessage(err, ar ? 'السلة على السيرفر فارغة أو العنوان غير صالح. حاول مرة أخرى.' : 'The server cart is empty or the address is invalid. Try again.');

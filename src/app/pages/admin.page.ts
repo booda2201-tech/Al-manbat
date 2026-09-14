@@ -228,7 +228,11 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   }
 
   get offerList(): ApiProduct[] {
-    return this.products.filter((p) => !!p.hasOffer || (p.discountPercent ?? 0) > 0);
+    return this.products.filter((p) => this.productOnOffer(p));
+  }
+
+  productOnOffer(p: ApiProduct): boolean {
+    return (Number(p.discountPercent) || 0) > 0;
   }
 
   get filteredOffers(): ApiProduct[] {
@@ -582,6 +586,20 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.selectedCategoryId = null;
   }
 
+  toggleDraftOffer(): void {
+    this.productDraft.hasOffer = !this.productDraft.hasOffer;
+    if (this.productDraft.hasOffer && !(Number(this.productDraft.discountPercent) || 0)) {
+      this.productDraft.discountPercent = 10;
+    }
+    if (!this.productDraft.hasOffer) this.productDraft.discountPercent = 0;
+  }
+
+  onDraftDiscount(value: number | string | null): void {
+    const percent = Math.min(90, Math.max(0, Math.round(Number(value) || 0)));
+    this.productDraft.discountPercent = percent;
+    this.productDraft.hasOffer = percent > 0;
+  }
+
   salePrice(p: ApiProduct): number {
     const price = Number(p.price) || 0;
     const percent = Math.min(90, Math.max(0, Number(p.discountPercent) || 0));
@@ -594,15 +612,18 @@ export class AdminPageComponent implements OnInit, OnDestroy {
 
   setOfferPct(p: ApiProduct, value: number | string | null): void {
     p.discountPercent = Math.min(90, Math.max(0, Math.round(Number(value) || 0)));
+    p.hasOffer = this.offerPct(p) > 0;
   }
 
   nudgeOffer(p: ApiProduct, delta: number): void {
     p.discountPercent = Math.min(90, Math.max(0, this.offerPct(p) + delta));
+    p.hasOffer = this.offerPct(p) > 0;
   }
 
   clearOffer(p: ApiProduct): void {
     p.discountPercent = 0;
-    this.selectedOfferId = null;
+    p.hasOffer = false;
+    p.discountDays = 0;
     this.saveOffer(p);
   }
 
@@ -1011,10 +1032,14 @@ export class AdminPageComponent implements OnInit, OnDestroy {
 
   saveOffer(p: ApiProduct): void {
     if (this.saving) return;
-    const percent = Number(p.discountPercent) || 0;
+    const percent = this.offerPct(p);
+    const days = Number(p.discountDays ?? p.discountDaysRemaining) || (percent > 0 ? 7 : 0);
+    p.hasOffer = percent > 0;
+    p.discountPercent = percent;
+    p.discountDays = days;
     this.saving = true;
     this.admin
-      .updateProduct({ ...p, hasOffer: percent > 0, discountPercent: percent })
+      .updateProduct({ ...p, hasOffer: percent > 0, discountPercent: percent, discountDays: days })
       .subscribe({
         next: () => this.afterSave(this.locale.isAr() ? 'تم تحديث العرض' : 'Offer updated'),
         error: (err) => this.fail(err),
@@ -1221,7 +1246,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   private enrichOne(order: Order): void {
     if (this.enrichedIds.has(order.id) && order.customerName && order.customerPhone) return;
     this.enrichedIds.add(order.id);
-    this.admin.enrichOrders([order]).subscribe((updated) => {
+    this.admin.enrichOrders([order]).subscribe((updated: Order[]) => {
       const next = updated[0];
       if (!next) return;
       this.orders = this.orders.map((row) => (row.id === next.id ? next : row));
@@ -1242,8 +1267,8 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     );
     if (!pending.length) return;
     pending.forEach((order) => this.enrichedIds.add(order.id));
-    this.admin.enrichOrders(pending).subscribe((updated) => {
-      const byId = new Map(updated.map((row) => [row.id, row]));
+    this.admin.enrichOrders(pending).subscribe((updated: Order[]) => {
+      const byId = new Map(updated.map((row: Order) => [row.id, row]));
       this.orders = this.orders.map((order) => byId.get(order.id) || order);
     });
   }
@@ -1268,7 +1293,8 @@ export class AdminPageComponent implements OnInit, OnDestroy {
 
   private toProductDto(): Partial<ApiProduct> {
     const percent = Number(this.productDraft.discountPercent) || 0;
-    const offered = this.productDraft.hasOffer || percent > 0;
+    const offered = percent > 0;
+    this.productDraft.hasOffer = offered;
     const acidity = this.productDraft.acidity == null ? NaN : Number(this.productDraft.acidity);
     return {
       ...(this.editingProduct ?? {}),

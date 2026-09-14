@@ -405,7 +405,7 @@ function buildSuggestions(
   if (isBlank(draft.highlightsAr) && isBlank(draft.highlightsEn)) {
     const variety = detectVariety(`${draft.nameAr} ${draft.varietyAr}`) || (draft.varietyAr ? { ar: draft.varietyAr, en: draft.varietyEn } : null);
     const size = detectSize(`${draft.sizeAr} ${draft.sizeEn}`);
-    const origin = { ar: draft.originAr || 'الجوف', en: draft.originEn || 'Al-Jouf' };
+    const origin = { ar: draft.originAr || 'مصر', en: draft.originEn || 'Egypt' };
     const highlights = buildHighlights(ctx.kind, variety, size, origin);
     out.push({
       id: 'highlights',
@@ -424,7 +424,7 @@ function buildSuggestions(
       ctx.kind,
       detectVariety(`${draft.nameAr} ${draft.varietyAr}`),
       detectSize(`${draft.sizeAr} ${draft.sizeEn}`),
-      { ar: draft.originAr || 'الجوف', en: draft.originEn || 'Al-Jouf' }
+      { ar: draft.originAr || 'مصر', en: draft.originEn || 'Egypt' }
     );
     out.push({
       id: 'description',
@@ -930,8 +930,8 @@ function pickOrigin(name: string, similar?: ApiProduct): { ar: string; en: strin
   if (stated) return stated;
   const ar = similar?.originAr || similar?.origin || '';
   const en = similar?.originEn || '';
-  if (ar || en) return { ar: ar || 'الجوف', en: en || 'Al-Jouf' };
-  return { ar: 'الجوف', en: 'Al-Jouf' };
+  if (ar || en) return { ar: ar || 'مصر', en: en || 'Egypt' };
+  return { ar: 'مصر', en: 'Egypt' };
 }
 
 function pickHarvest(similar?: ApiProduct): { ar: string; en: string } {

@@ -5,7 +5,7 @@ export const trustPoints: Array<{icon: 'truck' | 'shield' | 'lock' | 'headset';t
 {
   icon: 'truck',
   title: { ar: 'توصيل في نفس اليوم', en: 'Same-day delivery' },
-  body: { ar: 'في الرياض وجدة والدمام على الطلبات قبل الرابعة عصراً.', en: 'In Riyadh, Jeddah and Dammam on orders placed before 4pm.' }
+  body: { ar: 'في القاهرة والجيزة والإسكندرية على الطلبات قبل الرابعة عصراً.', en: 'In Cairo, Giza and Alexandria on orders placed before 4pm.' }
 },
 {
   icon: 'shield',
@@ -20,14 +20,14 @@ export const trustPoints: Array<{icon: 'truck' | 'shield' | 'lock' | 'headset';t
 {
   icon: 'headset',
   title: { ar: 'خدمة عملاء حقيقية', en: 'Real human care' },
-  body: { ar: 'فريق سعودي يجيب خلال دقيقتين، عربي وإنجليزي.', en: 'A local team answering within two minutes, in Arabic or English.' }
+  body: { ar: 'فريق مصري يجيب خلال دقيقتين، عربي وإنجليزي.', en: 'An Egyptian team answering within two minutes, in Arabic or English.' }
 }];
 
 
 export const testimonials: Array<{name: Bilingual;role: Bilingual;quote: Bilingual;rating: number;}> = [
 {
-  name: { ar: 'نورة العتيبي', en: 'Noura Al-Otaibi' },
-  role: { ar: 'الرياض · عميلة منذ ٢٠٢٣', en: 'Riyadh · Customer since 2023' },
+  name: { ar: 'ندى حسن', en: 'Nada Hassan' },
+  role: { ar: 'القاهرة · عميلة منذ ٢٠٢٣', en: 'Cairo · Customer since 2023' },
   quote: {
     ar: 'زيت المحصول المحفوظ صار الزيت الوحيد في المطبخ. التغليف محكم والطعم كما وُصف، بلا مبالغة.',
     en: 'The reserve oil is now the only oil in the kitchen. Tight packaging, and the taste matches the description — no exaggeration.'
@@ -35,8 +35,8 @@ export const testimonials: Array<{name: Bilingual;role: Bilingual;quote: Bilingu
   rating: 5
 },
 {
-  name: { ar: 'خالد المطيري', en: 'Khalid Al-Mutairi' },
-  role: { ar: 'جدة · عميل منذ ٢٠٢٢', en: 'Jeddah · Customer since 2022' },
+  name: { ar: 'عمرو فؤاد', en: 'Amr Fouad' },
+  role: { ar: 'الإسكندرية · عميل منذ ٢٠٢٢', en: 'Alexandria · Customer since 2022' },
   quote: {
     ar: 'طلبت تنكة العائلة ومكدوس في شحنة واحدة. وصل بارد، والبرطمانات محكمة كما لو خرجت من المونة.',
     en: 'I ordered the family tin and makdous in one shipment. It arrived cool, jars sealed as if they left a home pantry.'
@@ -44,8 +44,8 @@ export const testimonials: Array<{name: Bilingual;role: Bilingual;quote: Bilingu
   rating: 5
 },
 {
-  name: { ar: 'ريم الحربي', en: 'Reem Al-Harbi' },
-  role: { ar: 'الخبر · عميلة منذ ٢٠٢٤', en: 'Khobar · Customer since 2024' },
+  name: { ar: 'سارة علي', en: 'Sara Ali' },
+  role: { ar: 'المنصورة · عميلة منذ ٢٠٢٤', en: 'Mansoura · Customer since 2024' },
   quote: {
     ar: 'اللفت المخلل لونه من الشمندر فعلاً، والخيار يقرمش بعد أسبوع من الفتح. هذا مخلل بيت.',
     en: 'The pickled turnip really is coloured by beet, and the cucumber still crunches a week after opening. This is house pickle.'
@@ -161,17 +161,17 @@ export const addresses: Address[] = [
 {
   id: 'a1',
   label: { ar: 'المنزل', en: 'Home' },
-  line: { ar: 'حي الياسمين، شارع الأمير سلطان، مبنى ١٢', en: 'Al Yasmin, Prince Sultan St, Building 12' },
-  city: { ar: 'الرياض', en: 'Riyadh' },
-  phone: '+966 55 014 2288',
+  line: { ar: 'المعادي، شارع ٩، مبنى ١٢', en: 'Maadi, Street 9, Building 12' },
+  city: { ar: 'القاهرة', en: 'Cairo' },
+  phone: '+20 10 014 2288',
   isDefault: true
 },
 {
   id: 'a2',
   label: { ar: 'المكتب', en: 'Office' },
-  line: { ar: 'برج المنبت، طريق الملك فهد، الطابق ٩', en: 'Almanbat Tower, King Fahd Rd, Floor 9' },
-  city: { ar: 'الرياض', en: 'Riyadh' },
-  phone: '+966 55 014 2288',
+  line: { ar: 'وسط البلد، شارع قصر النيل، الطابق ٩', en: 'Downtown, Qasr El Nil St, Floor 9' },
+  city: { ar: 'القاهرة', en: 'Cairo' },
+  phone: '+20 10 014 2288',
   isDefault: false
 }];
 
@@ -180,8 +180,8 @@ export const faqs: Array<{q: Bilingual;a: Bilingual;}> = [
 {
   q: { ar: 'كم تستغرق مدة التوصيل؟', en: 'How long does delivery take?' },
   a: {
-    ar: 'الطلبات داخل الرياض وجدة والدمام تُسلّم في نفس اليوم إذا طُلبت قبل الرابعة عصراً. باقي المناطق من يوم إلى ثلاثة أيام عمل. الزيوت والتنك تُشحن بعبوات تحميها من الحرارة.',
-    en: 'Orders in Riyadh, Jeddah and Dammam are delivered same-day when placed before 4pm. Other regions take one to three working days. Oils and tins ship in packaging that shields them from heat.'
+    ar: 'الطلبات داخل القاهرة والجيزة والإسكندرية تُسلّم في نفس اليوم إذا طُلبت قبل الرابعة عصراً. باقي المحافظات من يوم إلى ثلاثة أيام عمل. الزيوت والتنك تُشحن بعبوات تحميها من الحرارة.',
+    en: 'Orders in Cairo, Giza and Alexandria are delivered same-day when placed before 4pm. Other governorates take one to three working days. Oils and tins ship in packaging that shields them from heat.'
   }
 },
 {
@@ -201,8 +201,8 @@ export const faqs: Array<{q: Bilingual;a: Bilingual;}> = [
 {
   q: { ar: 'ما طرق الدفع المتاحة؟', en: 'Which payment methods are available?' },
   a: {
-    ar: 'مدى، فيزا، ماستركارد، أبل باي، تابي وتمارا للتقسيط، والدفع عند الاستلام في مدن مختارة.',
-    en: 'Mada, Visa, Mastercard, Apple Pay, Tabby and Tamara instalments, plus cash on delivery in selected cities.'
+    ar: 'فيزا، ماستركارد، فوري، والدفع عند الاستلام في مدن مختارة.',
+    en: 'Visa, Mastercard, Fawry, and cash on delivery in selected cities.'
   }
 }];
 
@@ -216,9 +216,9 @@ export const supportChannels: Array<{title: Bilingual;detail: Bilingual;action: 
 },
 {
   title: { ar: 'الهاتف', en: 'Phone' },
-  detail: { ar: '٩٢٠٠ ١٢٣ ٤٥ · من ٨ص إلى ١١م', en: '9200 123 45 · 8am – 11pm' },
+  detail: { ar: 'من ٨ص إلى ١١م', en: '8am – 11pm' },
   action: { ar: 'اتصل بنا', en: 'Call us' },
-  href: 'tel:+966920012345'
+  href: '#contact-form'
 },
 {
   title: { ar: 'البريد الإلكتروني', en: 'Email' },
@@ -232,8 +232,8 @@ export const brandPillars: Array<{title: Bilingual;body: Bilingual;}> = [
 {
   title: { ar: 'الجذور', en: 'Roots' },
   body: {
-    ar: 'بدأنا من بستان زيتون واحد في الجوف. المصدر ليس تفصيلاً تسويقياً عندنا، بل بداية كل قرار.',
-    en: 'We began with a single olive grove in Al-Jouf. Provenance isn’t a marketing detail here — it’s where every decision starts.'
+    ar: 'بدأنا من بستان زيتون واحد في مصر. المصدر ليس تفصيلاً تسويقياً عندنا، بل بداية كل قرار.',
+    en: 'We began with a single olive grove in Egypt. Provenance isn’t a marketing detail here — it’s where every decision starts.'
   }
 },
 {

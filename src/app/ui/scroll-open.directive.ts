@@ -2,7 +2,7 @@ import { AfterViewInit, Directive, ElementRef, Input, NgZone, OnDestroy } from '
 import { gsap } from 'gsap';
 import { scheduleScrollRefresh } from './gsap-setup';
 
-export type ScrollOpenMode = 'card' | 'panel';
+export type ScrollOpenMode = 'card' | 'panel' | 'fit';
 
 @Directive({
   selector: '[appScrollOpen]',
@@ -10,6 +10,7 @@ export type ScrollOpenMode = 'card' | 'panel';
   host: {
     class: 'scroll-open',
     '[class.scroll-open--panel]': 'panel',
+    '[class.scroll-open--fit]': 'fit',
   },
 })
 export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
@@ -27,6 +28,10 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
     return this.appScrollOpen === 'panel';
   }
 
+  get fit(): boolean {
+    return this.appScrollOpen === 'fit';
+  }
+
   ngAfterViewInit(): void {
     this.zone.runOutsideAngular(() => this.bind());
   }
@@ -37,7 +42,7 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
       (el.querySelector('.scroll-open__media') as HTMLElement | null) ??
       (el.querySelector('img') as HTMLElement | null);
 
-    const mode: ScrollOpenMode = this.appScrollOpen === 'panel' ? 'panel' : 'card';
+    const mode: ScrollOpenMode = this.appScrollOpen === 'panel' ? 'panel' : this.appScrollOpen === 'fit' ? 'fit' : 'card';
     const radius =
       getComputedStyle(el).borderTopLeftRadius || (mode === 'panel' ? '24px' : '12px');
 
@@ -49,13 +54,21 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
     this.mm.add('(prefers-reduced-motion: no-preference)', () => {
       const compact = window.matchMedia('(max-width: 1023px)').matches;
       const fromClip =
-        mode === 'panel'
+        mode === 'fit'
+          ? `inset(0% 0% 0% 0% round ${radius})`
+          : mode === 'panel'
           ? `inset(${compact ? 40 : 46}% 0% ${compact ? 40 : 46}% 0% round ${radius})`
           : `inset(${compact ? 12 : 18}% ${compact ? 7 : 10}% ${compact ? 12 : 18}% ${compact ? 7 : 10}% round ${radius})`;
       const toClip = `inset(0% 0% 0% 0% round ${radius})`;
 
       gsap.set(el, { clipPath: fromClip, force3D: true });
-      if (media) gsap.set(media, { scale: compact ? 1.14 : 1.22, transformOrigin: '50% 50%', force3D: true });
+      if (media) {
+        gsap.set(media, {
+          scale: mode === 'fit' ? 1 : compact ? 1.14 : 1.22,
+          transformOrigin: '50% 50%',
+          force3D: true,
+        });
+      }
 
       const tl = gsap.timeline({
         defaults: { ease: 'none', force3D: true },
@@ -70,7 +83,7 @@ export class ScrollOpenDirective implements AfterViewInit, OnDestroy {
       });
 
       tl.to(el, { clipPath: toClip, duration: 1 }, 0);
-      if (media) tl.to(media, { scale: 1, duration: 1 }, 0);
+      if (media && mode !== 'fit') tl.to(media, { scale: 1, duration: 1 }, 0);
 
       el.querySelectorAll('img').forEach((img) => {
         if (!img.complete) {

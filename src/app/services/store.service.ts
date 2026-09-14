@@ -1,6 +1,7 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import type { CartLine, Product } from '../types';
 import { CatalogService } from './catalog.service';
 import { SessionService } from './session.service';
@@ -19,6 +20,11 @@ const PROMO_CODES: Record<string, number> = { ALMANBAT10: 0.1, HARVEST15: 0.15 }
 
 @Injectable({ providedIn: 'root' })
 export class StoreService {
+  private catalog = inject(CatalogService);
+  private session = inject(SessionService);
+  private shop = inject(ShopApiService);
+  private router = inject(Router);
+
   readonly lines = signal<CartLine[]>([]);
   readonly savedForLater = signal<string[]>([]);
   readonly wishlist = signal<string[]>([]);
@@ -52,13 +58,6 @@ export class StoreService {
     this.subtotal() === 0 || this.subtotal() >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
   );
   readonly total = computed(() => Math.max(0, this.subtotal() - this.promoDiscount()) + this.shipping());
-
-  constructor(
-    private catalog: CatalogService,
-    private session: SessionService,
-    private shop: ShopApiService,
-    private router: Router
-  ) {}
 
   hydrateFromApi(): void {
     if (!this.session.isLoggedIn() || this.session.isAdmin()) {
@@ -96,7 +95,16 @@ export class StoreService {
     });
     this.lastAdded.set(this.catalog.byId(productId) ?? null);
     if (openCart) this.cartOpen.set(true);
-    if (!this.session.isAdmin()) this.shop.addToCart(productId, qty).subscribe({ error: () => undefined });
+    if (!this.session.isAdmin()) {
+      this.shop.addToCart(productId, qty).subscribe({
+        error: () => {
+          this.pushToast({
+            tone: 'warning',
+            title: document.documentElement.lang === 'en' ? 'Could not add this to the server cart' : 'تعذر إضافة المنتج لسلة السيرفر',
+          });
+        },
+      });
+    }
     return true;
   }
 
@@ -127,7 +135,18 @@ export class StoreService {
 
   syncCartToServer(): Observable<unknown> {
     if (!this.session.isLoggedIn() || this.session.isAdmin()) return of(null);
-    return this.shop.syncCart(this.lines());
+    const local = this.lines();
+    if (!local.length) return throwError(() => new Error('CART_EMPTY'));
+    return this.shop.syncCart(local).pipe(
+      switchMap(() => this.shop.getCart()),
+      map((remote) => {
+        const missing = local.some(
+          (line) => !remote.some((row) => row.productId === line.productId && row.qty > 0)
+        );
+        if (missing) throw new Error('CART_SYNC');
+        return remote;
+      })
+    );
   }
 
   applyPromo(code: string): boolean {

@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import {
+  extractNameFromToken,
   extractRoleFromToken,
   extractToken,
   isAdminRole,
@@ -24,6 +25,8 @@ interface StoredSession {
   token: string | null;
   phone: string | null;
   role: string | null;
+  userName: string | null;
+  email: string | null;
 }
 
 function emptySession(): SessionState {
@@ -47,9 +50,9 @@ function readSession(): SessionState {
     }
     return {
       token,
-      userName: null,
+      userName: pickDisplayName(parsed.userName) || null,
       phone: parsed.phone ?? null,
-      email: null,
+      email: typeof parsed.email === 'string' && parsed.email.trim() ? parsed.email.trim() : null,
       role: extractRoleFromToken(token) || parsed.role || null,
     };
   } catch {
@@ -59,6 +62,7 @@ function readSession(): SessionState {
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
+  /** Auth token + display profile for the current browser session. */
   private readonly state = signal<SessionState>(readSession());
 
   readonly token = () => this.liveToken();
@@ -93,7 +97,7 @@ export class SessionService {
     if (!token) return false;
     this.commit({
       token,
-      userName: pickDisplayName(extractUserName(body)) || null,
+      userName: pickDisplayName(extractUserName(body), extractNameFromToken(token)) || null,
       phone,
       email: null,
       role: pickSessionRole(token, body),
@@ -131,6 +135,8 @@ export class SessionService {
         token: next.token,
         phone: next.phone,
         role: next.role,
+        userName: pickDisplayName(next.userName) || null,
+        email: next.email,
       };
       if (next.token) localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
       else localStorage.removeItem(STORAGE_KEY);

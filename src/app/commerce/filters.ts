@@ -26,7 +26,7 @@ export function applyFilters(list: Product[], f: FilterState): Product[] {
     if (p.price > f.maxPrice) return false;
     if (p.rating < f.minRating) return false;
     if (f.inStockOnly && p.stock === 0) return false;
-    if (f.onSaleOnly && !p.compareAt) return false;
+    if (f.onSaleOnly && !p.badges.includes('deal') && !p.compareAt) return false;
     if (f.newOnly && !p.badges.includes('new')) return false;
     if (f.sub && p.subcategory !== f.sub) return false;
     return true;

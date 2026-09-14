@@ -28,7 +28,7 @@ import { CrumbsComponent } from '../commerce/crumbs.component';
             <div class="max-w-2xl">
               <span class="about-hero__logo"><app-logo tone="light" size="lg"></app-logo></span>
               <h1 class="about-hero__title font-displayAr">{{ locale.isAr() ? 'بدأنا من بستان واحد' : 'We began with one grove' }}</h1>
-              <p class="about-hero__lede">{{ locale.isAr() ? 'المنبت بيت للزيتون والمخلل. بدأنا من بستان واحد في الجوف، وسألنا سؤالاً واحداً: لماذا يصعب أن تجد زيتاً تعرف مصدره، وزيتوناً يُملّح كما يجب، ومخللاً يقرمش بعد أسبوع من الفتح؟' : 'Almanbat is a house of olives and pickles. We began with one grove in Al-Jouf, and one question: why is it so hard to find oil you can trace, olives cured properly, and pickle that still crunches a week after opening?' }}</p>
+              <p class="about-hero__lede">{{ locale.isAr() ? 'المنبت بيت للزيتون والمخلل. بدأنا من بستان واحد في مصر، وسألنا سؤالاً واحداً: لماذا يصعب أن تجد زيتاً تعرف مصدره، وزيتوناً يُملّح كما يجب، ومخللاً يقرمش بعد أسبوع من الفتح؟' : 'Almanbat is a house of olives and pickles. We began with one grove in Egypt, and one question: why is it so hard to find oil you can trace, olives cured properly, and pickle that still crunches a week after opening?' }}</p>
             </div>
           </div>
         </div>

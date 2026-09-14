@@ -7,8 +7,8 @@ export const categories: Category[] = [
     name: { ar: 'زيوت الزيتون', en: 'Olive Oils' },
     tagline: { ar: 'معصور على البارد، من البستان إلى الزجاجة', en: 'Cold-pressed, from grove to bottle' },
     story: {
-      ar: 'نعصر زيتون الجوف خلال ساعات الحصاد، في زجاج داكن يحفظ النكهة. حموضة منخفضة، ودفعة محدودة لكل موسم.',
-      en: 'We press Al-Jouf olives within hours of harvest, in dark glass that holds the flavour. Low acidity, limited batches each season.',
+      ar: 'نعصر الزيتون خلال ساعات الحصاد، في زجاج داكن يحفظ النكهة. حموضة منخفضة، ودفعة محدودة لكل موسم.',
+      en: 'We press olives within hours of harvest, in dark glass that holds the flavour. Low acidity, limited batches each season.',
     },
     image: images.cat['olive-oil'],
     accent: 'olive',
