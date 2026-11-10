@@ -287,7 +287,7 @@
   </div>
 </section>
 
-<section *ngIf="placeReel.length" class="w-full px-4 pt-12 lg:px-8 lg:pt-20">
+<section *ngIf="placeReel.length" #placeStage class="w-full px-4 pt-12 lg:px-8 lg:pt-20">
   <div class="relative mx-auto aspect-[1.9/1] max-h-[250px] w-full overflow-hidden rounded-2xl bg-olive-900 shadow-[0_30px_70px_-36px_rgba(36,48,18,0.72)] ring-1 ring-gold-500/40 lg:aspect-[3.15/1] lg:max-h-[520px] lg:rounded-[1.75rem]">
     <div
       class="flex h-full transition-transform duration-500 ease-premium"
@@ -301,6 +301,7 @@
           [src]="film.src"
           [poster]="film.poster || null"
           [controls]="placePlaying && placeIndex === i"
+          muted
           playsinline
           preload="metadata"
           (ended)="onPlaceEnded()"

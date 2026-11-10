@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, QueryList, ViewChildren, computed, effect, signal, untracked } from '@angular/core';
+import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren, computed, effect, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { HeroAd, Category, Bilingual } from '../types';
 import { placeVideo } from '../data/content';
@@ -43,6 +43,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   placeFilms: Array<{ title: Bilingual; place: Bilingual; poster: string; src: string }> = [];
   placeIndex = 0;
   placePlaying = false;
+  @ViewChild('placeStage') placeStage?: ElementRef<HTMLElement>;
   @ViewChildren('slideFilm') slideFilms?: QueryList<ElementRef<HTMLVideoElement>>;
   hours = '06';
   minutes = '42';
@@ -53,6 +54,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   private heroStartedAt = 0;
   private heroRemaining = HERO_AD_MS;
   private reduceMotion = false;
+  private placeWatch?: IntersectionObserver;
+  private placeSound = false;
   private readonly desktop = signal(false);
   private desktopMq?: MediaQueryList;
   private desktopMqListener?: (event: MediaQueryListEvent) => void;
@@ -146,17 +149,29 @@ export class HomeComponent implements OnInit, OnDestroy {
     return this.placeFilms;
   }
 
-  playSlide(index: number): void {
+  playSlide(index: number, muted = false): void {
     const film = this.slideFilms?.get(index)?.nativeElement;
     if (!film?.src) return;
+    if (index === this.placeIndex && !film.paused) return;
     this.slideFilms?.forEach((item, itemIndex) => {
       if (itemIndex !== index) item.nativeElement.pause();
     });
     this.placeIndex = index;
     this.placePlaying = true;
-    film.muted = false;
+    film.muted = muted || !this.placeSound;
     const played = film.play();
-    if (played) played.catch(() => { this.placePlaying = false; });
+    if (!played) return;
+    played.then(() => {
+      if (!film.muted) this.placeSound = true;
+    }).catch(() => {
+      if (!film.muted) {
+        film.muted = true;
+        const retry = film.play();
+        if (retry) retry.catch(() => { this.placePlaying = false; });
+        return;
+      }
+      this.placePlaying = false;
+    });
   }
 
   stepPlace(dir: number): void {
@@ -190,6 +205,30 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.slideFilms?.forEach((item) => item.nativeElement.pause());
     this.placePlaying = false;
     this.placeIndex = index;
+    this.playSlide(index, !this.placeSound);
+  }
+
+  private watchPlace(): void {
+    this.placeWatch?.disconnect();
+    const node = this.placeStage?.nativeElement;
+    if (!node || this.reduceMotion || typeof IntersectionObserver === 'undefined') return;
+    this.placeWatch = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const ratio = entry.intersectionRatio;
+      const show = entry.isIntersecting && ratio >= 0.35;
+      const hide = !entry.isIntersecting || ratio < 0.12;
+      this.zone.run(() => {
+        if (show) this.playSlide(this.placeIndex, !this.placeSound);
+        else if (hide) this.pausePlace();
+      });
+    }, { threshold: [0, 0.12, 0.35, 0.6] });
+    this.placeWatch.observe(node);
+  }
+
+  private pausePlace(): void {
+    this.slideFilms?.forEach((item) => item.nativeElement.pause());
+    this.placePlaying = false;
   }
 
   onPlaceEnded(): void {
@@ -356,6 +395,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.placeFilms = films;
       this.placeIndex = 0;
       this.placePlaying = false;
+      setTimeout(() => this.watchPlace(), 0);
     });
     this.content.advertisements().subscribe((rows) => {
       const slides = bySort(rows).map(mapAdvertisement).filter((ad): ad is HeroAd => !!ad);
@@ -377,6 +417,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.placeWatch?.disconnect();
     this.clearHeroClock();
     if (this.desktopMq && this.desktopMqListener) {
       this.desktopMq.removeEventListener('change', this.desktopMqListener);
