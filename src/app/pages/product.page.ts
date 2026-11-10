@@ -9,7 +9,7 @@ import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
 import { SessionService } from '../services/session.service';
 import { StoreService } from '../services/store.service';
-import { formatCount } from '../utils/format';
+import { formatCount, offerWindowLabel } from '../utils/format';
 import { pickDisplayName } from '../api/api.util';
 import { IconComponent } from '../ui/icon.component';
 import { composeReviewComment, type ReviewDraft } from '../ui/review-form.component';
@@ -275,6 +275,11 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
       exclusive: 'bg-clay-400 text-sand-50',
     };
     return map[b] ?? 'bg-olive-600 text-sand-50';
+  }
+
+  offerCaption(): string {
+    if (!this.product) return '';
+    return offerWindowLabel(this.product.discountDaysRemaining, this.product.discountEndsAt, this.locale.locale());
   }
 
   badgeLabel(b: string): string {

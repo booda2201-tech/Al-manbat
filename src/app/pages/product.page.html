@@ -56,7 +56,8 @@
           <h1 class="pdp-buy__title font-displayAr">{{ locale.tr(product.name) }}</h1>
 
           <div class="pdp-buy__price">
-            <app-price-block [price]="product.price" [compareAt]="product.compareAt" size="lg"></app-price-block>
+            <app-price-block [price]="product.price" [compareAt]="product.compareAt" [offerPercent]="product.discountPercent ?? null" size="lg"></app-price-block>
+            <p *ngIf="offerCaption()" class="mt-2 text-sm font-medium text-olive-800">{{ offerCaption() }}</p>
             <div class="mt-3 text-base"><app-stock [stock]="product.stock"></app-stock></div>
           </div>
 
@@ -113,7 +114,7 @@
       <div class="flex items-center gap-3">
         <div class="min-w-0 flex-1">
           <p *ngIf="hasCopy(product.brand)" class="truncate text-sm text-ink-muted">{{ locale.tr(product.brand) }}</p>
-          <app-price-block [price]="product.price" [compareAt]="product.compareAt" size="md"></app-price-block>
+          <app-price-block [price]="product.price" [compareAt]="product.compareAt" [offerPercent]="product.discountPercent ?? null" size="md"></app-price-block>
         </div>
         <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive-600 px-5 text-sm font-medium text-sand-50 shadow-sm disabled:bg-olive-200 disabled:text-olive-500" [disabled]="soldOut" (click)="add()">
           <app-icon name="cart" [size]="16"></app-icon>

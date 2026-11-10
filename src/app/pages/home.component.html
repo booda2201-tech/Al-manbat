@@ -233,12 +233,14 @@
         <h2 class="mt-3 font-displayAr text-3xl text-sand-50 md:text-[40px]">{{ locale.ui('flashDeals') }}</h2>
       </div>
       <div class="flex items-center gap-3">
-        <span class="text-xs text-sand-100/70">{{ locale.ui('endsIn') }}</span>
-        <div class="flex gap-1.5">
-          <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ hours }}</span>
-          <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ minutes }}</span>
-          <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ seconds }}</span>
-        </div>
+        <ng-container *ngIf="offerClock">
+          <span class="text-xs text-sand-100/70">{{ locale.ui('endsIn') }}</span>
+          <div class="flex gap-1.5">
+            <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ hours }}</span>
+            <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ minutes }}</span>
+            <span class="flex h-11 w-11 items-center justify-center rounded bg-olive-900/60 text-base font-semibold tabular-nums text-sand-50">{{ seconds }}</span>
+          </div>
+        </ng-container>
         <a routerLink="/offers" class="ms-2 hidden border-b border-sand-100/25 pb-1 text-[13px] font-medium text-sand-100 transition-colors duration-200 ease-premium hover:border-gold-300 hover:text-gold-300 sm:block">{{ locale.ui('viewAll') }}</a>
       </div>
     </div>

@@ -17,6 +17,12 @@ export class AdminApiService {
     );
   }
 
+  getOffers(): Observable<ApiProduct[]> {
+    return this.http.get(apiUrl('/api/Products/GetOffers')).pipe(
+      map((body) => unwrapList(body) as ApiProduct[])
+    );
+  }
+
   getCategories(): Observable<ApiCategory[]> {
     return this.http.get(apiUrl('/api/Categories/GetAllCategories')).pipe(
       map((body) => unwrapList(body) as ApiCategory[]),
@@ -324,8 +330,9 @@ function productWriteBody(dto: Partial<ApiProduct>): Record<string, unknown> {
   const listed = Number(dto.price) || 0;
   const oldRaw = dto.oldPrice == null ? (listed > newPrice ? listed : null) : Number(dto.oldPrice);
   const oldPrice = oldRaw != null && Number.isFinite(oldRaw) && oldRaw > newPrice ? oldRaw : null;
+  const discountDays = oldPrice != null ? offerDays(dto.discountDays) : null;
   const acidity = dto.acidity == null ? null : Number(dto.acidity);
-  return {
+  const body: Record<string, unknown> = {
     name: nameEn || nameAr,
     nameAr,
     nameEn,
@@ -356,6 +363,15 @@ function productWriteBody(dto: Partial<ApiProduct>): Record<string, unknown> {
     acidity: acidity != null && Number.isFinite(acidity) ? acidity : null,
     isExclusive: typeof dto.isExclusive === 'boolean' ? dto.isExclusive : null,
   };
+  if (discountDays != null) body['discountDays'] = discountDays;
+  return body;
+}
+
+function offerDays(value: unknown): number | null {
+  if (value == null || value === '') return null;
+  const days = Math.round(Number(value));
+  if (!Number.isFinite(days) || days < 1 || days > 365) return null;
+  return days;
 }
 
 function appendValue(form: FormData, key: string, value: unknown): void {
@@ -388,6 +404,7 @@ function toProductFormData(dto: Partial<ApiProduct>, images?: File | File[] | nu
   appendValue(form, 'Price', body['price']);
   appendValue(form, 'OldPrice', body['oldPrice']);
   appendValue(form, 'NewPrice', body['newPrice']);
+  appendValue(form, 'DiscountDays', body['discountDays']);
   appendList(form, 'highlightsAr', lines(dto.highlightsAr, dto.highlights));
   appendList(form, 'highlightsEn', lines(dto.highlightsEn, dto.highlights));
   const files = asFiles(images);

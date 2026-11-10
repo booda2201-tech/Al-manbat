@@ -32,6 +32,9 @@ export interface Product {
   subcategory: string;
   price: number;
   compareAt?: number;
+  discountPercent?: number;
+  discountEndsAt?: string;
+  discountDaysRemaining?: number;
   rating: number;
   reviews: number;
   stock: number;

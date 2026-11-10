@@ -21,7 +21,7 @@ export interface ProductCopyDraft {
   highlightsAr: string;
   highlightsEn: string;
   discountPercent: number;
-  discountDays: number;
+  discountDays: number | null;
   hasOffer: boolean;
   isNew: boolean;
   isAvailable: boolean;

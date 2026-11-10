@@ -47,6 +47,10 @@ function zipHighlights(ar?: string[] | null, en?: string[] | null): Product['hig
 }
 
 function readNum(dto: object, keys: string[]): number {
+  return readOptionalNum(dto, keys) ?? 0;
+}
+
+function readOptionalNum(dto: object, keys: string[]): number | null {
   const rec = dto as Record<string, unknown>;
   for (const key of keys) {
     const raw = rec[key];
@@ -54,7 +58,16 @@ function readNum(dto: object, keys: string[]): number {
     const n = Number(raw);
     if (Number.isFinite(n)) return n;
   }
-  return 0;
+  return null;
+}
+
+function readText(dto: object, keys: string[]): string {
+  const rec = dto as Record<string, unknown>;
+  for (const key of keys) {
+    const raw = rec[key];
+    if (typeof raw === 'string' && raw.trim()) return raw.trim();
+  }
+  return '';
 }
 
 export function mapProduct(
@@ -69,7 +82,12 @@ export function mapProduct(
   const selling = newPrice > 0 ? newPrice : finalRaw > 0 ? finalRaw : listPrice;
   const previous = readNum(dto, ['oldPrice', 'OldPrice']);
   const compare = previous > selling ? previous : listPrice > selling ? listPrice : 0;
-  const onOffer = compare > selling;
+  const flagged = dto.hasOffer;
+  const onOffer = flagged === false ? false : flagged === true ? true : compare > selling;
+  const showWas = onOffer && compare > selling;
+  const apiPercent = readOptionalNum(dto, ['discountPercent', 'DiscountPercent']);
+  const daysLeft = readOptionalNum(dto, ['discountDaysRemaining', 'DiscountDaysRemaining']);
+  const endsAt = readText(dto, ['discountEndsAt', 'DiscountEndsAt']);
   const images = (dto.imageUrls ?? []).filter(Boolean);
   const image = images[0] || FALLBACK_IMAGE;
   const varietySlug = slugify(dto.varietyEn || dto.varietyAr || dto.sizeEn || 'all');
@@ -109,7 +127,10 @@ export function mapProduct(
     category: categorySlug,
     subcategory: varietySlug,
     price: selling,
-    compareAt: onOffer ? compare : undefined,
+    compareAt: showWas ? compare : undefined,
+    discountPercent: onOffer && apiPercent != null && apiPercent > 0 ? Math.round(apiPercent) : undefined,
+    discountEndsAt: onOffer && endsAt ? endsAt : undefined,
+    discountDaysRemaining: onOffer && daysLeft != null ? daysLeft : undefined,
     rating: dto.averageRating ?? 0,
     reviews: dto.reviewsCount ?? 0,
     stock: dto.isAvailable === false ? 0 : 24,
@@ -221,4 +242,47 @@ export function hydrateCatalog(
   );
   const categories = apiCategories.map((dto, i) => mapCategory(dto, i, products));
   return { products, categories };
+}
+
+export function applyOfferList(products: Product[], offers: ApiProduct[]): Product[] {
+  const byId = new Map(offers.map((dto) => [String(dto.id), dto]));
+  return products.map((product) => {
+    const dto = byId.get(product.id);
+    if (!dto) return withoutOffer(product);
+    const priced = mapProduct({ ...dto, hasOffer: true }, product.category);
+    return {
+      ...product,
+      price: priced.price || product.price,
+      compareAt: priced.compareAt,
+      badges: withDeal(product.badges),
+      discountPercent: priced.discountPercent,
+      discountEndsAt: priced.discountEndsAt,
+      discountDaysRemaining: priced.discountDaysRemaining,
+    };
+  });
+}
+
+function withDeal(badges: Product['badges']): Product['badges'] {
+  return badges.includes('deal') ? badges : [...badges, 'deal'];
+}
+
+function withoutOffer(product: Product): Product {
+  const badges = product.badges.filter((badge) => badge !== 'deal');
+  if (
+    product.compareAt == null &&
+    badges.length === product.badges.length &&
+    product.discountPercent == null &&
+    !product.discountEndsAt &&
+    product.discountDaysRemaining == null
+  ) {
+    return product;
+  }
+  return {
+    ...product,
+    compareAt: undefined,
+    badges,
+    discountPercent: undefined,
+    discountEndsAt: undefined,
+    discountDaysRemaining: undefined,
+  };
 }

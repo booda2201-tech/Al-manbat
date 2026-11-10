@@ -3,7 +3,7 @@ import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, E
 import { Router, RouterLink } from '@angular/router';
 import type { Product } from '../types';
 import { trustPoints } from '../data/content';
-import { discountPercent } from '../utils/format';
+import { discountPercent, offerWindowLabel } from '../utils/format';
 import { LocaleService } from '../services/locale.service';
 import { StoreService } from '../services/store.service';
 import { IconComponent } from '../ui/icon.component';
@@ -59,10 +59,13 @@ export class RatingComponent {
 export class PriceBlockComponent {
   @Input() price = 0;
   @Input() compareAt?: number;
+  @Input() offerPercent: number | null = null;
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
   @Input() stack = false;
   constructor(public locale: LocaleService) {}
   get pct(): number | null {
+    const given = Number(this.offerPercent);
+    if (Number.isFinite(given) && given > 0) return Math.round(given);
     return discountPercent(this.price, this.compareAt);
   }
   get was(): string {
@@ -156,7 +159,8 @@ export class QtyComponent {
           <a [routerLink]="['/product', product.slug]">{{ locale.tr(product.name) }}</a>
         </h3>
         <div class="product-card__foot">
-          <app-price-block [price]="product.price" [compareAt]="product.compareAt" size="sm"></app-price-block>
+          <app-price-block [price]="product.price" [compareAt]="product.compareAt" [offerPercent]="product.discountPercent ?? null" size="sm"></app-price-block>
+          <p *ngIf="offerCaption()" class="product-card__offer">{{ offerCaption() }}</p>
         </div>
       </div>
     </article>
@@ -170,6 +174,9 @@ export class ProductCardComponent {
   constructor(public locale: LocaleService, public store: StoreService, private router: Router) {}
   get soldOut(): boolean {
     return this.product.stock === 0;
+  }
+  offerCaption(): string {
+    return offerWindowLabel(this.product.discountDaysRemaining, this.product.discountEndsAt, this.locale.locale());
   }
   get wished(): boolean {
     return this.store.wishlist().includes(this.product.id);

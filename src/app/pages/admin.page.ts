@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize, forkJoin, from, of, switchMap } from 'rxjs';
+import { finalize, forkJoin, from, map, of, switchMap } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { unwrapPayload } from '../api/api.util';
 import { egyptGovernorates } from '../data/egypt-places';
@@ -16,6 +16,7 @@ import { SessionService } from '../services/session.service';
 import { StoreService } from '../services/store.service';
 import type { ApiOrderStatus, Order } from '../types';
 import { parseApiStatus } from '../services/account-api.service';
+import { offerWindowLabel } from '../utils/format';
 import { CountPipe, SarPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
 import { LogoComponent } from '../ui/logo.component';
@@ -47,7 +48,7 @@ interface ProductDraft {
   isExclusive: boolean;
   hasOffer: boolean;
   discountPercent: number;
-  discountDays: number;
+  discountDays: number | null;
   deliveryAr: string;
   deliveryEn: string;
   sizeAr: string;
@@ -88,6 +89,9 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   loading = true;
   saving = false;
   products: ApiProduct[] = [];
+  offers: ApiProduct[] = [];
+  private offersFromApi = false;
+  offerDayDraft: Record<number, number | null> = {};
   categories: ApiCategory[] = [];
   orders: Order[] = [];
   ordersError = '';
@@ -240,20 +244,77 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   }
 
   get offerList(): ApiProduct[] {
-    return this.products.filter((p) => this.productOnOffer(p));
+    return this.offersFromApi ? this.offers : this.products.filter((p) => this.productOnOffer(p));
   }
 
   productOnOffer(p: ApiProduct): boolean {
+    if (p.hasOffer === true) return true;
+    if (p.hasOffer === false) return false;
     const selling = this.salePrice(p);
     const previous = Number(p.oldPrice ?? 0);
-    return previous > selling || (!!p.hasOffer && Number(p.price) > selling);
+    return previous > selling && selling > 0;
   }
 
   offerPercent(p: ApiProduct): number {
+    const given = Number(p.discountPercent);
+    if (Number.isFinite(given) && given > 0) return Math.round(given);
     const selling = this.salePrice(p);
-    const previous = Number(p.oldPrice || p.price) || 0;
+    const previous = Number(p.oldPrice) || 0;
     if (previous <= selling || selling <= 0) return 0;
     return Math.round(((previous - selling) / previous) * 100);
+  }
+
+  offerMeta(p: ApiProduct): string {
+    const bits: string[] = [];
+    const pct = this.offerPercent(p);
+    if (pct > 0) bits.push(this.locale.isAr() ? `خصم ${pct}%` : `${pct}% off`);
+    const when = offerWindowLabel(p.discountDaysRemaining, p.discountEndsAt, this.locale.locale());
+    if (when) bits.push(when);
+    return bits.join(' · ');
+  }
+
+  productDaysPlaceholder(): string {
+    return this.productDraft.id
+      ? this.locale.isAr()
+        ? 'فاضي = نفس تاريخ النهاية'
+        : 'Empty keeps the end date'
+      : this.locale.isAr()
+        ? 'فاضي = 7 أيام'
+        : 'Empty starts a 7-day offer';
+  }
+
+  productDaysHint(): string {
+    if (this.locale.isAr()) {
+      return this.productDraft.id
+        ? 'من 1 إلى 365. اتركه فاضي عشان العرض يكمل لنفس تاريخ النهاية.'
+        : 'من 1 إلى 365. لو فاضي، العرض يبدأ بـ 7 أيام، وبيتسجل لما السعر قبل الخصم يكون أعلى.';
+    }
+    return this.productDraft.id
+      ? '1–365. Leave empty to keep the current end date.'
+      : '1–365. Leave empty to start a 7-day offer. It is sent only when the price before is higher.';
+  }
+
+  draftOfferNote(): string {
+    const selling = Number(this.productDraft.price) || 0;
+    const old = Number(this.productDraft.oldPrice) || 0;
+    const bits: string[] = [];
+    if (old > selling && selling > 0) {
+      const pct = Math.round(((old - selling) / old) * 100);
+      if (pct > 0) bits.push(this.locale.isAr() ? `خصم ${pct}%` : `${pct}% off`);
+    }
+    const current = this.editingProduct;
+    if (current && old > selling) {
+      const when = offerWindowLabel(current.discountDaysRemaining, current.discountEndsAt, this.locale.locale());
+      if (when) bits.push(when);
+    }
+    return bits.join(' · ');
+  }
+
+  offerDaysPlaceholder(p: ApiProduct): string {
+    if (p.discountEndsAt || p.discountDaysRemaining != null) {
+      return this.locale.isAr() ? 'فاضي = نفس النهاية' : 'Empty keeps the end date';
+    }
+    return this.locale.isAr() ? 'فاضي = 7 أيام' : 'Empty = 7 days';
   }
 
   get filteredOffers(): ApiProduct[] {
@@ -617,13 +678,27 @@ export class AdminPageComponent implements OnInit, OnDestroy {
 
   clearOffer(p: ApiProduct): void {
     const selling = this.salePrice(p);
+    const original = Number(p.oldPrice) > selling ? Number(p.oldPrice) : selling;
+    const restore = original > selling;
+    const ok = window.confirm(
+      restore
+        ? this.locale.isAr()
+          ? 'إيقاف العرض ويرجع السعر للسعر قبل الخصم؟'
+          : 'Stop the offer and restore the price before the discount?'
+        : this.locale.isAr()
+          ? 'إيقاف العرض؟'
+          : 'Stop this offer?'
+    );
+    if (!ok) return;
+    this.offerDayDraft[p.id] = null;
     p.oldPrice = null;
-    p.newPrice = selling;
-    p.price = selling;
-    p.finalPrice = selling;
+    p.newPrice = original;
+    p.price = original;
+    p.finalPrice = original;
+    p.discountDays = null;
     p.hasOffer = false;
     p.discountPercent = 0;
-    this.saveOffer(p);
+    this.persistOffer(p, this.locale.isAr() ? 'تم إيقاف العرض' : 'Offer stopped');
   }
 
   onDragEnter(ev: DragEvent): void {
@@ -993,6 +1068,26 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       this.toast(this.locale.isAr() ? 'أدخل اسم المنتج واختر القسم.' : 'Enter a product name and category.', 'warning');
       return;
     }
+    const selling = Number(this.productDraft.price) || 0;
+    const old = Number(this.productDraft.oldPrice) || 0;
+    const oldFilled = priceFilled(this.productDraft.oldPrice);
+    if (selling <= 0) {
+      this.toast(this.locale.isAr() ? 'اكتب السعر اللي العميل يدفعه.' : 'Enter the price the customer pays.', 'warning');
+      return;
+    }
+    if (oldFilled && old <= selling) {
+      this.toast(this.locale.isAr() ? 'السعر قبل الخصم لازم يكون أعلى من سعر البيع.' : 'The price before the discount has to be higher than the selling price.', 'warning');
+      return;
+    }
+    const typedDays = this.productDraft.discountDays;
+    if (daysFilled(typedDays) && readDays(typedDays) == null) {
+      this.toast(this.locale.isAr() ? 'مدة العرض من 1 إلى 365 يوم.' : 'Offer length has to be from 1 to 365 days.', 'warning');
+      return;
+    }
+    if (readDays(typedDays) != null && !(old > selling)) {
+      this.toast(this.locale.isAr() ? 'مدة العرض بتتحسب لما السعر قبل الخصم يكون أعلى.' : 'Offer length is used when the price before the discount is higher.', 'warning');
+      return;
+    }
     this.saving = true;
     const dto = this.toProductDto();
     const rewriteGallery = !this.productDraft.id || this.productDraft.images.some((slot) => !!slot.file);
@@ -1081,24 +1176,46 @@ export class AdminPageComponent implements OnInit, OnDestroy {
 
   saveOffer(p: ApiProduct): void {
     if (this.saving) return;
-    const selling = Number(p.newPrice);
+    const selling = Number(p.newPrice ?? p.finalPrice ?? p.price);
     const previous = Number(p.oldPrice) || 0;
     if (!Number.isFinite(selling) || selling <= 0) {
-      this.toast(this.locale.isAr() ? 'اكتب السعر بعد الخصم.' : 'Enter the price after the discount.', 'warning');
+      this.toast(this.locale.isAr() ? 'اكتب السعر اللي العميل يدفعه.' : 'Enter the price the customer pays.', 'warning');
       return;
     }
     if (previous > 0 && previous <= selling) {
-      this.toast(this.locale.isAr() ? 'السعر قبل الخصم لازم يكون أعلى من السعر بعده.' : 'The price before the discount has to be higher than the price after it.', 'warning');
+      this.toast(this.locale.isAr() ? 'السعر قبل الخصم لازم يكون أعلى من سعر البيع.' : 'The price before the discount has to be higher than the selling price.', 'warning');
       return;
     }
+    const typedDays = this.offerDayDraft[p.id];
+    const days = readDays(typedDays);
+    if (daysFilled(typedDays) && days == null) {
+      this.toast(this.locale.isAr() ? 'مدة العرض من 1 إلى 365 يوم.' : 'Offer length has to be from 1 to 365 days.', 'warning');
+      return;
+    }
+    if (days != null && !(previous > selling)) {
+      this.toast(this.locale.isAr() ? 'مدة العرض بتتحسب لما السعر قبل الخصم يكون أعلى.' : 'Offer length is used when the price before the discount is higher.', 'warning');
+      return;
+    }
+    p.discountDays = days;
+    this.persistOffer(p);
+  }
+
+  private normalizeOffer(row: ApiProduct): ApiProduct {
+    const selling = Number(row.newPrice ?? row.finalPrice ?? row.price) || 0;
+    return {
+      ...row,
+      newPrice: selling || row.newPrice,
+      finalPrice: selling || row.finalPrice,
+    };
+  }
+
+  private persistOffer(p: ApiProduct, title?: string): void {
     this.applyOfferPrices(p);
     this.saving = true;
-    this.admin
-      .updateProduct(p)
-      .subscribe({
-        next: () => this.afterSave(this.locale.isAr() ? 'تم تحديث العرض' : 'Offer updated'),
-        error: (err) => this.fail(err),
-      });
+    this.admin.updateProduct(p).subscribe({
+      next: () => this.afterSave(title || (this.locale.isAr() ? 'تم تحديث العرض' : 'Offer updated')),
+      error: (err) => this.fail(err),
+    });
   }
 
   confirmDeleteProduct(p: ApiProduct): void {
@@ -1269,8 +1386,15 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     forkJoin({
       products: this.admin.getProducts().pipe(catchError(() => of([] as ApiProduct[]))),
       categories: this.admin.getCategories().pipe(catchError(() => of([] as ApiCategory[]))),
-    }).subscribe(({ products, categories }) => {
+      offers: this.admin.getOffers().pipe(
+        map((rows) => ({ ok: true as const, rows })),
+        catchError(() => of({ ok: false as const, rows: [] as ApiProduct[] }))
+      ),
+    }).subscribe(({ products, categories, offers }) => {
       this.products = products ?? [];
+      this.offersFromApi = offers.ok;
+      this.offers = (offers.rows ?? []).map((row) => this.normalizeOffer(row));
+      this.offerDayDraft = {};
       this.categories = categories ?? [];
       this.loading = false;
       this.ensureOrders(this.tab === 'orders' || this.tab === 'overview');
@@ -1362,6 +1486,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       price: selling,
       oldPrice,
       newPrice: selling,
+      discountDays: oldPrice != null ? readDays(this.productDraft.discountDays) : null,
       categoryId: Number(this.productDraft.categoryId),
       imageUrls: this.productDraft.images.map((slot) => slot.remote).filter((url): url is string => !!url),
       isNew: this.productDraft.isNew,
@@ -1418,7 +1543,7 @@ function emptyProduct(categoryId: number): ProductDraft {
     isExclusive: false,
     hasOffer: false,
     discountPercent: 0,
-    discountDays: 7,
+    discountDays: null,
     deliveryAr: '',
     deliveryEn: '',
     sizeAr: '',
@@ -1438,6 +1563,7 @@ function emptyProduct(categoryId: number): ProductDraft {
 function fromProduct(p: ApiProduct): ProductDraft {
   const selling = Number(p.newPrice ?? p.finalPrice ?? p.price) || 0;
   const list = Number(p.oldPrice ?? (p.hasOffer ? p.price : 0)) || 0;
+  const onOffer = p.hasOffer === false ? false : list > selling;
   return {
     id: p.id,
     nameAr: p.nameAr || p.name || '',
@@ -1445,7 +1571,7 @@ function fromProduct(p: ApiProduct): ProductDraft {
     descriptionAr: p.descriptionAr || p.description || '',
     descriptionEn: p.descriptionEn || p.description || '',
     price: selling,
-    oldPrice: list > selling ? list : null,
+    oldPrice: onOffer ? list : null,
     categoryId: p.categoryId,
     images: (p.imageUrls ?? []).filter(Boolean).map((url) => ({
       preview: url,
@@ -1454,9 +1580,9 @@ function fromProduct(p: ApiProduct): ProductDraft {
     isNew: !!p.isNew,
     isAvailable: p.isAvailable !== false,
     isExclusive: !!p.isExclusive,
-    hasOffer: list > selling,
+    hasOffer: onOffer,
     discountPercent: p.discountPercent ?? 0,
-    discountDays: p.discountDays || p.discountDaysRemaining || 7,
+    discountDays: null,
     deliveryAr: p.deliveryAr || p.delivery || '',
     deliveryEn: p.deliveryEn || p.delivery || '',
     sizeAr: p.sizeAr || p.size || '',
@@ -1499,6 +1625,23 @@ function fromCategory(c: ApiCategory): CategoryDraft {
     descriptionEn: c.descriptionEn || c.description || '',
     imageUrl: c.imageUrl || '',
   };
+}
+
+function priceFilled(value: unknown): boolean {
+  if (value == null || value === '') return false;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0;
+}
+
+function daysFilled(value: unknown): boolean {
+  return value != null && value !== '';
+}
+
+function readDays(value: unknown): number | null {
+  if (!daysFilled(value)) return null;
+  const days = Math.round(Number(value));
+  if (!Number.isFinite(days) || days < 1 || days > 365) return null;
+  return days;
 }
 
 function isRemoteImageUrl(url: string): boolean {

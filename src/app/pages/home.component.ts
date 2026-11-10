@@ -45,11 +45,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   placePlaying = false;
   @ViewChild('placeStage') placeStage?: ElementRef<HTMLElement>;
   @ViewChildren('slideFilm') slideFilms?: QueryList<ElementRef<HTMLVideoElement>>;
-  hours = '06';
-  minutes = '42';
-  seconds = '18';
+  hours = '00';
+  minutes = '00';
+  seconds = '00';
+  offerClock = false;
   private timer?: number;
-  private left = 6 * 3600 + 42 * 60 + 18;
+  private left = 0;
   private heroTimer?: number;
   private heroStartedAt = 0;
   private heroRemaining = HERO_AD_MS;
@@ -77,6 +78,12 @@ export class HomeComponent implements OnInit, OnDestroy {
         if (!n) return;
         if (this.heroIndex >= n) this.heroIndex = 0;
       });
+    });
+    effect(() => {
+      const ends = this.deals()
+        .map((product) => Date.parse(product.discountEndsAt || ''))
+        .filter((time) => Number.isFinite(time));
+      untracked(() => this.syncOfferClock(ends));
     });
   }
 
@@ -461,7 +468,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.heroTimer = undefined;
   }
 
+  private syncOfferClock(ends: number[]): void {
+    const next = ends.filter((time) => time > Date.now());
+    if (!next.length) {
+      this.offerClock = false;
+      return;
+    }
+    const left = Math.max(0, Math.floor((Math.min(...next) - Date.now()) / 1000));
+    if (left <= 0 || left > 99 * 3600) {
+      this.offerClock = false;
+      return;
+    }
+    this.offerClock = true;
+    this.left = left;
+    this.tick();
+  }
+
   private tick(): void {
+    if (this.left <= 0) this.offerClock = false;
     const h = Math.floor(this.left / 3600);
     const m = Math.floor((this.left % 3600) / 60);
     const s = this.left % 60;

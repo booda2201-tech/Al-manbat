@@ -17,6 +17,27 @@ export function discountPercent(price: number, compareAt?: number): number | nul
   return Math.round((compareAt - price) / compareAt * 100);
 }
 
+export function offerWindowLabel(
+  days: number | null | undefined,
+  endsAt: string | null | undefined,
+  locale: Locale
+): string {
+  const ar = locale === 'ar';
+  const parts: string[] = [];
+  if (days != null && Number.isFinite(days)) {
+    if (days <= 0) parts.push(ar ? 'ينتهي اليوم' : 'Ends today');
+    else parts.push(ar ? `متبقي ${days} يوم` : `${days} day${days === 1 ? '' : 's'} left`);
+  }
+  if (endsAt) {
+    const date = new Date(endsAt);
+    if (!Number.isNaN(date.getTime())) {
+      const formatted = date.toLocaleDateString(ar ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short' });
+      parts.push(ar ? `حتى ${formatted}` : `until ${formatted}`);
+    }
+  }
+  return parts.join(' · ');
+}
+
 export function formatCount(n: number, locale: Locale): string {
   return n.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US');
 }
