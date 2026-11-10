@@ -1,0 +1,30 @@
+<div class="mx-auto w-full min-w-0 max-w-shell px-4 py-8 lg:px-10 lg:py-10">
+  <app-crumbs [trail]="trail"></app-crumbs>
+  <h1 class="mt-5 font-displayAr text-4xl text-olive-800 lg:text-5xl">{{ locale.isAr() ? 'فيديوهات المنبت' : 'Almanbat videos' }}</h1>
+  <p class="mt-3 max-w-2xl text-sm leading-relaxed text-ink-muted">
+    {{ locale.isAr() ? 'لقطات من البستان والمنتجات، كما نعرضها.' : 'Films from the grove and the products, as we show them.' }}
+  </p>
+
+  <p *ngIf="loading" class="mt-10 text-sm text-ink-muted">{{ locale.ui('loading') }}</p>
+  <p *ngIf="!loading && !videos.length" class="mt-10 text-sm text-ink-muted">
+    {{ locale.isAr() ? 'لا توجد فيديوهات معروضة الآن.' : 'No videos are on display right now.' }}
+  </p>
+
+  <div *ngIf="!loading && videos.length" class="mt-8 grid gap-6 md:grid-cols-2">
+    <article *ngFor="let video of videos" class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-olive-800/10">
+      <video
+        class="aspect-video w-full bg-olive-900 object-cover"
+        controls
+        playsinline
+        preload="metadata"
+        [src]="video.videoUrl"
+        [poster]="video.thumbnailUrl || null"
+        [attr.aria-label]="title(video)"
+      ></video>
+      <div class="px-4 py-4">
+        <h2 class="font-displayAr text-2xl text-olive-800">{{ title(video) }}</h2>
+        <p *ngIf="description(video)" class="mt-2 text-sm leading-relaxed text-ink-muted">{{ description(video) }}</p>
+      </div>
+    </article>
+  </div>
+</div>

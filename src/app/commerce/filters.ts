@@ -3,20 +3,20 @@ import type { Product } from '../types';
 export interface FilterState {
   brands: string[];
   maxPrice: number;
-  minRating: number;
   inStockOnly: boolean;
   onSaleOnly: boolean;
   newOnly: boolean;
+  exclusiveOnly: boolean;
   sub: string | null;
 }
 
 export const emptyFilters = (maxPrice: number): FilterState => ({
   brands: [],
   maxPrice,
-  minRating: 0,
   inStockOnly: false,
   onSaleOnly: false,
   newOnly: false,
+  exclusiveOnly: false,
   sub: null,
 });
 
@@ -24,10 +24,10 @@ export function applyFilters(list: Product[], f: FilterState): Product[] {
   return list.filter((p) => {
     if (f.brands.length && !f.brands.includes(p.brand.en)) return false;
     if (p.price > f.maxPrice) return false;
-    if (p.rating < f.minRating) return false;
     if (f.inStockOnly && p.stock === 0) return false;
     if (f.onSaleOnly && !p.badges.includes('deal') && !p.compareAt) return false;
     if (f.newOnly && !p.badges.includes('new')) return false;
+    if (f.exclusiveOnly && !p.badges.includes('exclusive')) return false;
     if (f.sub && p.subcategory !== f.sub) return false;
     return true;
   });

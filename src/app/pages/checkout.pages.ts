@@ -1,66 +1,55 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable, interval, of, Subscription, switchMap } from 'rxjs';
-import { apiErrorMessage, isDeniedAccess, pickDisplayName } from '../api/api.util';
+import { apiErrorMessage, pickDisplayName } from '../api/api.util';
 import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
 import { StoreService } from '../services/store.service';
 import { SessionService } from '../services/session.service';
-import { AccountApiService, orderTrackStep, resolveApiStatus } from '../services/account-api.service';
 import { ShopApiService } from '../services/shop-api.service';
-import type { Address, Order } from '../types';
+import { egyptGovernorates } from '../data/egypt-places';
 import { SarPipe } from '../utils/sar.pipe';
-import { LogoComponent } from '../ui/logo.component';
 import { IconComponent } from '../ui/icon.component';
 import { ProductRailComponent, SectionHeaderComponent } from '../commerce/commerce.component';
-import { CrumbsComponent } from '../commerce/crumbs.component';
 
 const DRAFT_KEY = 'almanbat.checkoutDraft';
 const LAST_ORDER_KEY = 'almanbat.lastOrderId';
+const WA_ORDER_KEY = 'almanbat.whatsappOrder';
+const ORDER_WHATSAPP = '201050302172';
 
 interface CheckoutDraft {
-  email: string;
-  firstName: string;
-  lastName: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   phone: string;
+  governorate: string;
   city: string;
   address: string;
-  saveAddress: boolean;
   ship: string;
   pay: string;
   notes: string;
-  selectedAddressId: string;
 }
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent, SarPipe, LogoComponent],
+  imports: [CommonModule, FormsModule, RouterLink, IconComponent, SarPipe],
   templateUrl: './checkout.page.html',
 })
 export class CheckoutPageComponent implements OnInit, OnDestroy {
   step = 0;
   summaryOpen = false;
-  guest = true;
-  email = '';
-  emailError = '';
-  firstName = '';
-  lastName = '';
+  name = '';
   phone = '';
+  governorate = '';
   city = '';
   address = '';
   notes = '';
-  saveAddress = true;
-  selectedAddressId = '';
-  savedAddresses: Address[] = [];
-  addingNew = false;
-  savingAddress = false;
-  addressLabel = '';
   ship = 'standard';
   pay = 'cod';
   placing = false;
+  private whatsappTab: Window | null = null;
   shippingOptions = [
     { id: 'sameday', title: { ar: 'توصيل في نفس اليوم', en: 'Same-day delivery' }, detail: { ar: 'قبل ١١ مساءً · القاهرة والجيزة', en: 'Before 11pm · Cairo and Giza' }, price: 35 },
     { id: 'standard', title: { ar: 'التوصيل القياسي', en: 'Standard delivery' }, detail: { ar: 'من يومين إلى ٤ أيام عمل', en: '2 – 4 working days' }, price: 0 },
@@ -76,24 +65,29 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
     public store: StoreService,
     public catalog: CatalogService,
     public session: SessionService,
-    private accountApi: AccountApiService,
     private shop: ShopApiService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.guest = !this.session.isLoggedIn();
-    this.city = this.locale.isAr() ? 'القاهرة' : 'Cairo';
     this.restoreDraft();
     this.prefillFromSession();
-    if (this.session.isLoggedIn()) {
-      this.guest = false;
-      this.loadAccount();
-    }
+    this.store.setShippingGovernorate(this.governorate);
   }
 
+  readonly places = egyptGovernorates;
   get steps() {
-    return [this.locale.ui('stepAddress'), this.locale.ui('stepShipping'), this.locale.ui('stepPayment'), this.locale.ui('stepReview')];
+    return [this.locale.ui('stepAddress'), this.locale.ui('stepReview')];
+  }
+  get cityOptions() {
+    return egyptGovernorates.find((item) => item.ar === this.governorate)?.cities ?? [];
+  }
+  onGovernorateChange(): void {
+    this.city = '';
+    this.store.setShippingGovernorate(this.governorate);
+  }
+  placeName(item: { ar: string; en: string }): string {
+    return this.locale.isAr() ? item.ar : item.en;
   }
   get currentStepName(): string {
     return this.steps[this.step];
@@ -106,9 +100,6 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
     if (this.locale.isAr()) return n === 1 ? 'منتج واحد' : n + ' منتجات';
     return n === 1 ? '1 item' : n + ' items';
   }
-  get selectedAddress(): Address | undefined {
-    return this.savedAddresses.find((a) => a.id === this.selectedAddressId);
-  }
   payIcon(id: string): string {
     if (id === 'cod') return 'truck';
     return 'card';
@@ -117,20 +108,6 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
     if (id === 'sameday') return 'zap';
     if (id === 'pickup') return 'home';
     return 'truck';
-  }
-  get reviewName(): string {
-    const fromForm = `${this.firstName} ${this.lastName}`.trim();
-    if (fromForm) return fromForm;
-    return pickDisplayName(this.session.userName()) || '';
-  }
-  get reviewLabel(): string {
-    if (this.addressLabel.trim()) return this.addressLabel.trim();
-    const saved = this.selectedAddress;
-    if (saved) return this.locale.tr(saved.label);
-    return '';
-  }
-  get reviewPhone(): string {
-    return this.phone.trim() || this.selectedAddress?.phone || '';
   }
   private scrollTop(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -165,7 +142,12 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       .filter((l) => l.product);
   }
   checkoutShipping(): number {
-    return this.shippingOptions[this.shipIndex].price;
+    return this.store.shipping();
+  }
+  wheelTitle(): string {
+    const prize = this.store.wheel();
+    if (!prize) return '';
+    return this.locale.isAr() ? prize.labelAr : prize.labelEn;
   }
   checkoutTotal(): number {
     return Math.max(0, this.store.subtotal() - this.store.promoDiscount()) + this.checkoutShipping();
@@ -186,72 +168,8 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       ? 'border-gold-400 bg-gold-50'
       : 'border-olive-800/15 bg-white hover:border-olive-800/30';
   }
-  emailInputClass(): string {
-    return this.emailError
-      ? 'border-state-danger focus:border-state-danger focus:ring-state-danger'
-      : 'border-olive-800/15 hover:border-olive-800/30 focus:border-gold-400 focus:ring-gold-400';
-  }
-
-  applySavedAddress(a: Address): void {
-    this.addingNew = false;
-    this.selectedAddressId = a.id;
-    this.address = this.locale.tr(a.line);
-    this.city = this.locale.tr(a.city) || this.city;
-    if (a.phone) this.phone = a.phone;
-  }
-
-  useNewAddress(): void {
-    this.addingNew = true;
-    this.selectedAddressId = '';
-    this.addressLabel = '';
-    this.address = '';
-  }
-
-  cancelNewAddress(): void {
-    this.addingNew = false;
-    const preferred = this.savedAddresses.find((a) => a.isDefault) || this.savedAddresses[0];
-    if (preferred) this.applySavedAddress(preferred);
-  }
-
-  saveNewAddress(thenAdvance = false): void {
-    if (this.savingAddress) return;
-    if (!this.session.isLoggedIn()) {
-      this.saveDraft();
-      this.router.navigate(['/login'], { queryParams: { redirect: '/checkout' } });
-      return;
-    }
-    if (!this.address.trim() || !this.city.trim()) {
-      this.store.pushToast({
-        tone: 'warning',
-        title: this.locale.isAr() ? 'أدخل المدينة والعنوان' : 'Enter the city and street address',
-      });
-      return;
-    }
-    this.savingAddress = true;
-    this.accountApi.addAddress(this.addressPayload()).subscribe({
-      next: (created) => {
-        this.accountApi.getAddresses().subscribe({
-          next: (rows) => this.afterAddressSaved(created, rows, thenAdvance),
-          error: () => this.afterAddressSaved(created, [], thenAdvance),
-        });
-      },
-      error: (err) => {
-        this.savingAddress = false;
-        this.store.pushToast({
-          tone: 'warning',
-          title: this.locale.isAr() ? 'تعذر حفظ العنوان' : 'Could not save the address',
-          description: err instanceof Error ? err.message : undefined,
-        });
-      },
-    });
-  }
-
   advance(): void {
     if (this.step === 0 && !this.validAddress()) return;
-    if (this.step === 0 && this.session.isLoggedIn() && this.addingNew && !this.selectedAddressId) {
-      this.saveNewAddress(true);
-      return;
-    }
     this.goNextStep();
   }
 
@@ -276,40 +194,49 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       this.scrollTop();
       return;
     }
-    if (!this.session.isLoggedIn()) {
-      this.saveDraft();
-      this.router.navigate(['/login'], { queryParams: { redirect: '/checkout' } });
-      return;
-    }
     this.placing = true;
     this.saveDraft();
-    this.ensureAddress()
-      .pipe(
-        switchMap((addressId) => this.store.syncCartToServer().pipe(switchMap(() => of(addressId)))),
-        switchMap((addressId) =>
-          this.shop.checkout({
-            addressId,
-            paymentMethod: this.pay === 'cod' ? 'Cash' : 'Visa',
-            notes: this.composeCheckoutNotes(),
-          })
-        )
-      )
+    this.whatsappTab?.close();
+    this.whatsappTab = window.open('', '_blank');
+    const items = this.rows()
+      .map((row) => ({ productId: Number(row.productId), quantity: row.qty }))
+      .filter((row) => Number.isFinite(row.productId) && row.productId > 0 && row.quantity > 0);
+    this.shop
+      .checkout({
+        name: this.name.trim(),
+        phone: this.phone.trim(),
+        governorate: this.governorate.trim(),
+        city: this.city.trim(),
+        address: this.address.trim(),
+        paymentMethod: 'cash',
+        notes: this.notes.trim(),
+        spinToken: this.store.wheel()?.token,
+        items,
+      })
       .subscribe({
         next: (result) => {
+          const whatsappUrl = this.whatsappOrderUrl(result.id);
           this.placing = false;
-          this.store.clearCart(true);
+          this.store.clearCart();
+          this.store.clearWheel();
           try {
             sessionStorage.removeItem(DRAFT_KEY);
+            sessionStorage.setItem(WA_ORDER_KEY, whatsappUrl);
             if (result.id) sessionStorage.setItem(LAST_ORDER_KEY, result.id);
           } catch {
             /* ignore */
           }
+          const tab = this.whatsappTab;
+          this.whatsappTab = null;
+          if (tab && !tab.closed) tab.location.href = whatsappUrl;
           this.router.navigate(['/order/confirmed'], {
             queryParams: result.id ? { id: result.id } : {},
           });
         },
         error: (err) => {
           this.placing = false;
+          this.whatsappTab?.close();
+          this.whatsappTab = null;
           this.store.pushToast({
             tone: 'warning',
             title: this.locale.isAr() ? 'تعذر إتمام الطلب' : 'Could not place the order',
@@ -320,29 +247,106 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
   }
 
   private validAddress(): boolean {
-    if (this.guest && !this.session.isLoggedIn() && !/^\S+@\S+\.\S+$/.test(this.email)) {
-      this.emailError = this.locale.isAr() ? 'أدخل بريداً إلكترونياً صحيحاً' : 'Enter a valid email address';
+    const ar = this.locale.isAr();
+    if (!this.name.trim()) {
+      this.store.pushToast({ tone: 'warning', title: ar ? 'اكتب الاسم' : 'Enter the name' });
       return false;
     }
-    if (this.selectedAddressId && !this.addingNew) return true;
-    if (this.session.isLoggedIn()) {
-      if (!this.address.trim() || !this.city.trim()) {
-        this.store.pushToast({
-          tone: 'warning',
-          title: this.locale.isAr() ? 'أدخل المدينة والعنوان' : 'Enter the city and street address',
-        });
-        return false;
-      }
-      return true;
+    if (!this.phone.trim()) {
+      this.store.pushToast({ tone: 'warning', title: ar ? 'اكتب رقم التليفون' : 'Enter the phone number' });
+      return false;
     }
-    if (!this.firstName.trim() || !this.address.trim() || !this.city.trim()) {
-      this.store.pushToast({
-        tone: 'warning',
-        title: this.locale.isAr() ? 'أكمل الاسم والعنوان' : 'Add your name and street address',
-      });
+    if (!this.governorate) {
+      this.store.pushToast({ tone: 'warning', title: ar ? 'اختار المحافظة' : 'Choose a governorate' });
+      return false;
+    }
+    if (!this.store.shippingKnown()) {
+      this.store.pushToast({ tone: 'warning', title: ar ? 'رسوم توصيل المحافظة دي مش متسجلة' : 'This governorate has no shipping fee' });
+      return false;
+    }
+    if (!this.city) {
+      this.store.pushToast({ tone: 'warning', title: ar ? 'اختار المدينة' : 'Choose a city' });
+      return false;
+    }
+    if (!this.address.trim()) {
+      this.store.pushToast({ tone: 'warning', title: ar ? 'اكتب العنوان التفصيلي' : 'Enter the detailed address' });
       return false;
     }
     return true;
+  }
+
+  private whatsappOrderUrl(orderId: string): string {
+    const rows = this.rows();
+    const products = rows
+      .map((row, index) => {
+        const name = row.product.name.ar || row.product.name.en;
+        const line = row.product.price * row.qty;
+        const lines = [
+          `*${index + 1}. ${name}*`,
+          `الكمية: ${row.qty}`,
+          `سعر القطعة: ${money(row.product.price)}`,
+        ];
+        if (row.product.compareAt && row.product.compareAt > row.product.price) {
+          lines.push(`قبل الخصم: ${money(row.product.compareAt)}`);
+        }
+        lines.push(`الإجمالي: ${money(line)}`);
+        return lines.join('\n');
+      })
+      .join('\n\n');
+    const prize = this.store.wheel();
+    const promo = this.store.promo();
+    const subtotal = this.store.subtotal();
+    const wheelDiscount =
+      prize?.kind === 'Percent' && prize.percent ? Math.round((subtotal * prize.percent) / 100) : 0;
+    const codeDiscount = Math.max(0, this.store.promoDiscount() - wheelDiscount);
+    const shipping = this.checkoutShipping();
+    const notes = this.notes.trim();
+    const prizeTitle = prize?.labelAr || prize?.labelEn || '';
+    const prizeDetail = prize?.detailAr || prize?.detailEn || '';
+    const prizeBlock = prize
+      ? [
+          '*جائزة العجلة*',
+          prizeTitle,
+          prizeDetail && prizeDetail !== prizeTitle ? prizeDetail : '',
+          prize.kind === 'FreeShipping' ? 'توصيل مجاني على الطلب' : '',
+          prize.kind === 'Gift' ? 'هتطلع مع الطلب' : '',
+        ]
+          .filter(Boolean)
+          .join('\n')
+      : '';
+    const shippingText =
+      prize?.kind === 'FreeShipping' ? 'مجاني — جائزة العجلة' : shipping === 0 ? 'مجاني' : money(shipping);
+    const text = [
+      ['*طلب جديد — المنبت*', orderId ? `رقم الطلب: ${orderId}` : '', `الوقت: ${orderStamp()}`].filter(Boolean).join('\n'),
+      [
+        '*بيانات العميل*',
+        `الاسم: ${this.name.trim()}`,
+        `التليفون: ${this.phone.trim()}`,
+        `المحافظة: ${this.governorate.trim()}`,
+        `المدينة: ${this.city.trim()}`,
+        `العنوان: ${this.address.trim()}`,
+        'الدفع: عند الاستلام',
+        notes ? `ملاحظات: ${notes}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+      prizeBlock,
+      `*المنتجات*\n${products}`,
+      [
+        '*الحساب*',
+        `المجموع: ${money(subtotal)}`,
+        wheelDiscount > 0 ? `خصم العجلة${prizeTitle ? ` (${prizeTitle})` : ''}: − ${money(wheelDiscount)}` : '',
+        codeDiscount > 0 ? `كود الخصم${promo ? ` (${promo})` : ''}: − ${money(codeDiscount)}` : '',
+        prize?.kind === 'Gift' && prizeTitle ? `هدية العجلة: ${prizeTitle}` : '',
+        `التوصيل: ${shippingText}`,
+        `*الإجمالي: ${money(this.checkoutTotal())}*`,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+    return `https://wa.me/${ORDER_WHATSAPP}?text=${encodeURIComponent(text)}`;
   }
 
   private checkoutError(err: unknown): string {
@@ -351,138 +355,32 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
     if (code === 'CART_EMPTY') {
       return ar ? 'السلة فارغة.' : 'Your cart is empty.';
     }
-    if (code === 'CART_SYNC') {
-      return ar
-        ? 'المنتجات ما اتحفظتش في سلة السيرفر. ادخل تاني وحاول مرة أخرى.'
-        : 'The items did not save to the server cart. Sign in again and retry.';
-    }
-    if (code === 'ADDRESS') {
-      return ar ? 'العنوان غير صالح. احفظ عنواناً ثم أتمّ الطلب.' : 'The address is invalid. Save an address, then place the order.';
-    }
-    if (isDeniedAccess(err) || code === 'LOGIN') {
-      return ar ? 'الجلسة انتهت. ادخل تاني وبعدين أتمّ الطلب.' : 'Your session expired. Sign in again, then place the order.';
-    }
-    return apiErrorMessage(err, ar ? 'السلة على السيرفر فارغة أو العنوان غير صالح. حاول مرة أخرى.' : 'The server cart is empty or the address is invalid. Try again.');
-  }
-
-  private composeCheckoutNotes(): string | undefined {
-    const name =
-      `${this.firstName} ${this.lastName}`.trim() || pickDisplayName(this.session.userName()) || '';
-    const phone = this.phone.trim();
-    const address = [this.address.trim(), this.city.trim()].filter(Boolean).join('، ');
-    const snap = ['ALM', name.replace(/\|/g, ' '), phone.replace(/\|/g, ''), address.replace(/\|/g, '، ')].join('|');
-    const extra = this.notes.trim();
-    return extra ? `${snap}\n${extra}` : snap;
-  }
-
-  private addressPayload(): { label: string; street: string; city: string; governorate: string; notes?: string } {
-    const label =
-      this.addressLabel.trim() ||
-      `${this.firstName} ${this.lastName}`.trim() ||
-      (this.locale.isAr() ? 'المنزل' : 'Home');
-    return {
-      label,
-      street: this.address.trim(),
-      city: this.city.trim(),
-      governorate: this.city.trim(),
-      notes: this.phone.trim() || undefined,
-    };
-  }
-
-  private afterAddressSaved(created: Address, rows: Address[], thenAdvance: boolean): void {
-    this.savingAddress = false;
-    this.addingNew = false;
-    this.saveAddress = true;
-    this.savedAddresses = rows.length
-      ? rows
-      : [created, ...this.savedAddresses.filter((a) => a.id !== created.id)];
-    const match =
-      this.savedAddresses.find((a) => a.id === created.id) ||
-      this.savedAddresses.find((a) => this.locale.tr(a.line) === this.address.trim()) ||
-      this.savedAddresses[0] ||
-      created;
-    this.applySavedAddress(match);
-    this.saveDraft();
-    this.store.pushToast({
-      tone: 'success',
-      title: this.locale.isAr() ? 'تم حفظ العنوان على حسابك' : 'Address saved to your profile',
-    });
-    if (thenAdvance) this.goNextStep();
+    return apiErrorMessage(err, ar ? 'تعذر إتمام الطلب. حاول مرة أخرى.' : 'Could not place the order. Try again.');
   }
 
   private goNextStep(): void {
-    this.emailError = '';
     this.saveDraft();
-    this.step = Math.min(3, this.step + 1);
+    this.step = Math.min(1, this.step + 1);
     this.summaryOpen = false;
     document.body.style.overflow = '';
     this.scrollTop();
   }
 
-  private ensureAddress(): Observable<number> {
-    if (this.selectedAddressId && /^\d+$/.test(this.selectedAddressId)) {
-      return of(Number(this.selectedAddressId));
-    }
-    return this.accountApi.addAddress(this.addressPayload()).pipe(
-      switchMap((created) => {
-        if (!created.id || !/^\d+$/.test(created.id)) {
-          throw new Error(this.locale.isAr() ? 'تعذر حفظ العنوان' : 'Could not save the address');
-        }
-        this.selectedAddressId = created.id;
-        this.savedAddresses = [created, ...this.savedAddresses.filter((a) => a.id !== created.id)];
-        return of(Number(created.id));
-      })
-    );
-  }
-
-  private loadAccount(): void {
-    this.accountApi.getProfile().subscribe({
-      next: (profile) => {
-        if (!profile) return;
-        if (!this.firstName) this.firstName = profile.firstName;
-        if (!this.lastName) this.lastName = profile.lastName;
-        if (!this.email) this.email = profile.email;
-        if (!this.phone) this.phone = profile.phone || this.session.phone() || '';
-      },
-      error: () => undefined,
-    });
-    this.accountApi.getAddresses().subscribe((rows) => {
-      this.savedAddresses = rows;
-      if (this.addingNew) return;
-      if (!rows.length) {
-        this.addingNew = true;
-        return;
-      }
-      if (!this.selectedAddressId) {
-        const preferred = rows.find((a) => a.isDefault) || rows[0];
-        if (preferred) this.applySavedAddress(preferred);
-      }
-    });
-  }
-
   private prefillFromSession(): void {
-    if (this.phone) return;
-    this.phone = this.session.phone() || '';
-    const name = pickDisplayName(this.session.userName());
-    const parts = name.split(/\s+/).filter(Boolean);
-    if (!this.firstName) this.firstName = parts[0] || '';
-    if (!this.lastName) this.lastName = parts.slice(1).join(' ');
-    if (!this.email) this.email = this.session.email() || '';
+    if (!this.phone) this.phone = this.session.phone() || '';
+    if (!this.name) this.name = pickDisplayName(this.session.userName()) || '';
   }
 
   private saveDraft(): void {
     const draft: CheckoutDraft = {
-      email: this.email,
-      firstName: this.firstName,
-      lastName: this.lastName,
+      name: this.name,
       phone: this.phone,
+      governorate: this.governorate,
       city: this.city,
       address: this.address,
-      saveAddress: this.saveAddress,
       ship: this.ship,
       pay: this.pay,
       notes: this.notes,
-      selectedAddressId: this.selectedAddressId,
     };
     try {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -496,17 +394,15 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       const raw = sessionStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw) as CheckoutDraft;
-      this.email = draft.email || this.email;
-      this.firstName = draft.firstName || this.firstName;
-      this.lastName = draft.lastName || this.lastName;
+      const legacyName = `${draft.firstName || ''} ${draft.lastName || ''}`.trim();
+      this.name = draft.name || legacyName || this.name;
       this.phone = draft.phone || this.phone;
+      this.governorate = draft.governorate || this.governorate;
       this.city = draft.city || this.city;
       this.address = draft.address || this.address;
-      this.saveAddress = draft.saveAddress !== false;
       this.ship = draft.ship || this.ship;
       this.pay = draft.pay || this.pay;
       this.notes = draft.notes || '';
-      this.selectedAddressId = draft.selectedAddressId || '';
     } catch {
       /* ignore */
     }
@@ -525,11 +421,11 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
         <p class="mt-3 text-ink-muted">
           {{ locale.isAr() ? 'رقم الطلب' : 'Order' }}
           <strong dir="ltr">{{ orderId || '—' }}</strong>
-          · {{ locale.isAr() ? 'تقدر تتابع حالته من حسابك.' : 'You can track it from your account.' }}
+          · {{ locale.isAr() ? 'هنوصلّه لعنوانك.' : 'We’ll deliver it to your address.' }}
         </p>
         <div class="mt-8 flex flex-wrap justify-center gap-3">
-          <a [routerLink]="orderId ? '/track' : '/account/orders'" [queryParams]="orderId ? { id: orderId } : {}" class="h-12 inline-flex items-center rounded-md bg-gold-400 px-6 text-olive-900">{{ locale.ui('trackOrder') }}</a>
-          <a routerLink="/" class="h-12 inline-flex items-center rounded-md border px-6">{{ locale.ui('continueShopping') }}</a>
+          <a *ngIf="whatsappUrl" [href]="whatsappUrl" target="_blank" rel="noopener" class="h-12 inline-flex items-center rounded-md bg-[#25D366] px-6 font-semibold text-white">{{ locale.isAr() ? 'إرسال الطلب على واتساب' : 'Send the order on WhatsApp' }}</a>
+          <a routerLink="/" class="h-12 inline-flex items-center rounded-md bg-gold-400 px-6 text-olive-900">{{ locale.ui('continueShopping') }}</a>
         </div>
       </div>
       <div class="mt-16"><app-section-header [title]="locale.ui('bestSellers')"></app-section-header><app-product-rail [products]="more"></app-product-rail></div>
@@ -538,171 +434,14 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
 })
 export class OrderConfirmedComponent implements OnInit {
   orderId = '';
+  whatsappUrl = '';
   constructor(public locale: LocaleService, public catalog: CatalogService, private route: ActivatedRoute) {}
   ngOnInit(): void {
     this.orderId = this.route.snapshot.queryParamMap.get('id') || readLastOrderId();
+    this.whatsappUrl = readWhatsappOrder();
   }
   get more() {
     return this.catalog.all().slice(0, 6);
-  }
-}
-
-@Component({
-  selector: 'app-track',
-  standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent, CrumbsComponent, SarPipe],
-  template: `
-    <div class="track-page">
-      <div class="hidden lg:block">
-        <app-crumbs [trail]="trail"></app-crumbs>
-      </div>
-
-      <header class="track-head">
-        <div class="min-w-0">
-          <p class="track-head__kicker">{{ locale.ui('trackOrder') }}</p>
-          <h1>{{ order?.id || (locale.isAr() ? 'لا يوجد طلب' : 'No order') }}</h1>
-          <p *ngIf="order" class="track-head__meta">
-            {{ formatDate(order.date) }}
-            <span aria-hidden="true"> · </span>
-            {{ order.total | sar }}
-          </p>
-        </div>
-      </header>
-
-      <p *ngIf="!order" class="track-empty">
-        {{ locale.isAr() ? 'لا يوجد طلب للتتبع. أكمل الشراء من السلة أولاً.' : 'No order to track yet. Place an order from checkout first.' }}
-        <a routerLink="/listing/all">{{ locale.ui('shopAll') }}</a>
-      </p>
-
-      <ng-container *ngIf="order">
-        <p *ngIf="cancelled" class="track-void">
-          {{ locale.isAr() ? 'هذا الطلب ملغي.' : 'This order was cancelled.' }}
-        </p>
-
-        <div class="track-board">
-          <ol class="track-rail">
-            <li *ngFor="let e of timeline" [class.is-on]="e.current" [class.is-done]="e.done && !e.current" [class.is-wait]="!e.done">
-              <span class="track-rail__dot" aria-hidden="true">
-                <app-icon *ngIf="e.done" name="check" [size]="13"></app-icon>
-              </span>
-              <div class="min-w-0">
-                <p>{{ locale.tr(e.title) }}</p>
-                <span *ngIf="locale.tr(e.hint)" class="track-rail__hint">{{ locale.tr(e.hint) }}</span>
-              </div>
-            </li>
-          </ol>
-
-          <div class="track-side">
-            <ul *ngIf="order.itemIds.length" class="track-lines">
-              <li *ngFor="let id of order.itemIds">
-                <ng-container *ngIf="lineOf(id) as line">
-                  <a *ngIf="line.slug" [routerLink]="['/product', line.slug]" class="track-line">
-                    <img *ngIf="line.image" [src]="line.image" alt="" />
-                    <span *ngIf="!line.image" class="track-line__ph"><app-icon name="package" [size]="16"></app-icon></span>
-                    <span class="track-line__copy">
-                      <b>{{ line.name }}</b>
-                      <i>{{ line.price ? (line.price | sar) : '' }}</i>
-                    </span>
-                  </a>
-                  <div *ngIf="!line.slug" class="track-line">
-                    <img *ngIf="line.image" [src]="line.image" alt="" />
-                    <span *ngIf="!line.image" class="track-line__ph"><app-icon name="package" [size]="16"></app-icon></span>
-                    <span class="track-line__copy">
-                      <b>{{ line.name }}</b>
-                      <i>{{ line.price ? (line.price | sar) : '' }}</i>
-                    </span>
-                  </div>
-                </ng-container>
-              </li>
-            </ul>
-            <p *ngIf="order.customerAddress" class="track-note">
-              <app-icon name="pin" [size]="14"></app-icon>
-              {{ order.customerAddress }}
-            </p>
-            <a routerLink="/account/orders" class="track-back">{{ locale.isAr() ? 'كل الطلبات' : 'All orders' }}</a>
-          </div>
-        </div>
-      </ng-container>
-    </div>
-  `,
-})
-export class TrackPageComponent implements OnInit, OnDestroy {
-  order: Order | null = null;
-  private pollSub?: Subscription;
-  constructor(
-    public locale: LocaleService,
-    private route: ActivatedRoute,
-    private accountApi: AccountApiService,
-    private catalog: CatalogService
-  ) {}
-  ngOnInit(): void {
-    this.reload();
-    this.pollSub = interval(12000).subscribe(() => {
-      if (!document.hidden) this.reload();
-    });
-  }
-  ngOnDestroy(): void {
-    this.pollSub?.unsubscribe();
-  }
-  @HostListener('document:visibilitychange')
-  onVisible(): void {
-    if (document.visibilityState === 'visible') this.reload();
-  }
-  get trail() {
-    return [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.ui('trackOrder') }];
-  }
-  get cancelled(): boolean {
-    return resolveApiStatus(this.order) === 'Cancelled';
-  }
-  formatDate(iso: string): string {
-    const d = new Date(iso.includes('T') ? iso : iso + 'T12:00:00');
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(this.locale.isAr() ? 'ar-SA' : 'en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }
-  lineOf(id: string): { name: string; image: string; slug: string; price?: number; qty?: number } | null {
-    const product = this.catalog.byId(id);
-    if (product) {
-      return { name: this.locale.tr(product.name), image: product.image, slug: product.slug, price: product.price };
-    }
-    const snap = this.order?.snapshots?.[id];
-    if (!snap) return { name: id, image: '', slug: '', price: undefined };
-    return { name: snap.name, image: snap.image, slug: '', price: snap.price, qty: snap.qty };
-  }
-  get timeline() {
-    const step = orderTrackStep(this.order);
-    const dateHint = { ar: this.formatDate(this.order?.date || ''), en: this.formatDate(this.order?.date || '') };
-    if (this.cancelled) {
-      return [
-        { title: { ar: 'استلمنا طلبك', en: 'Order received' }, hint: dateHint, done: true, current: false },
-        { title: { ar: 'الطلب ملغي', en: 'Order cancelled' }, hint: { ar: '', en: '' }, done: true, current: true },
-      ];
-    }
-    return [
-      { title: { ar: 'استلمنا طلبك', en: 'Order received' }, hint: dateHint, done: true, current: step === 0 },
-      { title: { ar: 'تم تأكيد الطلب', en: 'Order confirmed' }, hint: { ar: '', en: '' }, done: step >= 1, current: step === 1 },
-      { title: { ar: 'في الطريق إليك', en: 'Out for delivery' }, hint: { ar: '', en: '' }, done: step >= 2, current: step === 2 },
-      { title: { ar: 'تم التسليم', en: 'Delivered' }, hint: { ar: '', en: '' }, done: step >= 3, current: step === 3 },
-    ];
-  }
-  private reload(): void {
-    const id = this.route.snapshot.queryParamMap.get('id') || readLastOrderId();
-    if (id) {
-      this.accountApi.getOrder(id).subscribe((order) => {
-        this.order = order;
-        if (!order) this.loadLatest();
-      });
-    } else {
-      this.loadLatest();
-    }
-  }
-  private loadLatest(): void {
-    this.accountApi.getMyOrders().subscribe((orders) => {
-      this.order = orders[0] || null;
-    });
   }
 }
 
@@ -712,4 +451,26 @@ function readLastOrderId(): string {
   } catch {
     return '';
   }
+}
+
+function readWhatsappOrder(): string {
+  try {
+    return sessionStorage.getItem(WA_ORDER_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function money(amount: number): string {
+  const value = amount.toLocaleString('en-US', {
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+  return `${value} ج.م`;
+}
+
+function orderStamp(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }

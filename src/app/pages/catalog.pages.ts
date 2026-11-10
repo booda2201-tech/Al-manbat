@@ -163,7 +163,7 @@ export class ListingComponent implements OnInit, OnDestroy {
       inStockOnly: prev.inStockOnly,
       onSaleOnly: prev.onSaleOnly,
       newOnly: prev.newOnly,
-      minRating: prev.minRating,
+      exclusiveOnly: prev.exclusiveOnly,
       sub: this.route.snapshot.queryParamMap.get('sub'),
     };
     this.subs = this.category?.subcategories ?? [];

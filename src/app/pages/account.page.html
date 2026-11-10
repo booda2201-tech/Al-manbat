@@ -22,10 +22,6 @@
           <app-icon name="heart" [size]="16"></app-icon>
           {{ locale.ui('wishlist') }}
         </a>
-        <a *ngIf="active" routerLink="/track" class="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-gold-400 px-3 text-[13px] font-semibold text-olive-900 transition-colors duration-200 ease-premium hover:bg-gold-300 lg:flex-none lg:px-4 lg:text-sm">
-          <app-icon name="truck" [size]="16"></app-icon>
-          {{ locale.ui('trackOrder') }}
-        </a>
       </div>
     </div>
   </section>
@@ -76,7 +72,6 @@
               <p class="mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium" [ngClass]="statusTone(active)">{{ statusLabel(active) }}</p>
               <p *ngIf="active.eta" class="mt-0.5 text-sm text-state-success">{{ locale.tr(active.eta) }}</p>
             </div>
-            <a routerLink="/track" class="inline-flex h-11 w-full items-center justify-center rounded-xl bg-olive-600 px-5 text-sm font-medium text-sand-50 transition-colors duration-200 ease-premium hover:bg-olive-700 sm:h-11 sm:w-auto">{{ locale.ui('trackOrder') }}</a>
           </div>
           <ol class="grid grid-cols-4 border-t border-olive-800/10 bg-sand-50/80 px-2 py-3.5 text-center text-[10px] sm:px-6 sm:py-4 sm:text-[11px]">
             <li *ngFor="let step of trackSteps; let i = index" [ngClass]="stepClass(i)">
@@ -162,7 +157,6 @@
             <div class="mt-4 flex flex-col gap-3 border-t border-olive-800/10 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <p class="text-sm font-semibold text-olive-800">{{ o.total | sar }}</p>
               <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                <a *ngIf="o.status === 'in_transit'" routerLink="/track" class="inline-flex h-10 items-center justify-center rounded-xl border border-olive-800/25 px-3.5 text-[13px] font-medium text-olive-800 transition-colors duration-200 ease-premium hover:border-olive-800/60 sm:h-9">{{ locale.ui('trackOrder') }}</a>
                 <button type="button" class="inline-flex h-10 items-center justify-center rounded-xl border border-olive-800/25 bg-transparent px-3.5 text-[13px] font-medium text-olive-800 transition-colors duration-200 ease-premium hover:bg-olive-50 sm:h-9" (click)="reorder(o.itemIds)">{{ locale.ui('reorder') }}</button>
                 <button *ngIf="o.status === 'delivered' && hasUnrated(o)" type="button" class="col-span-2 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-transparent px-3.5 text-[13px] font-medium text-olive-700 transition-colors duration-200 ease-premium hover:bg-olive-50 sm:col-span-1 sm:h-9" (click)="rateOrder(o)">
                   <app-icon name="star" [size]="14"></app-icon>

@@ -3,18 +3,20 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, tap, throwError } from 'rxjs';
 import { apiErrorMessage, apiUrl, unwrapList, unwrapPayload } from '../api/api.util';
 import type { ApiCategory, ApiProduct } from '../api/api.models';
-import { hydrateCatalog, mapReview } from '../api/mappers';
+import { hydrateCatalog, mapExclusiveProducts, mapReview } from '../api/mappers';
 import type { Category, Product, Review } from '../types';
 
 @Injectable({ providedIn: 'root' })
 export class CatalogService {
   private readonly productList = signal<Product[]>([]);
   private readonly categoryList = signal<Category[]>([]);
+  private readonly exclusiveList = signal<Product[]>([]);
   readonly ready = signal(false);
   readonly error = signal<string | null>(null);
 
   readonly products = computed(() => this.productList());
   readonly categories = computed(() => this.categoryList());
+  readonly exclusive = computed(() => this.exclusiveList());
 
   constructor(private http: HttpClient) {}
 
@@ -26,11 +28,16 @@ export class CatalogService {
         map((body) => unwrapList(body) as ApiProduct[]),
         catchError(() => of([] as ApiProduct[]))
       ),
+      exclusive: this.http.get(apiUrl('/api/Products/GetExclusiveProducts')).pipe(
+        map((body) => unwrapList(body) as ApiProduct[]),
+        catchError(() => of([] as ApiProduct[]))
+      ),
     }).pipe(
-      tap(({ products, categories, best }) => {
+      tap(({ products, categories, best, exclusive }) => {
         const hydrated = hydrateCatalog(products ?? [], categories ?? [], best ?? []);
         this.productList.set(hydrated.products);
         this.categoryList.set(hydrated.categories);
+        this.exclusiveList.set(mapExclusiveProducts(exclusive ?? [], categories ?? [], hydrated.products, best ?? []));
         this.error.set(null);
         this.ready.set(true);
       }),

@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, forkJoin, from, of, switchMap } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { unwrapPayload } from '../api/api.util';
+import { egyptGovernorates } from '../data/egypt-places';
 import type { ApiCategory, ApiProduct } from '../api/api.models';
 import { PagerComponent } from '../commerce/commerce.component';
 import { LocaleService } from '../services/locale.service';
@@ -18,6 +19,8 @@ import { parseApiStatus } from '../services/account-api.service';
 import { CountPipe, SarPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
 import { LogoComponent } from '../ui/logo.component';
+import { AdminMediaComponent } from './admin-media.component';
+import { AdminWheelComponent } from './admin-wheel.component';
 import { MenuSelectComponent } from '../ui/menu-select.component';
 import { compressImageForUpload, fileFromRemoteUrl } from '../utils/image-file';
 import { completeProductCopy, type ProductCopySuggestion } from '../services/product-copy.service';
@@ -36,10 +39,12 @@ interface ProductDraft {
   descriptionAr: string;
   descriptionEn: string;
   price: number;
+  oldPrice: number | null;
   categoryId: number;
   images: ProductImageSlot[];
   isNew: boolean;
   isAvailable: boolean;
+  isExclusive: boolean;
   hasOffer: boolean;
   discountPercent: number;
   discountDays: number;
@@ -73,11 +78,13 @@ interface CategoryDraft {
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent, LogoComponent, SarPipe, CountPipe, PagerComponent, MenuSelectComponent],
+  imports: [CommonModule, FormsModule, RouterLink, IconComponent, LogoComponent, SarPipe, CountPipe, PagerComponent, MenuSelectComponent, AdminMediaComponent, AdminWheelComponent],
   templateUrl: './admin.page.html',
 })
 export class AdminPageComponent implements OnInit, OnDestroy {
   tab = 'overview';
+  shippingFees: { governorate: string; price: number }[] = [];
+  shippingError = '';
   loading = true;
   saving = false;
   products: ApiProduct[] = [];
@@ -161,6 +168,11 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     { id: 'categories', labelKey: 'adminCategories' as const, icon: 'list' },
     { id: 'offers', labelKey: 'adminOffers' as const, icon: 'zap' },
     { id: 'orders', labelKey: 'adminOrders' as const, icon: 'truck' },
+    { id: 'shipping', labelKey: 'adminShipping' as const, icon: 'pin' },
+    { id: 'wheel', labelKey: 'adminWheel' as const, icon: 'rotate' },
+    { id: 'announcements', labelKey: 'adminAnnouncements' as const, icon: 'bell' },
+    { id: 'ads', labelKey: 'adminHeroAds' as const, icon: 'image' },
+    { id: 'videos', labelKey: 'adminVideos' as const, icon: 'play' },
   ];
 
   get trail() {
@@ -232,7 +244,16 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   }
 
   productOnOffer(p: ApiProduct): boolean {
-    return (Number(p.discountPercent) || 0) > 0;
+    const selling = this.salePrice(p);
+    const previous = Number(p.oldPrice ?? 0);
+    return previous > selling || (!!p.hasOffer && Number(p.price) > selling);
+  }
+
+  offerPercent(p: ApiProduct): number {
+    const selling = this.salePrice(p);
+    const previous = Number(p.oldPrice || p.price) || 0;
+    if (previous <= selling || selling <= 0) return 0;
+    return Math.round(((previous - selling) / previous) * 100);
   }
 
   get filteredOffers(): ApiProduct[] {
@@ -504,6 +525,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       if (id === 'orders') this.boardLane = 'all';
       if (!keepForms) this.closeForms();
       if (id === 'orders' || id === 'overview') this.ensureOrders(true);
+      if (id === 'shipping') this.loadShippingFees();
     }
     this.tab = id;
     void this.router.navigate(['/admin'], {
@@ -524,6 +546,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.closeForms();
     if (next === 'orders') this.boardLane = 'all';
     if (next === 'orders' || next === 'overview') this.ensureOrders(true);
+    if (next === 'shipping') this.loadShippingFees();
   }
 
   productName(p: ApiProduct): string {
@@ -586,44 +609,20 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.selectedCategoryId = null;
   }
 
-  toggleDraftOffer(): void {
-    this.productDraft.hasOffer = !this.productDraft.hasOffer;
-    if (this.productDraft.hasOffer && !(Number(this.productDraft.discountPercent) || 0)) {
-      this.productDraft.discountPercent = 10;
-    }
-    if (!this.productDraft.hasOffer) this.productDraft.discountPercent = 0;
-  }
-
-  onDraftDiscount(value: number | string | null): void {
-    const percent = Math.min(90, Math.max(0, Math.round(Number(value) || 0)));
-    this.productDraft.discountPercent = percent;
-    this.productDraft.hasOffer = percent > 0;
-  }
-
   salePrice(p: ApiProduct): number {
-    const price = Number(p.price) || 0;
-    const percent = Math.min(90, Math.max(0, Number(p.discountPercent) || 0));
-    return Math.round(price * (1 - percent / 100) * 100) / 100;
-  }
-
-  offerPct(p: ApiProduct): number {
-    return Math.min(90, Math.max(0, Math.round(Number(p.discountPercent) || 0)));
-  }
-
-  setOfferPct(p: ApiProduct, value: number | string | null): void {
-    p.discountPercent = Math.min(90, Math.max(0, Math.round(Number(value) || 0)));
-    p.hasOffer = this.offerPct(p) > 0;
-  }
-
-  nudgeOffer(p: ApiProduct, delta: number): void {
-    p.discountPercent = Math.min(90, Math.max(0, this.offerPct(p) + delta));
-    p.hasOffer = this.offerPct(p) > 0;
+    const selling = Number(p.newPrice ?? p.finalPrice);
+    if (Number.isFinite(selling) && selling > 0) return selling;
+    return Number(p.price) || 0;
   }
 
   clearOffer(p: ApiProduct): void {
-    p.discountPercent = 0;
+    const selling = this.salePrice(p);
+    p.oldPrice = null;
+    p.newPrice = selling;
+    p.price = selling;
+    p.finalPrice = selling;
     p.hasOffer = false;
-    p.discountDays = 0;
+    p.discountPercent = 0;
     this.saveOffer(p);
   }
 
@@ -1030,16 +1029,72 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       });
   }
 
+  private applyOfferPrices(p: ApiProduct): void {
+    const selling = Number(p.newPrice ?? p.finalPrice ?? p.price) || 0;
+    const previous = Number(p.oldPrice) || 0;
+    const onOffer = previous > selling && selling > 0;
+    p.newPrice = selling;
+    p.finalPrice = selling;
+    p.oldPrice = onOffer ? previous : null;
+    p.price = onOffer ? previous : selling;
+    p.hasOffer = onOffer;
+  }
+
+  private mergeShippingFees(rows: { governorate: string; price: number }[]): { governorate: string; price: number }[] {
+    const prices = new Map(rows.map((row) => [row.governorate.trim(), Number(row.price) || 0]));
+    return egyptGovernorates.map((place) => ({
+      governorate: place.ar,
+      price: prices.get(place.ar) ?? 0,
+    }));
+  }
+
+  loadShippingFees(): void {
+    this.shippingError = '';
+    this.admin.getShippingFees().subscribe({
+      next: (rows) => {
+        this.shippingFees = this.mergeShippingFees(rows);
+      },
+      error: (err) => {
+        this.shippingFees = this.mergeShippingFees([]);
+        this.shippingError = err instanceof Error ? err.message : '';
+        this.fail(err);
+      },
+    });
+  }
+
+  saveShippingFees(): void {
+    const rates = this.shippingFees.map((row) => ({
+      governorate: row.governorate,
+      price: Number(row.price) || 0,
+    }));
+    if (rates.some((row) => !Number.isFinite(row.price) || row.price < 0)) {
+      this.toast(this.locale.isAr() ? 'اكتب سعر التوصيل لكل محافظة.' : 'Enter a shipping price for each governorate.', 'warning');
+      return;
+    }
+    this.shippingFees = rates;
+    this.saving = true;
+    this.admin.updateShippingFees(rates).subscribe({
+      next: () => this.afterSave(this.locale.isAr() ? 'تم حفظ أسعار التوصيل' : 'Shipping prices saved'),
+      error: (err) => this.fail(err),
+    });
+  }
+
   saveOffer(p: ApiProduct): void {
     if (this.saving) return;
-    const percent = this.offerPct(p);
-    const days = Number(p.discountDays ?? p.discountDaysRemaining) || (percent > 0 ? 7 : 0);
-    p.hasOffer = percent > 0;
-    p.discountPercent = percent;
-    p.discountDays = days;
+    const selling = Number(p.newPrice);
+    const previous = Number(p.oldPrice) || 0;
+    if (!Number.isFinite(selling) || selling <= 0) {
+      this.toast(this.locale.isAr() ? 'اكتب السعر بعد الخصم.' : 'Enter the price after the discount.', 'warning');
+      return;
+    }
+    if (previous > 0 && previous <= selling) {
+      this.toast(this.locale.isAr() ? 'السعر قبل الخصم لازم يكون أعلى من السعر بعده.' : 'The price before the discount has to be higher than the price after it.', 'warning');
+      return;
+    }
+    this.applyOfferPrices(p);
     this.saving = true;
     this.admin
-      .updateProduct({ ...p, hasOffer: percent > 0, discountPercent: percent, discountDays: days })
+      .updateProduct(p)
       .subscribe({
         next: () => this.afterSave(this.locale.isAr() ? 'تم تحديث العرض' : 'Offer updated'),
         error: (err) => this.fail(err),
@@ -1292,9 +1347,10 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   }
 
   private toProductDto(): Partial<ApiProduct> {
-    const percent = Number(this.productDraft.discountPercent) || 0;
-    const offered = percent > 0;
-    this.productDraft.hasOffer = offered;
+    const selling = Number(this.productDraft.price) || 0;
+    const old = Number(this.productDraft.oldPrice) || 0;
+    const oldPrice = old > selling ? old : null;
+    this.productDraft.hasOffer = oldPrice != null;
     const acidity = this.productDraft.acidity == null ? NaN : Number(this.productDraft.acidity);
     return {
       ...(this.editingProduct ?? {}),
@@ -1303,14 +1359,15 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       nameEn: this.productDraft.nameEn.trim(),
       descriptionAr: this.productDraft.descriptionAr.trim(),
       descriptionEn: this.productDraft.descriptionEn.trim(),
-      price: Number(this.productDraft.price) || 0,
+      price: selling,
+      oldPrice,
+      newPrice: selling,
       categoryId: Number(this.productDraft.categoryId),
       imageUrls: this.productDraft.images.map((slot) => slot.remote).filter((url): url is string => !!url),
       isNew: this.productDraft.isNew,
       isAvailable: this.productDraft.isAvailable,
-      hasOffer: offered,
-      discountPercent: offered ? percent : 0,
-      discountDays: offered ? Number(this.productDraft.discountDays) || 7 : 0,
+      isExclusive: this.productDraft.isExclusive,
+      hasOffer: oldPrice != null,
       deliveryAr: this.productDraft.deliveryAr.trim(),
       deliveryEn: this.productDraft.deliveryEn.trim(),
       sizeAr: this.productDraft.sizeAr.trim(),
@@ -1353,10 +1410,12 @@ function emptyProduct(categoryId: number): ProductDraft {
     descriptionAr: '',
     descriptionEn: '',
     price: 0,
+    oldPrice: null,
     categoryId,
     images: [],
     isNew: true,
     isAvailable: true,
+    isExclusive: false,
     hasOffer: false,
     discountPercent: 0,
     discountDays: 7,
@@ -1377,13 +1436,16 @@ function emptyProduct(categoryId: number): ProductDraft {
 }
 
 function fromProduct(p: ApiProduct): ProductDraft {
+  const selling = Number(p.newPrice ?? p.finalPrice ?? p.price) || 0;
+  const list = Number(p.oldPrice ?? (p.hasOffer ? p.price : 0)) || 0;
   return {
     id: p.id,
     nameAr: p.nameAr || p.name || '',
     nameEn: p.nameEn || p.name || '',
     descriptionAr: p.descriptionAr || p.description || '',
     descriptionEn: p.descriptionEn || p.description || '',
-    price: p.price ?? 0,
+    price: selling,
+    oldPrice: list > selling ? list : null,
     categoryId: p.categoryId,
     images: (p.imageUrls ?? []).filter(Boolean).map((url) => ({
       preview: url,
@@ -1391,7 +1453,8 @@ function fromProduct(p: ApiProduct): ProductDraft {
     })),
     isNew: !!p.isNew,
     isAvailable: p.isAvailable !== false,
-    hasOffer: !!p.hasOffer || (p.discountPercent ?? 0) > 0,
+    isExclusive: !!p.isExclusive,
+    hasOffer: list > selling,
     discountPercent: p.discountPercent ?? 0,
     discountDays: p.discountDays || p.discountDaysRemaining || 7,
     deliveryAr: p.deliveryAr || p.delivery || '',

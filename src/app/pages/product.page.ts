@@ -3,7 +3,7 @@ import { AfterViewChecked, Component, effect, ElementRef, HostListener, NgZone, 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { gsap } from 'gsap';
 import '../ui/gsap-setup';
-import type { Product, Review } from '../types';
+import type { Bilingual, Product, Review } from '../types';
 import { faqs } from '../data/content';
 import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
@@ -12,17 +12,16 @@ import { StoreService } from '../services/store.service';
 import { formatCount } from '../utils/format';
 import { pickDisplayName } from '../api/api.util';
 import { IconComponent } from '../ui/icon.component';
-import { ReviewFormComponent, composeReviewComment, type ReviewDraft } from '../ui/review-form.component';
+import { composeReviewComment, type ReviewDraft } from '../ui/review-form.component';
 import {
   PriceBlockComponent,
   ProductRailComponent,
   QtyComponent,
-  RatingComponent,
   SectionHeaderComponent,
   StockComponent,
 } from '../commerce/commerce.component';
 import { CrumbsComponent } from '../commerce/crumbs.component';
-import { CountPipe, SarPipe } from '../utils/sar.pipe';
+import { SarPipe } from '../utils/sar.pipe';
 
 @Component({
   selector: 'app-product',
@@ -33,14 +32,11 @@ import { CountPipe, SarPipe } from '../utils/sar.pipe';
     IconComponent,
     PriceBlockComponent,
     QtyComponent,
-    RatingComponent,
     StockComponent,
     ProductRailComponent,
     SectionHeaderComponent,
     CrumbsComponent,
-    CountPipe,
     SarPipe,
-    ReviewFormComponent,
   ],
   templateUrl: './product.page.html',
 })
@@ -209,6 +205,61 @@ export class ProductPageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   promiseDivider(i: number): string {
     return i > 0 ? 'lg:border-s lg:border-olive-800/10' : '';
+  }
+
+  hasCopy(value: Bilingual | string | null | undefined): boolean {
+    return !this.isBlank(this.plain(value));
+  }
+
+  get story(): string {
+    const text = this.plain(this.product?.description);
+    return this.isBlank(text) ? '' : text;
+  }
+
+  get points(): Bilingual[] {
+    const story = this.story;
+    const rows: Bilingual[] = [];
+    for (const item of this.product?.highlights ?? []) {
+      const arParts = this.splitBits(item.ar);
+      const enParts = this.splitBits(item.en);
+      const len = Math.max(arParts.length, enParts.length, 1);
+      for (let i = 0; i < len; i++) {
+        const row = {
+          ar: arParts[i] || (arParts.length === 1 ? arParts[0] : ''),
+          en: enParts[i] || (enParts.length === 1 ? enParts[0] : ''),
+        };
+        const text = this.plain(row);
+        if (!this.isBlank(text) && text !== story) rows.push(row);
+      }
+    }
+    return rows;
+  }
+
+  get facts(): Array<{ label: Bilingual; value: Bilingual }> {
+    return (this.product?.specs ?? []).filter(
+      (row) => !this.isBlank(this.plain(row.label)) && !this.isBlank(this.plain(row.value)),
+    );
+  }
+
+  get hasDetails(): boolean {
+    return !!this.story || this.points.length > 0 || this.facts.length > 0;
+  }
+
+  private plain(value: Bilingual | string | null | undefined): string {
+    if (value == null) return '';
+    const raw = typeof value === 'string' ? value : this.locale.tr(value);
+    return raw.replace(/\s+/g, ' ').trim();
+  }
+
+  private splitBits(value: string | undefined): string[] {
+    return (value || '')
+      .split(/[,،]/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  private isBlank(text: string): boolean {
+    return !text || text === '-' || text === '—' || text === '–' || text === 'N/A' || text === 'n/a';
   }
 
   thumbClass(i: number): string {

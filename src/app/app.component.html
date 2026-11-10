@@ -1,5 +1,5 @@
 <a class="skip-link" href="#main">{{ locale.isAr() ? 'تخطي إلى المحتوى' : 'Skip to content' }}</a>
-<div class="flex min-h-screen w-full min-w-0 flex-col bg-sand-50" [attr.dir]="locale.dir()" [class.font-ar]="locale.isAr()">
+<div class="flex w-full min-w-0 flex-col bg-sand-50" [class.min-h-screen]="!shortPage" [attr.dir]="locale.dir()" [class.font-ar]="locale.isAr()">
   <div
     *ngIf="!bareLayout && !focusLayout"
     class="site-chrome sticky top-0 z-50"
@@ -18,10 +18,13 @@
       >
         <ng-template #tickerRow let-clone="clone">
           <div class="ticker-group" [attr.aria-hidden]="clone">
-            <ng-container *ngFor="let item of tickerItems">
-              <span class="ticker-sep" aria-hidden="true"></span>
-              <a *ngIf="item.to && !clone" [routerLink]="item.to" class="ticker-item">{{ locale.tr(item.label) }}</a>
-              <span *ngIf="!item.to || clone" class="ticker-item">{{ locale.tr(item.label) }}</span>
+            <ng-container *ngFor="let copy of tickerCopies">
+              <ng-container *ngFor="let item of tickerItems">
+                <span class="ticker-sep" aria-hidden="true"></span>
+                <a *ngIf="item.to && !clone && copy === 0 && !webLink(item.to)" [routerLink]="item.to" class="ticker-item">{{ locale.tr(item.label) }}</a>
+                <a *ngIf="item.to && !clone && copy === 0 && webLink(item.to)" [href]="item.to" target="_blank" rel="noopener" class="ticker-item">{{ locale.tr(item.label) }}</a>
+                <span *ngIf="!item.to || clone || copy !== 0" class="ticker-item">{{ locale.tr(item.label) }}</span>
+              </ng-container>
             </ng-container>
           </div>
         </ng-template>
@@ -29,8 +32,6 @@
         <ng-container *ngTemplateOutlet="tickerRow; context: { clone: true }"></ng-container>
       </div>
       <div class="hidden shrink-0 items-center gap-5 lg:flex">
-        <a routerLink="/support" class="hover:text-gold-300">{{ locale.ui('support') }}</a>
-        <a routerLink="/track" class="hover:text-gold-300">{{ locale.ui('trackOrder') }}</a>
         <button type="button" class="inline-flex items-center gap-1.5 hover:text-gold-300" (click)="locale.toggle()">
           <app-icon name="globe" [size]="14"></app-icon> {{ locale.ui('language') }}
         </button>
@@ -39,7 +40,7 @@
   </div>
 
   <header class="bg-sand-50/95 shadow-none backdrop-blur lg:shadow-md" (mouseleave)="openMenu = null; openMore = false">
-    <div class="mx-auto flex h-[72px] max-w-shell items-center gap-3 px-4 lg:gap-4 lg:px-10">
+    <div class="mx-auto flex min-h-[84px] max-w-shell items-center gap-3 px-4 py-2 lg:gap-4 lg:px-10">
       <button
         type="button"
         class="-ms-2 rounded p-2 text-olive-700 lg:hidden"
@@ -123,6 +124,7 @@
         <a routerLink="/offers" routerLinkActive="text-clay-400" class="header-cats__item font-semibold text-clay-400/90 hover:text-clay-400">{{ locale.ui('offers') }}</a>
         <a *ngIf="showNewLink" routerLink="/new" routerLinkActive="text-olive-700" class="header-cats__item text-ink-soft hover:text-olive-700">{{ locale.ui('newArrivals') }}</a>
         <a *ngIf="showAboutLink" routerLink="/about" routerLinkActive="text-olive-700" class="header-cats__item text-ink-soft hover:text-olive-700">{{ locale.ui('aboutBrand') }}</a>
+        <button type="button" class="header-cats__item cursor-pointer font-semibold text-gold-500 hover:text-gold-400" (click)="spinOpen = true">{{ locale.isAr() ? 'العب واكسب' : 'Play & win' }}</button>
       </div>
       <div class="header-cats__measure" #catMeasure aria-hidden="true">
         <span *ngFor="let c of categories" class="header-cats__item" data-kind="cat">
@@ -137,6 +139,7 @@
         <span class="header-cats__item font-semibold" data-kind="offers">{{ locale.ui('offers') }}</span>
         <span class="header-cats__item" data-kind="new">{{ locale.ui('newArrivals') }}</span>
         <span class="header-cats__item" data-kind="about">{{ locale.ui('aboutBrand') }}</span>
+        <span class="header-cats__item font-semibold" data-kind="spin">{{ locale.isAr() ? 'العب واكسب' : 'Play & win' }}</span>
       </div>
 
       <div *ngIf="openMenu && openCategory as cat" class="absolute inset-x-0 top-full z-50 border-t border-olive-800/10 bg-sand-50 shadow-lg">
@@ -203,7 +206,8 @@
 
   <main
     id="main"
-    class="site-main min-w-0 flex-1"
+    class="site-main min-w-0"
+    [class.flex-1]="!shortPage"
   >
     <router-outlet></router-outlet>
   </main>
@@ -224,7 +228,18 @@
           <a *ngFor="let l of col.links" [routerLink]="l.to" class="mb-2.5 block text-[13px] text-sand-100/75 hover:text-gold-300">{{ locale.tr(l.label) }}</a>
         </div>
       </div>
-      <div class="grid gap-8 border-b border-sand-100/10 py-8 lg:grid-cols-[1.2fr_1fr] lg:py-12">
+      <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-b border-sand-100/10 py-4 text-[13px] text-sand-100/75">
+        <p class="flex items-baseline gap-x-3">
+          <span class="text-2xs tracking-[0.16em] text-gold-300">{{ locale.isAr() ? 'شكاوى' : 'Complaints' }}</span>
+          <a href="tel:01210077800" class="transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01210077800</span></a>
+          <a href="tel:01210077500" class="transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01210077500</span></a>
+        </p>
+        <p class="flex items-baseline gap-x-3">
+          <span class="text-2xs tracking-[0.16em] text-gold-300">{{ locale.isAr() ? 'متابعة الطلبات' : 'Order follow-up' }}</span>
+          <a href="tel:01050302172" class="transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01050302172</span></a>
+        </p>
+      </div>
+      <!-- <div class="grid gap-8 border-b border-sand-100/10 py-8 lg:grid-cols-[1.2fr_1fr] lg:py-12">
         <div>
           <h2 class="font-display text-3xl text-sand-50">{{ locale.ui('newsletter') }}</h2>
           <p class="mt-2 text-[13px] text-sand-100/70">{{ locale.ui('newsletterHint') }}</p>
@@ -237,7 +252,15 @@
         <div class="flex flex-wrap gap-2 self-end">
           <span *ngFor="let m of payments" class="rounded border border-sand-100/15 bg-olive-900/40 px-3 py-2 text-[11px] font-medium text-sand-100/80">{{ m }}</span>
         </div>
-      </div>
+      </div> -->
+     
+     
+     
+     
+     
+     
+     
+     
       <div class="flex flex-col gap-3 py-6 text-xs text-sand-100/55 sm:flex-row sm:justify-between">
         <p>{{ locale.isAr() ? '© ٢٠٢٦ المنبت. جميع الحقوق محفوظة.' : '© 2026 Almanbat. All rights reserved.' }}</p>
         <div class="flex gap-5">
@@ -324,21 +347,19 @@
         <span class="menu-chip__kicker menu-chip__kicker--gold">{{ locale.isAr() ? 'جديد' : 'New' }}</span>
         <span class="menu-chip__label">{{ locale.ui('newArrivals') }}</span>
       </a>
+      <button type="button" class="menu-chip w-full cursor-pointer text-start font-[inherit]" (click)="store.menuOpen.set(false); spinOpen = true">
+        <span class="menu-chip__kicker menu-chip__kicker--gold">{{ locale.isAr() ? 'لفّة' : 'Spin' }}</span>
+        <span class="menu-chip__label">{{ locale.isAr() ? 'العب واكسب' : 'Play & win' }}</span>
+      </button>
+      <a routerLink="/videos" class="menu-chip" (click)="store.menuOpen.set(false)">
+        <span class="menu-chip__kicker menu-chip__kicker--gold">{{ locale.isAr() ? 'عرض' : 'Watch' }}</span>
+        <span class="menu-chip__label">{{ locale.isAr() ? 'فيديوهات' : 'Videos' }}</span>
+      </a>
       <a routerLink="/listing/all" class="hidden items-center justify-center rounded-xl bg-gold-400 px-4 py-3.5 text-sm font-semibold text-olive-900 md:flex" (click)="store.menuOpen.set(false)">
         {{ locale.ui('shopAll') }}
       </a>
     </div>
 
-    <nav class="menu-utility" [attr.aria-label]="locale.isAr() ? 'مساعدة' : 'Help'">
-      <a routerLink="/support" class="menu-utility__item" (click)="store.menuOpen.set(false)">
-        <app-icon name="headset" [size]="16"></app-icon>
-        {{ locale.ui('support') }}
-      </a>
-      <a routerLink="/track" class="menu-utility__item" (click)="store.menuOpen.set(false)">
-        <app-icon name="package" [size]="16"></app-icon>
-        {{ locale.ui('trackOrder') }}
-      </a>
-    </nav>
   </div>
 
   <footer class="shrink-0 border-t border-olive-800/10 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 md:px-8">
@@ -416,6 +437,7 @@
 </div>
 
 <app-cart-drawer></app-cart-drawer>
+<app-spin-wheel *ngIf="spinOpen" (closed)="spinOpen = false"></app-spin-wheel>
 </ng-container>
 
 <div class="fixed bottom-20 start-4 z-[100] w-80 space-y-2 lg:bottom-6">

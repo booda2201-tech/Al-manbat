@@ -1,10 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, computed, effect, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ChangeDetectorRef, Component, HostListener, computed, effect } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { LocaleService } from '../services/locale.service';
-import { SessionService } from '../services/session.service';
-import { FREE_SHIPPING_THRESHOLD, StoreService } from '../services/store.service';
-import { formatPrice } from '../utils/format';
+import { StoreService } from '../services/store.service';
 import { SarPipe } from '../utils/sar.pipe';
 import { QtyComponent } from '../commerce/commerce.component';
 import { IconComponent } from './icon.component';
@@ -16,7 +14,6 @@ import { IconComponent } from './icon.component';
   templateUrl: './cart-drawer.component.html',
 })
 export class CartDrawerComponent {
-  readonly session = inject(SessionService);
   rows = computed(() =>
     this.store
       .lines()
@@ -30,7 +27,6 @@ export class CartDrawerComponent {
   constructor(
     public locale: LocaleService,
     public store: StoreService,
-    private router: Router,
     private cdr: ChangeDetectorRef
   ) {
     effect(() => {
@@ -49,13 +45,6 @@ export class CartDrawerComponent {
     this.store.cartOpen.set(false);
   }
 
-  goToLogin(): void {
-    this.store.rememberCartAfterLogin();
-    const here = this.router.url;
-    this.close();
-    void this.router.navigate(['/login'], { queryParams: { redirect: here } });
-  }
-
   setQty(productId: string, qty: number): void {
     this.store.setQty(productId, qty);
   }
@@ -72,22 +61,8 @@ export class CartDrawerComponent {
     return row.productId;
   }
 
-  remainingShip(): number {
-    return Math.max(0, FREE_SHIPPING_THRESHOLD - this.store.subtotal());
-  }
-
-  shipProgress(): number {
-    return Math.min(100, (this.store.subtotal() / FREE_SHIPPING_THRESHOLD) * 100);
-  }
-
-  shipHint(): string {
-    const rem = this.remainingShip();
-    if (!rem) return this.locale.ui('freeShippingUnlocked');
-    return this.locale.ui('freeShippingProgress').replace('{x}', formatPrice(rem, this.locale.locale()));
-  }
-
   shipValueClass(): string {
-    return this.store.shipping() === 0 ? 'font-medium text-state-success' : 'text-olive-800';
+    return this.store.shippingKnown() && this.store.shipping() === 0 ? 'font-medium text-state-success' : 'text-olive-800';
   }
 
   stockMax(stock: number): number {

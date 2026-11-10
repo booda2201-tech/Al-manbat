@@ -2,14 +2,13 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import type { Bilingual, Category, Product, Subcategory } from '../types';
 import { LocaleService } from '../services/locale.service';
-import { IconComponent } from '../ui/icon.component';
 import { SarPipe } from '../utils/sar.pipe';
 import type { FilterState } from './filters';
 
 @Component({
   selector: 'app-filter-panel',
   standalone: true,
-  imports: [CommonModule, IconComponent, SarPipe],
+  imports: [CommonModule, SarPipe],
   template: `
     <div class="filter-panel" [class.is-sheet]="compact">
       <div *ngIf="!compact" class="flex items-center justify-between gap-3">
@@ -73,35 +72,18 @@ import type { FilterState } from './filters';
       </section>
 
       <section>
-        <h3 class="filter-panel__h">{{ locale.ui('rating') }}</h3>
-        <div class="filter-rates">
-          <button
-            *ngFor="let min of ratingOptions"
-            type="button"
-            class="filter-rate"
-            [class.is-on]="filters.minRating === min"
-            (click)="patch({ minRating: min })"
-          >
-            <span class="flex gap-0.5" aria-hidden="true">
-              <app-icon
-                *ngFor="let i of stars"
-                name="star"
-                [size]="15"
-                [filled]="i <= (min || 0)"
-                [ngClass]="i <= (min || 0) ? 'text-gold-400' : 'text-sand-300'"
-              ></app-icon>
-            </span>
-            <span>{{ min === 0 ? (locale.isAr() ? 'الكل' : 'All') : min + '+' }}</span>
-          </button>
+        <h3 class="filter-panel__h">{{ locale.isAr() ? 'النوع' : 'Type' }}</h3>
+        <div class="filter-chips">
+          <button type="button" class="filter-chip" [class.is-on]="filters.exclusiveOnly" (click)="patch({ exclusiveOnly: !filters.exclusiveOnly })">{{ locale.isAr() ? 'الحصرية' : 'Exclusive' }}</button>
+          <button type="button" class="filter-chip" [class.is-on]="filters.onSaleOnly" (click)="patch({ onSaleOnly: !filters.onSaleOnly })">{{ locale.isAr() ? 'العروض' : 'Offers' }}</button>
+          <button type="button" class="filter-chip" [class.is-on]="filters.newOnly" (click)="patch({ newOnly: !filters.newOnly })">{{ locale.isAr() ? 'الجديد' : 'New' }}</button>
         </div>
       </section>
 
       <section>
         <h3 class="filter-panel__h">{{ locale.ui('extraFilters') }}</h3>
         <div class="filter-chips">
-          <button type="button" class="filter-chip" [class.is-on]="filters.newOnly" (click)="patch({ newOnly: !filters.newOnly })">{{ locale.ui('newOnly') }}</button>
           <button type="button" class="filter-chip" [class.is-on]="filters.inStockOnly" (click)="patch({ inStockOnly: !filters.inStockOnly })">{{ locale.ui('inStockOnly') }}</button>
-          <button type="button" class="filter-chip" [class.is-on]="filters.onSaleOnly" (click)="patch({ onSaleOnly: !filters.onSaleOnly })">{{ locale.ui('onSale') }}</button>
         </div>
       </section>
     </div>
@@ -117,9 +99,6 @@ export class FilterPanelComponent {
   @Output() filtersChange = new EventEmitter<FilterState>();
   @Output() reset = new EventEmitter<void>();
   @Output() categoryChange = new EventEmitter<string | null>();
-
-  stars = [1, 2, 3, 4, 5];
-  ratingOptions = [4, 3, 0];
 
   constructor(public locale: LocaleService) {}
 

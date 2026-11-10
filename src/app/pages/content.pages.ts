@@ -1,15 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { brandPillars, faqs, supportChannels } from '../data/content';
+import { brandPillars, faqs } from '../data/content';
 import { images } from '../data/images';
 import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
 import { StoreService } from '../services/store.service';
-import { IconComponent } from '../ui/icon.component';
 import { LogoComponent } from '../ui/logo.component';
-import { MenuSelectComponent } from '../ui/menu-select.component';
 import { ScrollOpenDirective } from '../ui/scroll-open.directive';
 import { ProductRailComponent, SectionHeaderComponent, TrustStripComponent } from '../commerce/commerce.component';
 import { CrumbsComponent } from '../commerce/crumbs.component';
@@ -122,68 +119,9 @@ export class AboutPageComponent {
 }
 
 @Component({
-  selector: 'app-support',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent, CrumbsComponent, MenuSelectComponent],
-  templateUrl: './support.page.html',
-})
-export class SupportPageComponent {
-  channels = supportChannels;
-  faqs = faqs;
-  icons = ['chat', 'phone', 'mail'];
-  sent = false;
-  openFaq: number | null = 0;
-  form = {
-    name: '',
-    email: '',
-    phone: '',
-    topic: 'Order enquiry',
-    order: '',
-    message: '',
-  };
-  topics = [
-    { ar: 'استفسار عن طلب', en: 'Order enquiry' },
-    { ar: 'مشكلة في التوصيل', en: 'Delivery issue' },
-    { ar: 'سؤال عن منتج', en: 'Product question' },
-    { ar: 'شيء آخر', en: 'Something else' },
-  ];
-
-  constructor(public locale: LocaleService, public store: StoreService) {}
-
-  get trail() {
-    return [{ label: this.locale.isAr() ? 'الرئيسية' : 'Home', to: '/' }, { label: this.locale.ui('support') }];
-  }
-
-  get topicOptions() {
-    return this.topics.map((t) => ({ value: t.en, label: this.locale.isAr() ? t.ar : t.en }));
-  }
-
-  setTopic(next: string | number): void {
-    this.form.topic = String(next);
-  }
-
-  send(ev: Event): void {
-    ev.preventDefault();
-    if (!this.form.name.trim() || !this.form.message.trim() || !/^\S+@\S+\.\S+$/.test(this.form.email)) {
-      this.store.pushToast({
-        tone: 'warning',
-        title: this.locale.isAr() ? 'أكمل الاسم والبريد والرسالة' : 'Add your name, email and message',
-      });
-      return;
-    }
-    this.sent = true;
-    this.store.pushToast({
-      tone: 'success',
-      title: this.locale.isAr() ? 'وصلت رسالتك' : 'Message received',
-      description: this.locale.isAr() ? 'رقم التذكرة SP-4821' : 'Ticket SP-4821',
-    });
-  }
-}
-
-@Component({
   selector: 'app-faq',
   standalone: true,
-  imports: [CommonModule, RouterLink, CrumbsComponent],
+  imports: [CommonModule, CrumbsComponent],
   template: `
     <div class="mx-auto max-w-4xl px-4 py-9">
       <app-crumbs [trail]="trail"></app-crumbs>
@@ -193,10 +131,6 @@ export class SupportPageComponent {
           <button type="button" class="w-full text-start font-medium text-olive-800" (click)="open = open === i ? null : i">{{ locale.tr(f.q) }}</button>
           <p *ngIf="open === i" class="mt-2 text-sm text-ink-muted">{{ locale.tr(f.a) }}</p>
         </div>
-      </div>
-      <div class="mt-12 rounded-xl bg-olive-800 p-8 text-sand-100">
-        <h2 class="font-displayAr text-2xl text-sand-50">{{ locale.isAr() ? 'لم تجد إجابتك؟' : 'Still need an answer?' }}</h2>
-        <a routerLink="/support" class="mt-4 inline-flex h-11 items-center rounded-md bg-gold-400 px-5 text-olive-900">{{ locale.ui('support') }}</a>
       </div>
     </div>
   `,
@@ -242,17 +176,13 @@ export class NotFoundPageComponent {
 @Component({
   selector: 'app-maintenance',
   standalone: true,
-  imports: [CommonModule, RouterLink, LogoComponent],
+  imports: [CommonModule, LogoComponent],
   template: `
     <div class="grain relative flex min-h-[70vh] items-center justify-center bg-olive-800 px-4 py-20">
       <div class="max-w-xl text-center">
         <div class="flex justify-center"><app-logo tone="light" size="lg"></app-logo></div>
         <h1 class="mt-6 font-displayAr text-4xl text-sand-50">{{ locale.isAr() ? 'نعود بعد قليل' : 'We’ll be right back' }}</h1>
         <p class="mt-4 text-sand-100/75">{{ locale.isAr() ? 'نُحدّث المتجر لتحسين سرعة التصفح والدفع.' : 'We’re updating the store to make browsing and checkout faster.' }}</p>
-        <div class="mt-8 flex justify-center gap-3">
-          <a routerLink="/track" class="inline-flex h-12 items-center rounded-md bg-gold-400 px-6 text-olive-900">{{ locale.ui('trackOrder') }}</a>
-          <a routerLink="/support" class="inline-flex h-12 items-center rounded-md border border-sand-100/25 px-6 text-sand-100">{{ locale.ui('support') }}</a>
-        </div>
       </div>
     </div>
   `,

@@ -23,7 +23,7 @@ function rewriteCookies(proxyRes) {
 
 const PROXY_CONFIG = {
   '/api': {
-    target: 'http://alhendalcompany-001-site12.jtempurl.com',
+    target: 'http://almanbat.somee.com',
     secure: false,
     changeOrigin: true,
     logLevel: 'warn',

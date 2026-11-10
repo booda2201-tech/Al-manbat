@@ -19,9 +19,7 @@ import { IconComponent } from '../ui/icon.component';
 export class AuthPageComponent implements OnInit {
   signup = false;
   password = '';
-  confirmPassword = '';
-  firstName = '';
-  lastName = '';
+  fullName = '';
   phone = '';
   error = '';
   showPassword = false;
@@ -65,12 +63,8 @@ export class AuthPageComponent implements OnInit {
       return;
     }
     if (this.signup) {
-      if (!this.firstName.trim() || !this.lastName.trim()) {
-        this.error = this.locale.isAr() ? 'أدخل الاسم كاملاً.' : 'Enter your full name.';
-        return;
-      }
-      if (this.password !== this.confirmPassword) {
-        this.error = this.locale.isAr() ? 'كلمتا المرور غير متطابقتين.' : 'Passwords do not match.';
+      if (!this.fullName.trim()) {
+        this.error = this.locale.isAr() ? 'أدخل الاسم.' : 'Enter your name.';
         return;
       }
       if (!/\d/.test(this.password)) {
@@ -80,7 +74,7 @@ export class AuthPageComponent implements OnInit {
         return;
       }
       this.busy = true;
-      const displayName = `${this.firstName.trim()} ${this.lastName.trim()}`.replace(/\s+/g, ' ');
+      const displayName = this.fullName.trim().replace(/\s+/g, ' ');
       this.auth
         .register({
           userName: toApiUserName(displayName, phone),

@@ -43,9 +43,10 @@ export class AuthApiService {
     const phone = normalizeAuthPhone(data.phone) || data.phone.trim();
     const body = {
       userName: data.userName,
+      name: shownName,
+      fullName: shownName,
       phone,
       password: data.password,
-      reEnterPassword: data.password,
     };
     return this.http.post(apiUrl('/api/Auth/register'), body, { observe: 'response' }).pipe(
       switchMap((res) => {

@@ -9,9 +9,11 @@ import { CatalogService } from './services/catalog.service';
 import { StoreService } from './services/store.service';
 import { SessionService } from './services/session.service';
 import { AuthApiService } from './services/auth-api.service';
+import { ContentApiService, bySort } from './services/content-api.service';
 import { IconComponent } from './ui/icon.component';
 import { LogoComponent } from './ui/logo.component';
 import { CartDrawerComponent } from './ui/cart-drawer.component';
+import { SpinWheelComponent } from './ui/spin-wheel.component';
 import { CountPipe, SarPipe } from './utils/sar.pipe';
 import type { Bilingual, Category, Product } from './types';
 
@@ -27,6 +29,7 @@ import type { Bilingual, Category, Product } from './types';
     IconComponent,
     LogoComponent,
     CartDrawerComponent,
+    SpinWheelComponent,
     SarPipe,
     CountPipe,
   ],
@@ -38,6 +41,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('catMeasure') catMeasure?: ElementRef<HTMLElement>;
   openMenu: string | null = null;
   openMore = false;
+  spinOpen = false;
   catLimit = 4;
   showNewLink = false;
   showAboutLink = false;
@@ -48,28 +52,35 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   promo = '';
   email = '';
   subscribed = false;
-  tickerItems: Array<{ label: Bilingual; to?: string }> = [
+  private readonly fallbackTicker: Array<{ label: Bilingual; to?: string }> = [
     { label: copy['announcement1'], to: '/offers' },
     { label: copy['announcement5'] },
     { label: copy['announcement2'] },
     { label: copy['announcement4'], to: '/listing/extra-virgin' },
     { label: copy['announcement7'], to: '/listing/extra-virgin' },
     { label: copy['announcement6'] },
-    { label: copy['announcement3'], to: '/support' },
+    { label: copy['announcement3'] },
   ];
+  tickerItems: Array<{ label: Bilingual; to?: string }> = [...this.fallbackTicker];
+  get tickerCopies(): number[] {
+    const count = Math.max(2, Math.ceil(14 / Math.max(1, this.tickerItems.length)));
+    return Array.from({ length: count }, (_, index) => index);
+  }
+  private readonly onTickerVisible = (): void => {
+    if (document.visibilityState === 'visible') this.zone.run(() => this.loadTicker());
+  };
   footerCols = [
     {
       title: { ar: 'خدمة العملاء', en: 'Customer care' },
       links: [
         { label: { ar: 'الأسئلة الشائعة', en: 'FAQ' }, to: '/faq' },
-        { label: { ar: 'تتبع الطلب', en: 'Track order' }, to: '/track' },
-        { label: { ar: 'الدعم', en: 'Support' }, to: '/support' },
       ],
     },
     {
       title: { ar: 'المنبت', en: 'Almanbat' },
       links: [
         { label: { ar: 'قصتنا', en: 'Our story' }, to: '/about' },
+        { label: { ar: 'فيديوهات', en: 'Videos' }, to: '/videos' },
         { label: { ar: 'تسجيل الدخول', en: 'Sign in' }, to: '/login' },
         { label: { ar: 'العروض', en: 'Offers' }, to: '/offers' },
         { label: { ar: 'وصل حديثاً', en: 'New arrivals' }, to: '/new' },
@@ -79,6 +90,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   payments = ['mada', 'VISA', 'Mastercard', 'Apple Pay', 'tabby', 'tamara'];
   bareLayout = false;
   focusLayout = false;
+  shortPage = false;
   heroBleed = false;
   navHidden = false;
   private lastScrollY = 0;
@@ -89,6 +101,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     public store: StoreService,
     public catalog: CatalogService,
     private auth: AuthApiService,
+    private content: ContentApiService,
     private router: Router,
     private zone: NgZone
   ) {
@@ -111,7 +124,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  webLink(to?: string): boolean {
+    return !!to && /^https?:\/\//i.test(to);
+  }
+
   ngOnInit(): void {
+    this.loadTicker();
+    document.addEventListener('visibilitychange', this.onTickerVisible);
     this.syncLayout(this.router.url);
     const path = this.router.url.split('?')[0];
     if (path !== '/login' && path !== '/signup') {
@@ -138,11 +157,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.syncLayout(e.urlAfterRedirects);
       this.openMenu = null;
       this.openMore = false;
+      this.spinOpen = false;
       this.store.menuOpen.set(false);
       this.store.searchOpen.set(false);
       this.store.cartOpen.set(this.store.consumeCartOpenRequest());
       if (!stayOnAdmin) {
         window.scrollTo(0, 0);
+        this.loadTicker();
       }
       this.navHidden = false;
       this.lastScrollY = 0;
@@ -153,7 +174,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private syncLayout(url: string): void {
     const path = url.split('?')[0];
     this.bareLayout = path === '/login' || path === '/signup';
-    this.focusLayout = path === '/checkout' || path === '/admin' || path.startsWith('/admin/');
+    this.focusLayout = path === '/admin' || path.startsWith('/admin/');
+    this.shortPage = path === '/checkout';
     if (this.bareLayout || this.focusLayout) {
       this.openMenu = null;
       this.openMore = false;
@@ -180,8 +202,24 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.removeEventListener('visibilitychange', this.onTickerVisible);
     this.navObserver?.disconnect();
     this.removeScroll?.();
+  }
+
+  private loadTicker(): void {
+    this.content.announcements().subscribe((rows) => {
+      const items = bySort(rows)
+        .filter((row) => row.isActive !== false && !!(row.textAr || row.textEn || row.text))
+        .map((row) => ({
+          label: {
+            ar: (row.textAr || row.text || row.textEn || '').trim(),
+            en: (row.textEn || row.text || row.textAr || '').trim(),
+          },
+          to: (row.link || '').trim() || undefined,
+        }));
+      this.tickerItems = items.length ? items : this.fallbackTicker;
+    });
   }
 
   private bindNavScroll(): void {
@@ -234,6 +272,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const offersW = boxOf('offers');
     const newW = boxOf('new');
     const aboutW = boxOf('about');
+    const spinW = boxOf('spin');
     const styles = getComputedStyle(row);
     const gap = parseFloat(styles.columnGap || styles.gap) || 0;
     const pad = (parseFloat(styles.paddingInlineStart) || 0) + (parseFloat(styles.paddingInlineEnd) || 0);
@@ -246,7 +285,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return total;
     };
     const layoutWidth = (n: number, more: boolean, showNew: boolean, showAbout: boolean) => {
-      const parts = n + 1 + (more ? 1 : 0) + 1 + (showNew ? 1 : 0) + (showAbout ? 1 : 0);
+      const parts = n + 1 + (more ? 1 : 0) + 1 + (showNew ? 1 : 0) + (showAbout ? 1 : 0) + 1;
       return (
         catsWidth(n) +
         offersW +
@@ -254,6 +293,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         (more ? moreW : 0) +
         (showNew ? newW : 0) +
         (showAbout ? aboutW : 0) +
+        spinW +
         Math.max(0, parts - 1) * gap
       );
     };

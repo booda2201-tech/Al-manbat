@@ -5,7 +5,7 @@ import { map, switchMap } from 'rxjs/operators';
 import type { CartLine, Product } from '../types';
 import { CatalogService } from './catalog.service';
 import { SessionService } from './session.service';
-import { ShopApiService } from './shop-api.service';
+import { ShopApiService, type ShippingFeeRow } from './shop-api.service';
 
 export interface Toast {
   id: number;
@@ -14,12 +14,48 @@ export interface Toast {
   tone: 'success' | 'info' | 'warning';
 }
 
-export const FREE_SHIPPING_THRESHOLD = 250;
-export const SHIPPING_FEE = 25;
-const PROMO_CODES: Record<string, number> = { ALMANBAT10: 0.1, HARVEST15: 0.15 };
+function readWheel(): HeldWheelPrize | null {
+  try {
+    const raw = sessionStorage.getItem(WHEEL_KEY);
+    if (!raw) return null;
+    const prize = JSON.parse(raw) as HeldWheelPrize;
+    if (!prize?.token || !prize.kind) return null;
+    return prize;
+  } catch {
+    return null;
+  }
+}
+
+const PROMO_CODES: Record<string, number> = { ALMANBAT10: 0.1, HARVEST15: 0.15, SPIN5: 0.05 };
+const WHEEL_KEY = 'almanbat.wheelPrize';
+
+export interface HeldWheelPrize {
+  token: string;
+  kind: 'Percent' | 'FreeShipping' | 'Gift';
+  percent: number | null;
+  labelAr: string;
+  labelEn: string;
+  detailAr?: string;
+  detailEn?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class StoreService {
+  constructor() {
+    this.shop.getShippingFees().subscribe((rows) => this.shippingFees.set(rows));
+  }
+
+  setShippingGovernorate(name: string): void {
+    this.shippingGovernorate.set(name.trim());
+  }
+
+  private feeForGovernorate(): number | null {
+    const name = this.shippingGovernorate().trim();
+    if (!name) return null;
+    const row = this.shippingFees().find((item) => item.governorate === name);
+    return row ? Number(row.fee) || 0 : null;
+  }
+
   private catalog = inject(CatalogService);
   private session = inject(SessionService);
   private shop = inject(ShopApiService);
@@ -33,6 +69,9 @@ export class StoreService {
   readonly searchOpen = signal(false);
   readonly menuOpen = signal(false);
   readonly promo = signal<string | null>(null);
+  readonly wheel = signal<HeldWheelPrize | null>(readWheel());
+  readonly shippingGovernorate = signal('');
+  readonly shippingFees = signal<ShippingFeeRow[]>([]);
   readonly toasts = signal<Toast[]>([]);
   readonly lastAdded = signal<Product | null>(null);
   private cartOpenAfterNav = false;
@@ -52,11 +91,22 @@ export class StoreService {
   );
   readonly promoDiscount = computed(() => {
     const code = this.promo();
-    return code ? Math.round(this.subtotal() * PROMO_CODES[code] * 100) / 100 : 0;
+    const fromCode = code ? Math.round(this.subtotal() * PROMO_CODES[code] * 100) / 100 : 0;
+    const prize = this.wheel();
+    const fromWheel =
+      prize?.kind === 'Percent' && prize.percent
+        ? Math.round((this.subtotal() * prize.percent) / 100)
+        : 0;
+    return fromCode + fromWheel;
   });
-  readonly shipping = computed(() =>
-    this.subtotal() === 0 || this.subtotal() >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
-  );
+  readonly shippingKnown = computed(() => {
+    if (this.subtotal() === 0 || this.wheel()?.kind === 'FreeShipping') return true;
+    return this.feeForGovernorate() != null;
+  });
+  readonly shipping = computed(() => {
+    if (this.subtotal() === 0 || this.wheel()?.kind === 'FreeShipping') return 0;
+    return this.feeForGovernorate() ?? 0;
+  });
   readonly total = computed(() => Math.max(0, this.subtotal() - this.promoDiscount()) + this.shipping());
 
   hydrateFromApi(): void {
@@ -82,12 +132,6 @@ export class StoreService {
   }
 
   addToCart(productId: string, qty = 1, openCart = true): boolean {
-    if (!this.session.isLoggedIn()) {
-      this.pendingAdd = { productId, qty };
-      this.wantCartOpen = true;
-      this.cartOpen.set(true);
-      return false;
-    }
     this.lines.update((lines) => {
       const i = lines.findIndex((l) => l.productId === productId);
       if (i === -1) return [...lines, { productId, qty }];
@@ -95,7 +139,7 @@ export class StoreService {
     });
     this.lastAdded.set(this.catalog.byId(productId) ?? null);
     if (openCart) this.cartOpen.set(true);
-    if (!this.session.isAdmin()) {
+    if (this.session.isLoggedIn() && !this.session.isAdmin()) {
       this.shop.addToCart(productId, qty).subscribe({
         error: () => {
           this.pushToast({
@@ -154,6 +198,24 @@ export class StoreService {
     if (!PROMO_CODES[key]) return false;
     this.promo.set(key);
     return true;
+  }
+
+  holdWheel(prize: HeldWheelPrize): void {
+    this.wheel.set(prize);
+    try {
+      sessionStorage.setItem(WHEEL_KEY, JSON.stringify(prize));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  clearWheel(): void {
+    this.wheel.set(null);
+    try {
+      sessionStorage.removeItem(WHEEL_KEY);
+    } catch {
+      /* ignore */
+    }
   }
 
   saveForLater(productId: string): void {

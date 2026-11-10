@@ -101,6 +101,6 @@ export interface HeroAd {
   heading: Bilingual;
   body: Bilingual;
   badge?: Bilingual;
-  primary: { label: Bilingual; to: string };
+  primary?: { label: Bilingual; to: string };
   secondary?: { label: Bilingual; to: string };
 }

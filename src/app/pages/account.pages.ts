@@ -738,8 +738,8 @@ function yearOf(value?: string): string {
             <p class="wishlist-row__brand">{{ locale.tr(p.brand) }}</p>
             <a [routerLink]="['/product', p.slug]" class="wishlist-row__name">{{ locale.tr(p.name) }}</a>
             <div class="wishlist-row__meta">
-              <span class="wishlist-row__price">{{ p.price | sar }}</span>
               <span *ngIf="p.compareAt" class="wishlist-row__was">{{ p.compareAt | sar }}</span>
+              <span class="wishlist-row__price">{{ p.price | sar }}</span>
             </div>
             <div class="wishlist-row__actions">
               <button type="button" class="wishlist-row__cart" [disabled]="p.stock === 0" (click)="addOne(p)">

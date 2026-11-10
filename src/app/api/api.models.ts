@@ -7,6 +7,8 @@ export interface ApiProduct {
   descriptionAr?: string | null;
   descriptionEn?: string | null;
   price: number;
+  oldPrice?: number | null;
+  newPrice?: number | null;
   discountPercent?: number | null;
   discountDays?: number | null;
   discountStartsAt?: string | null;
@@ -15,6 +17,7 @@ export interface ApiProduct {
   finalPrice?: number | null;
   hasOffer?: boolean;
   isNew?: boolean;
+  isExclusive?: boolean;
   createdAt?: string | null;
   isAvailable?: boolean;
   delivery?: string | null;
@@ -82,4 +85,55 @@ export interface ApiCartItem {
 export interface ApiCart {
   items?: ApiCartItem[];
   cartItems?: ApiCartItem[];
+}
+
+export interface ApiAnnouncement {
+  id: number;
+  text?: string | null;
+  textAr?: string | null;
+  textEn?: string | null;
+  link?: string | null;
+  sortOrder?: number | null;
+  isActive?: boolean | null;
+}
+
+export interface ApiAdvertisement {
+  id: number;
+  imageUrl?: string | null;
+  badge?: string | null;
+  badgeAr?: string | null;
+  badgeEn?: string | null;
+  eyebrow?: string | null;
+  eyebrowAr?: string | null;
+  eyebrowEn?: string | null;
+  heading?: string | null;
+  headingAr?: string | null;
+  headingEn?: string | null;
+  body?: string | null;
+  bodyAr?: string | null;
+  bodyEn?: string | null;
+  primaryLabel?: string | null;
+  primaryLabelAr?: string | null;
+  primaryLabelEn?: string | null;
+  primaryLink?: string | null;
+  secondaryLabel?: string | null;
+  secondaryLabelAr?: string | null;
+  secondaryLabelEn?: string | null;
+  secondaryLink?: string | null;
+  sortOrder?: number | null;
+  isActive?: boolean | null;
+}
+
+export interface ApiVideo {
+  id: number;
+  title?: string | null;
+  titleAr?: string | null;
+  titleEn?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  videoUrl?: string | null;
+  thumbnailUrl?: string | null;
+  sortOrder?: number | null;
+  isActive?: boolean | null;
 }

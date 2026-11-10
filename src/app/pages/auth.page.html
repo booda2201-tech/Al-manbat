@@ -27,31 +27,22 @@
 
       <div class="flex-1 overflow-y-auto px-7 pb-8 pt-5 sm:px-9">
         <form class="space-y-5" (submit)="submit($event)">
-          <div *ngIf="signup" class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <label class="auth-label" for="first-name">
-                <span>{{ locale.isAr() ? 'الاسم الأول' : 'First name' }}</span>
-                <span>{{ locale.isAr() ? 'First name' : 'الاسم الأول' }}</span>
-              </label>
-              <input id="first-name" required [(ngModel)]="firstName" name="firstName" class="auth-input" [placeholder]="locale.isAr() ? 'فهد' : 'Fahd'" autocomplete="given-name" />
-            </div>
-            <div class="space-y-1.5">
-              <label class="auth-label" for="last-name">
-                <span>{{ locale.isAr() ? 'اسم العائلة' : 'Last name' }}</span>
-                <span>{{ locale.isAr() ? 'Last name' : 'اسم العائلة' }}</span>
-              </label>
-              <input id="last-name" required [(ngModel)]="lastName" name="lastName" class="auth-input" [placeholder]="locale.isAr() ? 'العلي' : 'Al-Ali'" autocomplete="family-name" />
-            </div>
+          <div *ngIf="signup" class="space-y-1.5">
+            <label class="auth-label" for="full-name">
+              <span>{{ locale.isAr() ? 'الاسم' : 'Full name' }}</span>
+              <span>{{ locale.isAr() ? 'Full name' : 'الاسم' }}</span>
+            </label>
+            <input id="full-name" required [(ngModel)]="fullName" name="fullName" class="auth-input" [placeholder]="locale.isAr() ? 'فهد العلي' : 'Fahd Al-Ali'" autocomplete="name" />
           </div>
 
           <div class="space-y-1.5">
             <label class="auth-label" for="phone">
-              <span>{{ locale.isAr() ? 'الجوال' : 'Mobile' }}</span>
-              <span>{{ locale.isAr() ? 'Mobile' : 'الجوال' }}</span>
+              <span>{{ locale.isAr() ? 'رقم التليفون' : 'Phone' }}</span>
+              <span>{{ locale.isAr() ? 'Phone' : 'رقم التليفون' }}</span>
             </label>
             <div class="auth-field">
               <app-icon name="phone" [size]="18"></app-icon>
-              <input id="phone" required type="tel" [(ngModel)]="phone" name="phone" class="auth-input" placeholder="05XXXXXXXX" autocomplete="tel" inputmode="tel" />
+              <input id="phone" required type="tel" [(ngModel)]="phone" name="phone" class="auth-input" placeholder="01XXXXXXXXX" autocomplete="tel" inputmode="tel" />
             </div>
           </div>
 
@@ -71,17 +62,6 @@
               <button type="button" class="auth-eye" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? (locale.isAr() ? 'إخفاء' : 'Hide') : (locale.isAr() ? 'إظهار' : 'Show')">
                 <app-icon [name]="showPassword ? 'eye-off' : 'eye'" [size]="16"></app-icon>
               </button>
-            </div>
-          </div>
-
-          <div *ngIf="signup" class="space-y-1.5">
-            <label class="auth-label" for="confirm-password">
-              <span>{{ locale.isAr() ? 'تأكيد كلمة المرور' : 'Confirm password' }}</span>
-              <span>{{ locale.isAr() ? 'Confirm' : 'تأكيد' }}</span>
-            </label>
-            <div class="auth-field">
-              <app-icon name="lock" [size]="18"></app-icon>
-              <input id="confirm-password" required [type]="showPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword" name="confirmPassword" class="auth-input" placeholder="••••••••" autocomplete="new-password" />
             </div>
           </div>
 

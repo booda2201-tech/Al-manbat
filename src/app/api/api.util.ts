@@ -399,6 +399,23 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
   }
   if (body && typeof body === 'object') {
     const record = body as Record<string, unknown>;
+    if (typeof record['text'] === 'string') {
+      const raw = record['text'].trim();
+      if (raw.startsWith('{') || raw.startsWith('[') || raw.startsWith('"')) {
+        try {
+          const nested = apiErrorMessage(new HttpErrorResponse({ error: JSON.parse(raw), status: error.status }), '');
+          if (nested) return nested;
+        } catch {
+          /* keep the raw text */
+        }
+      }
+      const text = readableApiText(raw);
+      if (text) return text;
+    }
+    if (typeof record['detail'] === 'string') {
+      const text = readableApiText(record['detail']);
+      if (text) return text;
+    }
     if (typeof record['message'] === 'string') {
       const text = readableApiText(record['message']);
       if (text) return text;
@@ -435,5 +452,7 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
       ? 'الخادم رفض تسجيل الدخول. اكتب رقم الجوال كما هو محفوظ في الحساب، بدون + أو مسافات.'
       : 'حدث عطل في الخادم. حاول مرة أخرى بعد قليل.';
   }
-  return fallback;
+  if (error.status === 404) return 'الطلب مش موجود على السيرفر.';
+  if (error.status === 400) return 'السيرفر رفض البيانات. راجع الحقول وحاول مرة أخرى.';
+  return fallback === 'LOGIN' || fallback === 'REGISTER' ? fallback : 'تعذر تنفيذ الطلب. حاول مرة أخرى.';
 }

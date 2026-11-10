@@ -4,6 +4,27 @@ import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from
 import { apiErrorMessage, apiUrl, extractEntityId, isDeniedAccess, parseAuthBody, unwrapList } from '../api/api.util';
 import type { ApiCartItem } from '../api/api.models';
 
+export interface ShippingFeeRow {
+  governorate: string;
+  fee: number;
+}
+
+export interface WheelPrizeRow {
+  id: number;
+  labelAr: string;
+  labelEn: string;
+  detailAr?: string | null;
+  detailEn?: string | null;
+  kind: string;
+  percent?: number | null;
+}
+
+export interface WheelSpinRow extends WheelPrizeRow {
+  prizeId: number;
+  index: number;
+  token?: string | null;
+}
+
 export interface RemoteLine {
   productId: string;
   qty: number;
@@ -74,9 +95,39 @@ export class ShopApiService {
     return this.http.delete(apiUrl('/api/Cart/items/RemoveItem'), { params: { productId } });
   }
 
-  checkout(dto: { addressId: number; paymentMethod: 'Cash' | 'Visa'; notes?: string }): Observable<{ id: string }> {
-    if (!dto.addressId || !Number.isFinite(dto.addressId)) {
-      return throwError(() => new Error('ADDRESS'));
+  getShippingFees(): Observable<ShippingFeeRow[]> {
+    return this.http.get(apiUrl('/api/Shipping/GetAll'), { responseType: 'text' }).pipe(
+      map((body) =>
+        (unwrapList(body) as Record<string, unknown>[]).map((row) => ({
+          governorate: String(row['governorate'] ?? row['Governorate'] ?? ''),
+          fee: Number(row['price'] ?? row['Price']) || 0,
+        }))
+      ),
+      catchError(() => of([]))
+    );
+  }
+
+  getWheelPrizes(): Observable<WheelPrizeRow[]> {
+    return this.http.get<WheelPrizeRow[]>(apiUrl('/api/Wheel/GetPrizes'), { params: { activeOnly: 'true' } });
+  }
+
+  spinWheel(): Observable<WheelSpinRow> {
+    return this.http.post<WheelSpinRow>(apiUrl('/api/Wheel/Spin'), {});
+  }
+
+  checkout(dto: {
+    name: string;
+    phone: string;
+    governorate: string;
+    city: string;
+    address: string;
+    paymentMethod: 'cash' | 'visa';
+    notes?: string;
+    spinToken?: string;
+    items: { productId: number; quantity: number }[];
+  }): Observable<{ id: string }> {
+    if (!dto.items.length) {
+      return throwError(() => new Error('CART_EMPTY'));
     }
     return this.http
       .post(apiUrl('/api/Orders/Checkout'), dto, { observe: 'response', responseType: 'text' })

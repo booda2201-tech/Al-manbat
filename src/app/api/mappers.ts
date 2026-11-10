@@ -64,23 +64,18 @@ export function mapProduct(
 ): Product {
   const name = bilingual(dto.nameAr, dto.nameEn, dto.name || `Product ${dto.id}`);
   const listPrice = readNum(dto, ['price', 'Price']);
-  const percent = Math.min(90, Math.max(0, readNum(dto, ['discountPercent', 'DiscountPercent'])));
-  const computedSale = percent > 0 ? Math.round(listPrice * (1 - percent / 100) * 100) / 100 : listPrice;
-  const hasFinal = dto.finalPrice != null || (dto as { FinalPrice?: number | null }).FinalPrice != null;
-  const apiFinal = hasFinal ? readNum(dto, ['finalPrice', 'FinalPrice']) : listPrice;
-  const onOffer = percent > 0;
-  const finalPrice = onOffer
-    ? hasFinal && apiFinal > 0 && (listPrice <= 0 || apiFinal < listPrice)
-      ? apiFinal
-      : computedSale
-    : hasFinal
-      ? apiFinal
-      : listPrice;
+  const newPrice = readNum(dto, ['newPrice', 'NewPrice']);
+  const finalRaw = readNum(dto, ['finalPrice', 'FinalPrice']);
+  const selling = newPrice > 0 ? newPrice : finalRaw > 0 ? finalRaw : listPrice;
+  const previous = readNum(dto, ['oldPrice', 'OldPrice']);
+  const compare = previous > selling ? previous : listPrice > selling ? listPrice : 0;
+  const onOffer = compare > selling;
   const images = (dto.imageUrls ?? []).filter(Boolean);
   const image = images[0] || FALLBACK_IMAGE;
   const varietySlug = slugify(dto.varietyEn || dto.varietyAr || dto.sizeEn || 'all');
   const badges: Product['badges'] = [];
   if (dto.isNew) badges.push('new');
+  if (dto.isExclusive) badges.push('exclusive');
   if (onOffer) badges.push('deal');
   if (extras?.bestSellerIds?.has(dto.id)) badges.push('bestseller');
   const organicHay = `${dto.categoryNameEn ?? ''} ${dto.categoryNameAr ?? ''} ${dto.nameEn ?? ''}`.toLowerCase();
@@ -113,8 +108,8 @@ export function mapProduct(
     brand: bilingual(dto.originAr, dto.originEn, 'Almanbat'),
     category: categorySlug,
     subcategory: varietySlug,
-    price: finalPrice,
-    compareAt: onOffer && listPrice > 0 ? listPrice : undefined,
+    price: selling,
+    compareAt: onOffer ? compare : undefined,
     rating: dto.averageRating ?? 0,
     reviews: dto.reviewsCount ?? 0,
     stock: dto.isAvailable === false ? 0 : 24,
@@ -180,6 +175,33 @@ export function mapReview(raw: unknown): Review | null {
     body: { ar: body, en: body },
     verified: true,
   };
+}
+
+export function mapExclusiveProducts(
+  rows: ApiProduct[],
+  apiCategories: ApiCategory[],
+  catalog: Product[],
+  bestSellers: ApiProduct[] = []
+): Product[] {
+  const slugById = new Map<number, string>();
+  for (const cat of apiCategories) slugById.set(cat.id, categorySlugFromApi(cat));
+  const bestSellerIds = new Set(bestSellers.map((p) => p.id));
+  const byId = new Map(catalog.map((p) => [p.id, p]));
+  return rows.map((dto) => {
+    const existing = byId.get(String(dto.id));
+    if (existing) {
+      return existing.badges.includes('exclusive')
+        ? existing
+        : { ...existing, badges: [...existing.badges, 'exclusive' as const] };
+    }
+    const product = mapProduct(
+      dto,
+      slugById.get(dto.categoryId) || slugify(dto.categoryNameEn || `category-${dto.categoryId}`),
+      { bestSellerIds }
+    );
+    if (!product.badges.includes('exclusive')) product.badges.push('exclusive');
+    return product;
+  });
 }
 
 export function hydrateCatalog(

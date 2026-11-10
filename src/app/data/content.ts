@@ -228,6 +228,14 @@ export const supportChannels: Array<{title: Bilingual;detail: Bilingual;action: 
 }];
 
 
+export const placeVideo: {id: string;title: Bilingual;place: Bilingual;poster: string;src: string;} = {
+  id: 'grove',
+  title: { ar: 'بستان المنبت', en: 'The Almanbat grove' },
+  place: { ar: 'البستان', en: 'The grove' },
+  poster: images.hero,
+  src: '',
+};
+
 export const brandPillars: Array<{title: Bilingual;body: Bilingual;}> = [
 {
   title: { ar: 'الجذور', en: 'Roots' },

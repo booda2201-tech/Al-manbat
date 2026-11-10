@@ -49,12 +49,10 @@ export class RatingComponent {
   standalone: true,
   imports: [CommonModule, SarPipe],
   template: `
-    <div [ngClass]="stack ? 'flex flex-col items-start gap-1.5' : 'flex flex-wrap items-baseline gap-x-2 gap-y-1.5'">
-      <span class="price font-bold tracking-tight" [ngClass]="main">{{ price | sar }}</span>
-      <div *ngIf="compareAt || pct" class="flex flex-wrap items-center gap-2">
-        <span *ngIf="compareAt" class="text-xs text-ink-muted line-through">{{ compareAt | sar }}</span>
-        <span *ngIf="pct" class="inline-flex items-center rounded-full bg-clay-400/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-clay-400">{{ locale.ui('save') }} {{ pct }}%</span>
-      </div>
+    <div [ngClass]="stack ? 'flex flex-col items-start gap-1' : 'flex flex-wrap items-baseline gap-x-2.5 gap-y-1'">
+      <span *ngIf="compareAt" class="price-was font-semibold leading-none text-[#3c4124]" [ngClass]="was">{{ compareAt | sar }}</span>
+      <span class="price font-bold leading-none tracking-tight" [ngClass]="main">{{ price | sar }}</span>
+      <span *ngIf="pct" class="inline-flex items-center rounded-full bg-gold-400/25 px-2 py-0.5 font-semibold text-olive-800" [ngClass]="badge">{{ pct }}%</span>
     </div>
   `,
 })
@@ -67,8 +65,14 @@ export class PriceBlockComponent {
   get pct(): number | null {
     return discountPercent(this.price, this.compareAt);
   }
+  get was(): string {
+    return this.size === 'lg' ? 'text-[26px] lg:text-[32px]' : this.size === 'md' ? 'text-lg' : 'text-[15px]';
+  }
   get main(): string {
-    return this.size === 'lg' ? 'text-[32px]' : this.size === 'md' ? 'text-lg' : 'text-[15px]';
+    return this.size === 'lg' ? 'text-[36px] lg:text-[46px]' : this.size === 'md' ? 'text-2xl' : 'text-[17px]';
+  }
+  get badge(): string {
+    return this.size === 'lg' ? 'text-sm' : 'text-xs';
   }
 }
 
@@ -107,7 +111,7 @@ export class QtyComponent {
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent, RatingComponent, PriceBlockComponent, CountPipe],
+  imports: [CommonModule, RouterLink, IconComponent, RatingComponent, PriceBlockComponent],
   template: `
     <article
       class="product-card group relative flex h-full flex-col overflow-hidden rounded-xl border border-olive-800/10 bg-white"
@@ -146,26 +150,13 @@ export class QtyComponent {
       <div class="product-card__body">
         <div class="product-card__head">
           <p class="product-card__brand">{{ locale.tr(product.brand) }}</p>
-          <app-rating class="product-card__rating" [rating]="product.rating" size="xs"></app-rating>
+          <app-rating *ngIf="product.rating > 0 || product.reviews > 0" class="product-card__rating" [rating]="product.rating" size="xs"></app-rating>
         </div>
         <h3 class="product-card__name">
           <a [routerLink]="['/product', product.slug]">{{ locale.tr(product.name) }}</a>
         </h3>
         <div class="product-card__foot">
           <app-price-block [price]="product.price" [compareAt]="product.compareAt" size="sm"></app-price-block>
-          <p class="product-card__meta">
-            <span class="product-card__stock" [ngClass]="stockTextClass">
-              <span class="product-card__dot" [ngClass]="stockDotClass"></span>
-              {{ stockLabel }}
-            </span>
-            <span class="product-card__ship">
-              <app-icon name="truck" [size]="12"></app-icon>
-              {{ product.freeShipping ? locale.ui('freeShipping') : locale.ui('shipping') }}
-              ·
-              {{ product.deliveryDays | countLoc }}
-              {{ locale.ui('daysDelivery') }}
-            </span>
-          </p>
         </div>
       </div>
     </article>
@@ -195,21 +186,6 @@ export class ProductCardComponent {
     return this.comparing
       ? 'is-on bg-olive-700 text-sand-50'
       : 'bg-white/90 text-olive-700 hover:bg-white';
-  }
-  get stockTextClass(): string {
-    if (this.product.stock === 0) return 'text-ink-muted';
-    if (this.product.stock <= 10) return 'text-state-warning';
-    return 'text-state-success';
-  }
-  get stockDotClass(): string {
-    if (this.product.stock === 0) return 'bg-ink-muted';
-    if (this.product.stock <= 10) return 'bg-state-warning';
-    return 'bg-state-success';
-  }
-  get stockLabel(): string {
-    if (this.product.stock === 0) return this.locale.ui('outOfStock');
-    if (this.product.stock <= 10) return `${this.locale.ui('lowStock')} · ${this.product.stock}`;
-    return this.locale.ui('inStock');
   }
   badgeTone(b: string): string {
     const map: Record<string, string> = {

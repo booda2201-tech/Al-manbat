@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, NgZone, OnDestroy, OnInit, computed, effect, signal, untracked } from '@angular/core';
+import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, QueryList, ViewChildren, computed, effect, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { HeroAd, Category } from '../types';
-import { brandPillars } from '../data/content';
+import type { HeroAd, Category, Bilingual } from '../types';
+import { placeVideo } from '../data/content';
 import { HERO_AD_MS, desktopHeroAds, heroAds } from '../data/hero-ads';
+import { ContentApiService, mapAdvertisement, bySort } from '../services/content-api.service';
 import { images } from '../data/images';
 import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
@@ -39,7 +40,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   images = images;
   heroIndex = 0;
   heroPaused = false;
-  pillars = brandPillars;
+  placeFilms: Array<{ title: Bilingual; place: Bilingual; poster: string; src: string }> = [];
+  placeIndex = 0;
+  placePlaying = false;
+  @ViewChildren('slideFilm') slideFilms?: QueryList<ElementRef<HTMLVideoElement>>;
   hours = '06';
   minutes = '42';
   seconds = '18';
@@ -53,9 +57,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   private desktopMq?: MediaQueryList;
   private desktopMqListener?: (event: MediaQueryListEvent) => void;
 
+  private readonly campaignAds = signal<HeroAd[]>([]);
+
   constructor(
     public locale: LocaleService,
     public catalog: CatalogService,
+    private content: ContentApiService,
     private zone: NgZone
   ) {
     if (typeof window !== 'undefined') {
@@ -83,6 +90,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     const list = this.catalog.withBadge('new');
     return (list.length ? list : this.catalog.all()).slice(0, 8);
   });
+  readonly exclusive = computed(() => this.catalog.exclusive().slice(0, 8));
   readonly deals = computed(() => this.catalog.withBadge('deal').slice(0, 8));
   readonly spots = computed(() =>
     this.categories()
@@ -97,6 +105,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   );
 
   private readonly heroSlides = computed(() => {
+    const remote = this.campaignAds();
+    if (remote.length) return remote;
     if (this.desktop()) return this.desktopSlides();
     const slides = this.catalog.categories().map((category) => this.slideFromCategory(category));
     return slides.length ? slides : heroAds;
@@ -130,6 +140,64 @@ export class HomeComponent implements OnInit, OnDestroy {
     const prev = (this.heroIndex - 1 + n) % n;
     const next = (this.heroIndex + 1) % n;
     return index === this.heroIndex || index === next || index === prev;
+  }
+
+  get placeReel(): Array<{ title: Bilingual; place: Bilingual; poster: string; src: string }> {
+    return this.placeFilms;
+  }
+
+  playSlide(index: number): void {
+    const film = this.slideFilms?.get(index)?.nativeElement;
+    if (!film?.src) return;
+    this.slideFilms?.forEach((item, itemIndex) => {
+      if (itemIndex !== index) item.nativeElement.pause();
+    });
+    this.placeIndex = index;
+    this.placePlaying = true;
+    film.muted = false;
+    const played = film.play();
+    if (played) played.catch(() => { this.placePlaying = false; });
+  }
+
+  stepPlace(dir: number): void {
+    const count = this.placeReel.length;
+    if (count < 2) return;
+    const keepPlaying = this.placePlaying;
+    this.slideFilms?.forEach((item) => item.nativeElement.pause());
+    this.placePlaying = false;
+    this.placeIndex = (this.placeIndex + dir + count) % count;
+    if (keepPlaying) setTimeout(() => this.playSlide(this.placeIndex));
+  }
+
+  showPlay(index: number): boolean {
+    return !this.placePlaying || this.placeIndex !== index;
+  }
+
+  isPlace(index: number): boolean {
+    return this.placeIndex === index;
+  }
+
+  hasManyFilms(): boolean {
+    return this.placeReel.length > 1;
+  }
+
+  dotClass(index: number): string {
+    return this.placeIndex === index ? 'w-6 bg-gold-400' : 'w-2 bg-sand-50/70';
+  }
+
+  goPlace(index: number): void {
+    if (index === this.placeIndex || index < 0 || index >= this.placeReel.length) return;
+    this.slideFilms?.forEach((item) => item.nativeElement.pause());
+    this.placePlaying = false;
+    this.placeIndex = index;
+  }
+
+  onPlaceEnded(): void {
+    if (this.placeReel.length > 1) {
+      this.stepPlace(1);
+      return;
+    }
+    this.placePlaying = false;
   }
 
   catCount(cat: Category): number {
@@ -267,7 +335,35 @@ export class HomeComponent implements OnInit, OnDestroy {
     else this.resumeHero();
   }
 
+  webLink(to?: string): boolean {
+    return !!to && /^https?:\/\//i.test(to);
+  }
+
   ngOnInit(): void {
+    this.content.videos().subscribe((rows) => {
+      const films = bySort(rows)
+        .filter((row) => row.isActive !== false && /^https?:\/\//i.test((row.videoUrl || '').trim()))
+        .map((row) => ({
+          title: {
+            ar: (row.titleAr || row.title || row.titleEn || placeVideo.title.ar).trim(),
+            en: (row.titleEn || row.title || row.titleAr || placeVideo.title.en).trim(),
+          },
+          place: placeVideo.place,
+          poster: (row.thumbnailUrl || '').trim() || placeVideo.poster,
+          src: (row.videoUrl || '').trim(),
+        }));
+      if (!films.length) return;
+      this.placeFilms = films;
+      this.placeIndex = 0;
+      this.placePlaying = false;
+    });
+    this.content.advertisements().subscribe((rows) => {
+      const slides = bySort(rows).map(mapAdvertisement).filter((ad): ad is HeroAd => !!ad);
+      if (slides.length) {
+        this.campaignAds.set(slides);
+        this.heroIndex = 0;
+      }
+    });
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.watchDesktopHero();
     this.startHeroClock();
@@ -308,7 +404,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       const slug = ad.id.includes('grape') ? grape : ad.id.includes('olives') ? olives : pickles;
       return {
         ...ad,
-        primary: { ...ad.primary, to: `/listing/${slug}` },
+        primary: ad.primary ? { ...ad.primary, to: `/listing/${slug}` } : undefined,
       };
     });
   }

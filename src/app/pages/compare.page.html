@@ -114,7 +114,10 @@
                         {{ locale.tr(p.name) }}
                       </a>
                       <div class="compare-card__buy">
-                        <p class="compare-card__price">{{ p.price | sar }}</p>
+                        <p class="compare-card__price">
+                          <span *ngIf="p.compareAt" class="compare-card__was">{{ p.compareAt | sar }}</span>
+                          <span>{{ p.price | sar }}</span>
+                        </p>
                         <button
                           type="button"
                           class="compare-card__cart"
@@ -154,7 +157,10 @@
             <div *ngIf="showPriceRow()" class="compare-row">
               <div class="compare-axis">{{ locale.ui('price') }}</div>
               <div *ngFor="let p of columns()" class="compare-cell" [class.is-best]="isBestPrice(p)" [class.is-lead]="isLead(p)">
-                <span class="compare-cell__value">{{ p.price | sar }}</span>
+                <span class="compare-cell__value">
+                  <span *ngIf="p.compareAt" class="price-was me-2 text-base font-semibold">{{ p.compareAt | sar }}</span>
+                  {{ p.price | sar }}
+                </span>
               </div>
             </div>
             <div *ngIf="showRatingRow()" class="compare-row">
@@ -236,7 +242,10 @@
           <span class="min-w-0 flex-1">
             <span class="block text-2xs uppercase tracking-[0.12em] text-gold-400">{{ locale.tr(p.brand) }}</span>
             <span class="mt-0.5 block truncate text-[13px] font-medium text-olive-800">{{ locale.tr(p.name) }}</span>
-            <span class="price mt-0.5 block text-sm font-bold">{{ p.price | sar }}</span>
+            <span class="mt-0.5 flex flex-wrap items-baseline gap-x-2">
+              <span *ngIf="p.compareAt" class="price-was text-[15px] font-semibold">{{ p.compareAt | sar }}</span>
+              <span class="price text-base font-bold">{{ p.price | sar }}</span>
+            </span>
           </span>
           <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-olive-900">
             <app-icon name="plus" [size]="16"></app-icon>
