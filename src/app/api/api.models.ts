@@ -44,6 +44,7 @@ export interface ApiProduct {
   categoryNameAr?: string | null;
   categoryNameEn?: string | null;
   imageUrls?: string[] | null;
+  images?: { id: number; url: string }[] | null;
   averageRating?: number | null;
   reviewsCount?: number | null;
 }

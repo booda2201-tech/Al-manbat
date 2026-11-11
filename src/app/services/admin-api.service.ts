@@ -50,6 +50,18 @@ export class AdminApiService {
     return this.http.delete(apiUrl(`/api/Products/DeleteProduct/${id}`)).pipe(this.fail('DELETE_PRODUCT'));
   }
 
+  deleteProductImage(productId: number, imageId: number): Observable<unknown> {
+    return this.http
+      .delete(apiUrl(`/api/Products/DeleteProductImage/${productId}/${imageId}`))
+      .pipe(this.fail('DELETE_IMAGE'));
+  }
+
+  deleteProductImageByUrl(productId: number, url: string): Observable<unknown> {
+    return this.http
+      .delete(apiUrl(`/api/Products/DeleteProductImageByUrl/${productId}`), { params: { url } })
+      .pipe(this.fail('DELETE_IMAGE'));
+  }
+
   addCategory(dto: Partial<ApiCategory>, image?: File | null): Observable<unknown> {
     return this.http.post(apiUrl('/api/Categories/AddCategory'), toCategoryFormData(dto, image)).pipe(this.fail('ADD_CATEGORY'));
   }

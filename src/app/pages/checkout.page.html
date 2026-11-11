@@ -90,7 +90,7 @@
               <li *ngFor="let r of rows()" class="checkout-review-item">
                 <span class="checkout-review-item__img">
                   <img [src]="r.product.image" alt="" />
-                  <span class="checkout-review-item__qty">{{ r.qty }}</span>
+                  <span class="checkout-review-item__qty" *ngIf="r.qty > 1">{{ r.qty }}</span>
                 </span>
                 <span class="min-w-0 flex-1">
                   <span class="checkout-review-item__name">{{ locale.tr(r.product.name) }}</span>

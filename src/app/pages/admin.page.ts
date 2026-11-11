@@ -29,6 +29,7 @@ import { completeProductCopy, type ProductCopySuggestion } from '../services/pro
 interface ProductImageSlot {
   preview: string;
   remote?: string;
+  imageId?: number;
   file?: File;
   broken?: boolean;
 }
@@ -753,11 +754,30 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   removeProductImage(index: number, ev?: Event): void {
     ev?.preventDefault();
     ev?.stopPropagation();
-    const next = this.productDraft.images.filter((_, i) => i !== index);
     const removed = this.productDraft.images[index];
+    const next = this.productDraft.images.filter((_, i) => i !== index);
     this.revokeSlot(removed);
     this.productDraft.images = next;
-    if (this.productDraft.id && next.length) this.persistGallery();
+    if (!this.productDraft.id || !removed) return;
+    const productId = this.productDraft.id;
+    const request = removed.imageId
+      ? this.admin.deleteProductImage(productId, removed.imageId)
+      : removed.remote
+        ? this.admin.deleteProductImageByUrl(productId, removed.remote)
+        : null;
+    if (!request) return;
+    this.uploadingImages = true;
+    request.pipe(finalize(() => { this.uploadingImages = false; })).subscribe({
+      next: (body) => this.afterImageSaved(body),
+      error: (err) => {
+        this.productDraft.images = [
+          ...this.productDraft.images.slice(0, index),
+          removed,
+          ...this.productDraft.images.slice(index),
+        ];
+        this.fail(err);
+      },
+    });
   }
 
   setCoverImage(index: number, ev?: Event): void {
@@ -856,9 +876,13 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       return;
     }
     if (!body) return;
-    const urls = productImageUrls(body);
-    if (urls.length && this.editingProduct) {
-      this.editingProduct = { ...this.editingProduct, imageUrls: urls };
+    const images = readProductImages(body);
+    if (this.editingProduct) {
+      this.editingProduct = {
+        ...this.editingProduct,
+        imageUrls: images.map((item) => item.url),
+        images,
+      };
       this.setProductDraft(fromProduct(this.editingProduct));
     }
     this.toast(this.locale.isAr() ? 'تم تحديث الصور' : 'Images updated', 'success');
@@ -1573,10 +1597,7 @@ function fromProduct(p: ApiProduct): ProductDraft {
     price: selling,
     oldPrice: onOffer ? list : null,
     categoryId: p.categoryId,
-    images: (p.imageUrls ?? []).filter(Boolean).map((url) => ({
-      preview: url,
-      remote: isRemoteImageUrl(url) ? url : undefined,
-    })),
+    images: productImageSlots(p),
     isNew: !!p.isNew,
     isAvailable: p.isAvailable !== false,
     isExclusive: !!p.isExclusive,
@@ -1646,6 +1667,37 @@ function readDays(value: unknown): number | null {
 
 function isRemoteImageUrl(url: string): boolean {
   return /^https?:\/\//i.test(url) || (url.startsWith('/') && !url.startsWith('//'));
+}
+
+function productImageSlots(p: ApiProduct): ProductImageSlot[] {
+  const rows = p.images?.length
+    ? p.images
+    : (p.imageUrls ?? []).filter(Boolean).map((url) => ({ id: 0, url }));
+  return rows
+    .filter((item) => !!item.url)
+    .map((item) => ({
+      preview: item.url,
+      remote: isRemoteImageUrl(item.url) ? item.url : undefined,
+      imageId: item.id > 0 ? item.id : undefined,
+    }));
+}
+
+function readProductImages(body: unknown): { id: number; url: string }[] {
+  const inner = unwrapPayload(body);
+  const record = inner && typeof inner === 'object' ? (inner as Record<string, unknown>) : null;
+  const images = record?.['images'] ?? record?.['Images'];
+  if (Array.isArray(images)) {
+    return images
+      .map((item) => {
+        const row = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+        return {
+          id: Number(row['id'] ?? row['Id']) || 0,
+          url: String(row['url'] ?? row['Url'] ?? '').trim(),
+        };
+      })
+      .filter((item) => item.url);
+  }
+  return productImageUrls(body).map((url) => ({ id: 0, url }));
 }
 
 function productImageUrls(body: unknown): string[] {

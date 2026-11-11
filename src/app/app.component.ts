@@ -72,9 +72,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   footerCols = [
     {
       title: { ar: 'خدمة العملاء', en: 'Customer care' },
-      links: [
-        { label: { ar: 'الأسئلة الشائعة', en: 'FAQ' }, to: '/faq' },
-      ],
+      links: [],
     },
     {
       title: { ar: 'المنبت', en: 'Almanbat' },

@@ -9,7 +9,7 @@
     <div class="mx-auto flex h-10 max-w-shell items-center gap-4 px-4 text-[11px] lg:px-10 lg:text-xs">
       <div class="hidden shrink-0 items-center gap-2 lg:flex">
         <app-icon name="pin" [size]="14" class="text-gold-300"></app-icon>
-        <span class="text-sand-100/80">{{ locale.isAr() ? 'التوصيل إلى القاهرة' : 'Delivering to Cairo' }}</span>
+        <span class="text-sand-100/80">{{ locale.isAr() ? 'التوصيل لكل المحافظات' : 'Delivery to every governorate' }}</span>
       </div>
       <div
         class="ticker min-w-0 flex-1"
@@ -223,21 +223,16 @@
           <h3 class="mb-4 text-2xs uppercase tracking-[0.2em] text-gold-300">{{ locale.ui('allCategories') }}</h3>
           <a *ngFor="let c of categories" [routerLink]="['/category', c.slug]" class="mb-2.5 block text-[13px] text-sand-100/75 hover:text-gold-300">{{ locale.tr(c.name) }}</a>
         </div>
-        <div *ngFor="let col of footerCols">
+        <div *ngFor="let col of footerCols; let i = index">
           <h3 class="mb-4 text-2xs uppercase tracking-[0.2em] text-gold-300">{{ locale.tr(col.title) }}</h3>
           <a *ngFor="let l of col.links" [routerLink]="l.to" class="mb-2.5 block text-[13px] text-sand-100/75 hover:text-gold-300">{{ locale.tr(l.label) }}</a>
+          <div *ngIf="i === 0" class="mt-4 flex flex-col items-start gap-2">
+            <a href="tel:01210077800" class="text-[13px] text-sand-100/75 transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01210077800</span></a>
+            <a href="tel:01210077500" class="text-[13px] text-sand-100/75 transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01210077500</span></a>
+            <span class="mt-2 text-2xs tracking-[0.16em] text-gold-300">{{ locale.isAr() ? 'متابعة الطلبات' : 'Order follow-up' }}</span>
+            <a href="tel:01050302172" class="text-[13px] text-sand-100/75 transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01050302172</span></a>
+          </div>
         </div>
-      </div>
-      <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-b border-sand-100/10 py-4 text-[13px] text-sand-100/75">
-        <p class="flex items-baseline gap-x-3">
-          <span class="text-2xs tracking-[0.16em] text-gold-300">{{ locale.isAr() ? 'شكاوى' : 'Complaints' }}</span>
-          <a href="tel:01210077800" class="transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01210077800</span></a>
-          <a href="tel:01210077500" class="transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01210077500</span></a>
-        </p>
-        <p class="flex items-baseline gap-x-3">
-          <span class="text-2xs tracking-[0.16em] text-gold-300">{{ locale.isAr() ? 'متابعة الطلبات' : 'Order follow-up' }}</span>
-          <a href="tel:01050302172" class="transition-colors duration-200 ease-premium hover:text-gold-300"><span dir="ltr">01050302172</span></a>
-        </p>
       </div>
       <!-- <div class="grid gap-8 border-b border-sand-100/10 py-8 lg:grid-cols-[1.2fr_1fr] lg:py-12">
         <div>

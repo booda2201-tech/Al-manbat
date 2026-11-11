@@ -281,18 +281,15 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       .map((row, index) => {
         const name = row.product.name.ar || row.product.name.en;
         const line = row.product.price * row.qty;
-        const lines = [
-          `*${index + 1}. ${name}*`,
-          `الكمية: ${row.qty}`,
-          `سعر القطعة: ${money(row.product.price)}`,
-        ];
+        const n = (index + 1).toLocaleString('ar-EG');
+        const qty = row.qty.toLocaleString('ar-EG');
+        const lines = [`${n}. ${name}`, `   ${qty} × ${money(row.product.price)}  =  ${money(line)}`];
         if (row.product.compareAt && row.product.compareAt > row.product.price) {
-          lines.push(`قبل الخصم: ${money(row.product.compareAt)}`);
+          lines.push(`   قبل الخصم: ${money(row.product.compareAt)}`);
         }
-        lines.push(`الإجمالي: ${money(line)}`);
         return lines.join('\n');
       })
-      .join('\n\n');
+      .join('\n');
     const prize = this.store.wheel();
     const promo = this.store.promo();
     const subtotal = this.store.subtotal();
@@ -316,36 +313,35 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       : '';
     const shippingText =
       prize?.kind === 'FreeShipping' ? 'مجاني — جائزة العجلة' : shipping === 0 ? 'مجاني' : money(shipping);
-    const text = [
-      ['*طلب جديد — المنبت*', orderId ? `رقم الطلب: ${orderId}` : '', `الوقت: ${orderStamp()}`].filter(Boolean).join('\n'),
-      [
-        '*بيانات العميل*',
-        `الاسم: ${this.name.trim()}`,
-        `التليفون: ${this.phone.trim()}`,
-        `المحافظة: ${this.governorate.trim()}`,
-        `المدينة: ${this.city.trim()}`,
-        `العنوان: ${this.address.trim()}`,
-        'الدفع: عند الاستلام',
-        notes ? `ملاحظات: ${notes}` : '',
-      ]
-        .filter(Boolean)
-        .join('\n'),
-      prizeBlock,
-      `*المنتجات*\n${products}`,
-      [
-        '*الحساب*',
-        `المجموع: ${money(subtotal)}`,
-        wheelDiscount > 0 ? `خصم العجلة${prizeTitle ? ` (${prizeTitle})` : ''}: − ${money(wheelDiscount)}` : '',
-        codeDiscount > 0 ? `كود الخصم${promo ? ` (${promo})` : ''}: − ${money(codeDiscount)}` : '',
-        prize?.kind === 'Gift' && prizeTitle ? `هدية العجلة: ${prizeTitle}` : '',
-        `التوصيل: ${shippingText}`,
-        `*الإجمالي: ${money(this.checkoutTotal())}*`,
-      ]
-        .filter(Boolean)
-        .join('\n'),
+    const place = [this.governorate.trim(), this.city.trim()].filter(Boolean).join('، ');
+    const customer = [
+      '*العميل*',
+      `الاسم: ${this.name.trim()}`,
+      `التليفون: ${this.phone.trim()}`,
+      place ? `العنوان: ${place}` : '',
+      this.address.trim(),
+      notes ? `ملاحظات: ${notes}` : '',
     ]
       .filter(Boolean)
-      .join('\n\n');
+      .join('\n');
+    const totals = [
+      `المجموع: ${money(subtotal)}`,
+      wheelDiscount > 0 ? `خصم العجلة${prizeTitle ? ` (${prizeTitle})` : ''}: − ${money(wheelDiscount)}` : '',
+      codeDiscount > 0 ? `كود الخصم${promo ? ` (${promo})` : ''}: − ${money(codeDiscount)}` : '',
+      prize?.kind === 'Gift' && prizeTitle ? `هدية العجلة: ${prizeTitle}` : '',
+      `التوصيل: ${shippingText}`,
+    ].filter(Boolean);
+    totals.push('', `*المطلوب: ${money(this.checkoutTotal())}*`, 'الدفع عند الاستلام');
+    const rule = '────────────────';
+    const text = [
+      ['*فاتورة — المنبت*', orderId ? `رقم الفاتورة: ${orderId}` : '', `التاريخ: ${orderStamp()}`].filter(Boolean).join('\n'),
+      customer,
+      `*الأصناف*\n${products}`,
+      prizeBlock,
+      totals.join('\n'),
+    ]
+      .filter(Boolean)
+      .join(`\n${rule}\n`);
     return `https://wa.me/${ORDER_WHATSAPP}?text=${encodeURIComponent(text)}`;
   }
 
@@ -462,7 +458,7 @@ function readWhatsappOrder(): string {
 }
 
 function money(amount: number): string {
-  const value = amount.toLocaleString('en-US', {
+  const value = amount.toLocaleString('ar-EG', {
     minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
     maximumFractionDigits: 2,
   });
@@ -471,6 +467,7 @@ function money(amount: number): string {
 
 function orderStamp(): string {
   const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const date = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+  const time = now.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' });
+  return `${date}، ${time}`;
 }

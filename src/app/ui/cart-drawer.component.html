@@ -26,7 +26,7 @@
                 class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-sand-100"
                 (click)="close()"
               >
-                <img [src]="l.product.image" [alt]="locale.tr(l.product.name)" class="h-full w-full object-cover" />
+                <img [src]="l.product.image" [alt]="locale.tr(l.product.name)" class="h-full w-full object-contain p-1" />
               </a>
               <div class="min-w-0 flex-1">
                 <p class="text-2xs uppercase tracking-[0.14em] text-gold-400">{{ locale.tr(l.product.brand) }}</p>
@@ -73,7 +73,7 @@
             <h3 class="text-xs font-semibold uppercase tracking-[0.14em] text-olive-800">{{ locale.ui('savedForLater') }}</h3>
             <ul class="mt-3 space-y-2.5">
               <li *ngFor="let p of saved()" class="flex items-center gap-3">
-                <img [src]="p.image" class="h-14 w-14 shrink-0 rounded-md object-cover" alt="" draggable="false" />
+                <img [src]="p.image" class="h-14 w-14 shrink-0 rounded-md bg-sand-100 object-contain p-0.5" alt="" draggable="false" />
                 <div class="min-w-0 flex-1">
                   <p class="line-clamp-2 text-[13px] font-medium text-olive-800">{{ locale.tr(p.name) }}</p>
                   <p class="mt-0.5 flex flex-wrap items-baseline gap-x-2">
