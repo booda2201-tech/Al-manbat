@@ -4,7 +4,7 @@ import { Observable, catchError, forkJoin, map, of, throwError } from 'rxjs';
 import type { ApiAdvertisement, ApiAnnouncement, ApiCategory, ApiProduct, ApiVideo } from '../api/api.models';
 import { apiErrorMessage, apiUrl, parseAuthBody, unwrapList } from '../api/api.util';
 import type { Order } from '../types';
-import { mapOrder } from './account-api.service';
+import { mapOrder, sortOrdersById } from './account-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminApiService {
@@ -80,7 +80,7 @@ export class AdminApiService {
 
   getOrders(): Observable<Order[]> {
     return this.http.get(apiUrl('/api/Orders/admin/GetAllOrders'), { responseType: 'text' }).pipe(
-      map((body): Order[] => unwrapList(parseAuthBody(body)).map(mapOrder).filter((row): row is Order => !!row)),
+      map((body): Order[] => sortOrdersById(unwrapList(parseAuthBody(body)).map(mapOrder).filter((row): row is Order => !!row))),
       catchError((err) => throwError(() => new Error(apiErrorMessage(err, 'ORDERS'))))
     );
   }

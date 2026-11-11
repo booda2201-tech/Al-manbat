@@ -112,7 +112,9 @@ export class ShopApiService {
   }
 
   spinWheel(): Observable<WheelSpinRow> {
-    return this.http.post<WheelSpinRow>(apiUrl('/api/Wheel/Spin'), {});
+    return this.http.post<WheelSpinRow>(apiUrl('/api/Wheel/Spin'), {}).pipe(
+      catchError((err) => throwError(() => new Error(apiErrorMessage(err, 'SPIN'))))
+    );
   }
 
   checkout(dto: {

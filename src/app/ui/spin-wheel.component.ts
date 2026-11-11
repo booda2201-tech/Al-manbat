@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, HostBinding, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Router } from '@angular/router';
 import { Wheel } from 'spin-wheel';
 import { LocaleService } from '../services/locale.service';
+import { SessionService } from '../services/session.service';
 import { ShopApiService, WheelPrizeRow, WheelSpinRow } from '../services/shop-api.service';
 import { StoreService } from '../services/store.service';
 import { IconComponent } from './icon.component';
@@ -39,8 +41,8 @@ interface SpinSlice {
             <span>{{ locale.isAr() ? slice.ar : slice.en }}</span>
           </span>
         </div>
-        <button type="button" class="spin-hub" (click)="spin()" [disabled]="spinning || !!result || !slices.length">
-          {{ spinning ? '…' : (locale.isAr() ? 'دور' : 'Spin') }}
+        <button type="button" class="spin-hub" (click)="spin()" [disabled]="session.isLoggedIn() && (spinning || !!result || !slices.length)">
+          {{ hubLabel }}
         </button>
       </div>
 
@@ -221,6 +223,8 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     public locale: LocaleService,
+    public session: SessionService,
+    private router: Router,
     private store: StoreService,
     private shop: ShopApiService,
     private zone: NgZone
@@ -255,9 +259,16 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.embedded) document.body.style.overflow = this.bodyOverflow;
   }
 
+  get hubLabel(): string {
+    if (!this.session.isLoggedIn()) return this.locale.isAr() ? 'دخول' : 'Sign in';
+    if (this.spinning) return '…';
+    return this.locale.isAr() ? 'دور' : 'Spin';
+  }
+
   get hint(): string {
     if (!this.loaded) return this.locale.isAr() ? 'بنحمّل العجلة.' : 'Loading the wheel.';
     if (!this.slices.length) return this.locale.isAr() ? 'العجلة مش متاحة دلوقتي.' : 'The wheel is not available right now.';
+    if (!this.session.isLoggedIn()) return this.locale.isAr() ? 'سجل دخول الأول عشان تلف العجلة.' : 'Sign in before you spin.';
     return this.locale.isAr() ? 'اضغط دور وخلي العجلة تقف لوحدها.' : 'Press spin and let the wheel stop.';
   }
 
@@ -267,6 +278,10 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
 
   spin(): void {
     if (this.spinning || this.result || !this.slices.length || !this.wheel) return;
+    if (!this.session.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
     this.spinning = true;
     this.shop.spinWheel().subscribe({
       next: (spin) => {
@@ -275,11 +290,14 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
         this.pendingSpin = spin;
         this.wheel?.spinToItem(index, 4600, true, 5, 1);
       },
-      error: () => {
+      error: (err) => {
         this.spinning = false;
+        const message = err instanceof Error ? err.message : '';
         this.store.pushToast({
           tone: 'warning',
-          title: this.locale.isAr() ? 'العجلة متعطلتش. حاول تاني.' : 'The wheel did not spin. Try again.',
+          title: message && message !== 'SPIN'
+            ? message
+            : this.locale.isAr() ? 'العجلة متعطلتش. حاول تاني.' : 'The wheel did not spin. Try again.',
         });
       },
     });
@@ -290,9 +308,12 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.spinning = false;
     const spin = this.pendingSpin;
     this.pendingSpin = null;
-    if (spin.kind === 'TryAgain') return;
     const slice = this.slices.find((item) => item.id === spin.prizeId) ?? this.slices[spin.index];
-    if (!slice || !spin.token) return;
+    if (!slice) return;
+    if (spin.kind === 'TryAgain' || !spin.token) {
+      this.result = { ...slice, ar: spin.labelAr || slice.ar, en: spin.labelEn || slice.en, token: undefined };
+      return;
+    }
     this.result = {
       ...slice,
       ar: spin.labelAr || slice.ar,

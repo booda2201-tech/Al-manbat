@@ -115,7 +115,7 @@ export class AccountApiService {
       map((raw) => {
         const body = parseAuthBody(raw);
         const rows = unwrapList(body);
-        const mapped = rows.map((row, i) => mapOrder(row, i)).filter((o): o is Order => !!o);
+        const mapped = sortOrdersById(rows.map((row, i) => mapOrder(row, i)).filter((o): o is Order => !!o));
         if (mapped.length) return mapped;
         const single = mapOrder(body);
         return single ? [single] : [];
@@ -303,6 +303,10 @@ export function orderTrackStep(order: Pick<Order, 'apiStatus' | 'status'> | null
   if (api === 'Shipped') return 2;
   if (api === 'Confirmed') return 1;
   return 0;
+}
+
+export function sortOrdersById(orders: Order[]): Order[] {
+  return [...orders].sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
 }
 
 export function mapOrder(raw: unknown, index = 0): Order | null {
@@ -603,7 +607,7 @@ function pickOrderContact(record: Record<string, unknown>): { name: string; phon
     pickScalar(record, ['userName', 'customerName', 'clientName', 'buyerName', 'fullName']);
   const composed = pickDisplayName(`${first} ${last}`.trim());
   let name = pickDisplayName(
-    pickString(record, ['customerName', 'clientName', 'buyerName', 'fullName', 'customerFullName']),
+    pickString(record, ['recipientName', 'customerName', 'clientName', 'buyerName', 'fullName', 'customerFullName']),
     pickString(user, ['fullName', 'displayName']),
     composed,
     loginName
@@ -613,6 +617,7 @@ function pickOrderContact(record: Record<string, unknown>): { name: string; phon
   }
   const phoneKeys = [
     'customerPhone',
+    'shippingPhone',
     'phone',
     'phoneNumber',
     'mobile',

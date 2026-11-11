@@ -217,12 +217,7 @@
   </div>
 </section> -->
 
-<section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:pb-20">
-  <app-section-header [title]="locale.ui('bestSellers')" [subtitle]="locale.isAr() ? 'ما يعود إلى السلة أكثر من غيره: الزيت، الزيتون، ومخلل البيت.' : 'What returns to the cart most: the oil, the olives, and the house pickle.'" linkTo="/listing/all" [linkLabel]="locale.ui('viewAll')"></app-section-header>
-  <app-product-rail [products]="bestSellers()"></app-product-rail>
-</section>
-
-<section class="mx-auto max-w-shell px-4 pb-8 lg:px-10 lg:pb-16">
+<section class="mx-auto max-w-shell px-4 pt-8 pb-8 lg:px-10 lg:pt-14 lg:pb-16">
   <div class="home-spin">
     <span class="home-spin__glow" aria-hidden="true"></span>
     <span class="home-spin__ribbon home-spin__ribbon--a" aria-hidden="true"></span>
@@ -245,7 +240,12 @@
         <li><app-icon name="truck" [size]="14"></app-icon>{{ locale.isAr() ? 'توصيل مجاني' : 'Free delivery' }}</li>
         <li><app-icon name="gift" [size]="14"></app-icon>{{ locale.isAr() ? 'هدية' : 'A gift' }}</li>
       </ul>
-      <button *ngIf="!homeWheel?.result" type="button" class="home-spin__go" (click)="homeWheel?.spin()" [disabled]="!homeWheel || homeWheel.spinning || !homeWheel.slices.length">
+      <a *ngIf="!session.isLoggedIn()" routerLink="/login" class="home-spin__go">
+        <app-icon name="user" [size]="18"></app-icon>
+        <span>{{ locale.isAr() ? 'سجل دخول عشان تجرب' : 'Sign in to spin' }}</span>
+        <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
+      </a>
+      <button *ngIf="session.isLoggedIn() && !homeWheel?.result" type="button" class="home-spin__go" (click)="homeWheel?.spin()" [disabled]="!homeWheel || homeWheel.spinning || !homeWheel.slices.length">
         <app-icon name="gift" [size]="18"></app-icon>
         <span>{{ locale.isAr() ? (homeWheel?.spinning ? 'بتلف…' : 'جرب حظك الآن') : (homeWheel?.spinning ? 'Spinning…' : 'Try your luck') }}</span>
         <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
@@ -255,6 +255,11 @@
       <app-spin-wheel [embedded]="true"></app-spin-wheel>
     </div>
   </div>
+</section>
+
+<section class="mx-auto max-w-shell px-4 py-8 lg:px-10 lg:pb-20">
+  <app-section-header [title]="locale.ui('bestSellers')" [subtitle]="locale.isAr() ? 'ما يعود إلى السلة أكثر من غيره: الزيت، الزيتون، ومخلل البيت.' : 'What returns to the cart most: the oil, the olives, and the house pickle.'" linkTo="/listing/all" [linkLabel]="locale.ui('viewAll')"></app-section-header>
+  <app-product-rail [products]="bestSellers()"></app-product-rail>
 </section>
 
 <section class="grain relative bg-olive-800 py-8 lg:py-20">
@@ -434,9 +439,6 @@
   <app-section-header [title]="locale.ui('newArrivals')" [subtitle]="locale.isAr() ? 'إضافات هذا الأسبوع، بعد مرورها على معايير الاختيار.' : 'This week’s additions, after passing our curation standard.'" linkTo="/new" [linkLabel]="locale.ui('viewAll')"></app-section-header>
   <app-product-rail [products]="newArrivals()"></app-product-rail>
 </section>
-
-
-
 
 <section>
   <div class="border-b border-olive-800/10 bg-sand-100/60">

@@ -8,6 +8,7 @@ import { ContentApiService, mapAdvertisement, bySort } from '../services/content
 import { images } from '../data/images';
 import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
+import { SessionService } from '../services/session.service';
 import { CountPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
 import { SpinWheelComponent } from '../ui/spin-wheel.component';
@@ -69,6 +70,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   constructor(
     public locale: LocaleService,
     public catalog: CatalogService,
+    public session: SessionService,
     private content: ContentApiService,
     private zone: NgZone
   ) {
