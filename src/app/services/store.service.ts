@@ -66,6 +66,7 @@ export class StoreService {
   readonly wishlist = signal<string[]>([]);
   readonly compare = signal<string[]>([]);
   readonly cartOpen = signal(false);
+  readonly spinOpen = signal(false);
   readonly searchOpen = signal(false);
   readonly menuOpen = signal(false);
   readonly promo = signal<string | null>(null);

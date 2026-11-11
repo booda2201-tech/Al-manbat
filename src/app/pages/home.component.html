@@ -222,6 +222,41 @@
   <app-product-rail [products]="bestSellers()"></app-product-rail>
 </section>
 
+<section class="mx-auto max-w-shell px-4 pb-8 lg:px-10 lg:pb-16">
+  <div class="home-spin">
+    <span class="home-spin__glow" aria-hidden="true"></span>
+    <span class="home-spin__ribbon home-spin__ribbon--a" aria-hidden="true"></span>
+    <span class="home-spin__ribbon home-spin__ribbon--b" aria-hidden="true"></span>
+    <svg class="home-spin__leaf" viewBox="0 0 140 90" aria-hidden="true">
+      <path d="M8 78c22-6 38-22 48-42 6 18 18 32 36 40" fill="none" stroke="currentColor" stroke-width="1.4" />
+      <path d="M28 70c2-14 10-24 22-32-8 6-14 16-16 28" fill="currentColor" opacity="0.55" />
+      <path d="M48 58c8-12 20-18 34-20-14 6-24 16-30 30" fill="currentColor" opacity="0.4" />
+      <path d="M70 62c6-10 16-16 30-18-12 6-22 14-26 26" fill="currentColor" opacity="0.35" />
+    </svg>
+    <div class="home-spin__copy">
+      <p class="home-spin__kicker">
+        <app-icon name="gift" [size]="14"></app-icon>
+        {{ locale.isAr() ? 'لفّة حظ' : 'A lucky spin' }}
+      </p>
+      <h2 class="home-spin__title font-displayAr">{{ locale.isAr() ? 'العب واكسب' : 'Play and win' }}</h2>
+      <p class="home-spin__lede">{{ locale.isAr() ? 'لف العجلة على طلبك. ممكن تطلع بخصم، أو توصيل مجاني، أو هدية.' : 'Spin once on your order. It can land on a discount, free delivery, or a gift.' }}</p>
+      <ul class="home-spin__prizes">
+        <li><app-icon name="tag" [size]="14"></app-icon>{{ locale.isAr() ? 'خصم' : 'A discount' }}</li>
+        <li><app-icon name="truck" [size]="14"></app-icon>{{ locale.isAr() ? 'توصيل مجاني' : 'Free delivery' }}</li>
+        <li><app-icon name="gift" [size]="14"></app-icon>{{ locale.isAr() ? 'هدية' : 'A gift' }}</li>
+      </ul>
+      <button *ngIf="!homeWheel?.result" type="button" class="home-spin__go" (click)="homeWheel?.spin()" [disabled]="!homeWheel || homeWheel.spinning || !homeWheel.slices.length">
+        <app-icon name="gift" [size]="18"></app-icon>
+        <span>{{ locale.isAr() ? (homeWheel?.spinning ? 'بتلف…' : 'جرب حظك الآن') : (homeWheel?.spinning ? 'Spinning…' : 'Try your luck') }}</span>
+        <app-icon [name]="locale.isAr() ? 'arrow-left' : 'arrow-right'" [size]="16"></app-icon>
+      </button>
+    </div>
+    <div class="home-spin__wheel">
+      <app-spin-wheel [embedded]="true"></app-spin-wheel>
+    </div>
+  </div>
+</section>
+
 <section class="grain relative bg-olive-800 py-8 lg:py-20">
   <div class="mx-auto max-w-shell px-4 lg:px-10">
     <div class="mb-5 flex flex-wrap items-end justify-between gap-4 lg:mb-8 lg:gap-5">

@@ -124,7 +124,7 @@
         <a routerLink="/offers" routerLinkActive="text-clay-400" class="header-cats__item font-semibold text-clay-400/90 hover:text-clay-400">{{ locale.ui('offers') }}</a>
         <a *ngIf="showNewLink" routerLink="/new" routerLinkActive="text-olive-700" class="header-cats__item text-ink-soft hover:text-olive-700">{{ locale.ui('newArrivals') }}</a>
         <a *ngIf="showAboutLink" routerLink="/about" routerLinkActive="text-olive-700" class="header-cats__item text-ink-soft hover:text-olive-700">{{ locale.ui('aboutBrand') }}</a>
-        <button type="button" class="header-cats__item cursor-pointer font-semibold text-gold-500 hover:text-gold-400" (click)="spinOpen = true">{{ locale.isAr() ? 'العب واكسب' : 'Play & win' }}</button>
+        <button type="button" class="header-cats__item cursor-pointer font-semibold text-gold-500 hover:text-gold-400" (click)="store.spinOpen.set(true)">{{ locale.isAr() ? 'العب واكسب' : 'Play & win' }}</button>
       </div>
       <div class="header-cats__measure" #catMeasure aria-hidden="true">
         <span *ngFor="let c of categories" class="header-cats__item" data-kind="cat">
@@ -342,7 +342,7 @@
         <span class="menu-chip__kicker menu-chip__kicker--gold">{{ locale.isAr() ? 'جديد' : 'New' }}</span>
         <span class="menu-chip__label">{{ locale.ui('newArrivals') }}</span>
       </a>
-      <button type="button" class="menu-chip w-full cursor-pointer text-start font-[inherit]" (click)="store.menuOpen.set(false); spinOpen = true">
+      <button type="button" class="menu-chip w-full cursor-pointer text-start font-[inherit]" (click)="store.menuOpen.set(false); store.spinOpen.set(true)">
         <span class="menu-chip__kicker menu-chip__kicker--gold">{{ locale.isAr() ? 'لفّة' : 'Spin' }}</span>
         <span class="menu-chip__label">{{ locale.isAr() ? 'العب واكسب' : 'Play & win' }}</span>
       </button>
@@ -432,7 +432,7 @@
 </div>
 
 <app-cart-drawer></app-cart-drawer>
-<app-spin-wheel *ngIf="spinOpen" (closed)="spinOpen = false"></app-spin-wheel>
+<app-spin-wheel *ngIf="store.spinOpen()" (closed)="store.spinOpen.set(false)"></app-spin-wheel>
 </ng-container>
 
 <div class="fixed bottom-20 start-4 z-[100] w-80 space-y-2 lg:bottom-6">

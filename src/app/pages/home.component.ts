@@ -10,6 +10,7 @@ import { LocaleService } from '../services/locale.service';
 import { CatalogService } from '../services/catalog.service';
 import { CountPipe } from '../utils/sar.pipe';
 import { IconComponent } from '../ui/icon.component';
+import { SpinWheelComponent } from '../ui/spin-wheel.component';
 import { ScrollOpenDirective } from '../ui/scroll-open.directive';
 import {
   ProductCardComponent,
@@ -27,6 +28,7 @@ const CATEGORY_PLACEHOLDER = 'assets/catalog/cat-oil-banner.png';
     CommonModule,
     RouterLink,
     IconComponent,
+    SpinWheelComponent,
     ScrollOpenDirective,
     CountPipe,
     ProductCardComponent,
@@ -44,6 +46,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   placeIndex = 0;
   placePlaying = false;
   @ViewChild('placeStage') placeStage?: ElementRef<HTMLElement>;
+  @ViewChild(SpinWheelComponent) homeWheel?: SpinWheelComponent;
   @ViewChildren('slideFilm') slideFilms?: QueryList<ElementRef<HTMLVideoElement>>;
   hours = '00';
   minutes = '00';

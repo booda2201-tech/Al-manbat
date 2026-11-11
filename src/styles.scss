@@ -3769,6 +3769,274 @@ app-icon svg {
   color: #3f5d2a;
 }
 
+.product-card__size {
+  margin-top: 0.18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #6d5522;
+}
+
+.home-spin {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "copy"
+    "wheel"
+    "prize";
+  align-items: center;
+  gap: 0.85rem 2rem;
+  overflow: hidden;
+  border-radius: 2rem;
+  border: 1.5px solid rgba(198, 163, 90, 0.85);
+  background:
+    radial-gradient(520px 420px at 12% 48%, rgba(224, 195, 106, 0.28), transparent 70%),
+    linear-gradient(180deg, #fffdf8 0%, #f7f0dc 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 252, 244, 0.9),
+    0 22px 48px rgba(90, 70, 20, 0.08);
+  padding: 1.7rem 1.15rem 1.45rem;
+}
+
+.home-spin::before {
+  content: '';
+  position: absolute;
+  inset: 0.42rem;
+  z-index: 3;
+  border-radius: 1.6rem;
+  border: 1px solid rgba(198, 163, 90, 0.35);
+  pointer-events: none;
+}
+
+.home-spin__glow {
+  position: absolute;
+  z-index: 0;
+  width: min(440px, 90%);
+  aspect-ratio: 1;
+  inset-inline-end: -4%;
+  top: 50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 208, 120, 0.55), rgba(236, 208, 120, 0) 68%);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.home-spin__ribbon {
+  position: absolute;
+  z-index: 4;
+  width: 8.5rem;
+  height: 1.15rem;
+  background: linear-gradient(90deg, #8d6e34, #f6e7b8 42%, #d4b15a 70%, #8d6e34);
+  box-shadow: 0 8px 14px rgba(90, 68, 20, 0.2);
+  pointer-events: none;
+}
+
+.home-spin__ribbon--a {
+  top: 1.55rem;
+  inset-inline-end: -2.35rem;
+  transform: rotate(-36deg);
+}
+
+.home-spin__ribbon--b {
+  bottom: 1.2rem;
+  inset-inline-start: -2.5rem;
+  transform: rotate(-36deg);
+}
+
+.home-spin__leaf {
+  position: absolute;
+  z-index: 0;
+  width: 6.5rem;
+  inset-inline-end: -0.15rem;
+  bottom: -0.35rem;
+  color: #7d9a52;
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.home-spin__copy {
+  position: relative;
+  z-index: 1;
+  grid-area: copy;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  padding-inline: 0.35rem;
+  text-align: center;
+}
+
+.home-spin__kicker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin: 0;
+  color: #b8923e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.home-spin__kicker::before,
+.home-spin__kicker::after {
+  content: '';
+  width: 2.1rem;
+  height: 1px;
+  background: #d4b15a;
+}
+
+.home-spin__title {
+  margin: 0.45rem 0 0;
+  color: #243012;
+  font-size: 2.5rem;
+  line-height: 1.15;
+}
+
+.home-spin__title::after {
+  content: '';
+  display: block;
+  width: 6.5rem;
+  height: 2px;
+  margin: 0.45rem auto 0;
+  background: linear-gradient(90deg, transparent, #d4b15a, transparent);
+}
+
+.home-spin__lede {
+  margin: 0.7rem 0 0;
+  max-width: 26rem;
+  color: #6d684e;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.home-spin__prizes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-spin__prizes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.15rem;
+  padding: 0 0.85rem;
+  border: 1px solid rgba(198, 163, 90, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 252, 244, 0.8);
+  color: #3f5d2a;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.home-spin__go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  width: min(100%, 22rem);
+  height: 3.25rem;
+  margin-top: 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #547538, #3a5324);
+  color: #fbf8ee;
+  font-size: 1.05rem;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(46, 51, 16, 0.18);
+  cursor: pointer;
+}
+
+.home-spin__go:hover:not(:disabled) {
+  background: linear-gradient(180deg, #3f5d2a, #243012);
+}
+
+.home-spin__go:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.home-spin__wheel {
+  display: contents;
+}
+
+.home-spin .spin-stage {
+  position: relative;
+  z-index: 1;
+  grid-area: wheel;
+  justify-self: center;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 8px rgba(224, 195, 106, 0.28),
+    0 0 36px 6px rgba(224, 195, 106, 0.45),
+    0 16px 28px rgba(90, 70, 20, 0.16);
+}
+
+.home-spin .spin-result {
+  position: relative;
+  z-index: 1;
+  grid-area: prize;
+  justify-self: center;
+  width: min(100%, 22rem);
+  margin: 0.2rem 0 0;
+  padding: 0;
+  border: 0;
+  text-align: center;
+}
+
+.home-spin .spin-result__title {
+  font-size: 1.85rem;
+  line-height: 1.2;
+}
+
+.home-spin .spin-result__detail {
+  margin-inline: auto;
+}
+
+.home-spin .spin-apply {
+  width: 100%;
+  height: 3.15rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #547538, #3a5324);
+  box-shadow: 0 12px 24px rgba(46, 51, 16, 0.18);
+}
+
+.home-spin .spin-apply:hover {
+  background: #243012;
+}
+
+@media (min-width: 1024px) {
+  .home-spin {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.92fr);
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+      "copy wheel"
+      "prize wheel";
+    padding: 2.4rem 2.6rem 2.1rem;
+  }
+
+  .home-spin__copy {
+    align-self: center;
+    padding-inline: 0.5rem 0.2rem;
+  }
+
+  .home-spin__title {
+    font-size: 3.35rem;
+  }
+
+  .home-spin .spin-stage {
+    align-self: center;
+  }
+}
+
 .product-card__foot {
   margin-top: 0.3rem;
   min-width: 0;

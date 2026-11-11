@@ -158,6 +158,7 @@ export class QtyComponent {
         <h3 class="product-card__name">
           <a [routerLink]="['/product', product.slug]">{{ locale.tr(product.name) }}</a>
         </h3>
+        <p *ngIf="sizeLabel()" class="product-card__size">{{ sizeLabel() }}</p>
         <div class="product-card__foot">
           <app-price-block [price]="product.price" [compareAt]="product.compareAt" [offerPercent]="product.discountPercent ?? null" size="sm"></app-price-block>
           <p *ngIf="offerCaption()" class="product-card__offer">{{ offerCaption() }}</p>
@@ -177,6 +178,11 @@ export class ProductCardComponent {
   }
   offerCaption(): string {
     return offerWindowLabel(this.product.discountDaysRemaining, this.product.discountEndsAt, this.locale.locale());
+  }
+  sizeLabel(): string {
+    const spec = this.product.specs?.find((item) => item.label.ar === 'الحجم' || item.label.en === 'Volume');
+    const value = spec ? this.locale.tr(spec.value).trim() : '';
+    return value;
   }
   get wished(): boolean {
     return this.store.wishlist().includes(this.product.id);

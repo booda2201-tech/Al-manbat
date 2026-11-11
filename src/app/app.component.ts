@@ -41,7 +41,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('catMeasure') catMeasure?: ElementRef<HTMLElement>;
   openMenu: string | null = null;
   openMore = false;
-  spinOpen = false;
   catLimit = 4;
   showNewLink = false;
   showAboutLink = false;
@@ -155,7 +154,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.syncLayout(e.urlAfterRedirects);
       this.openMenu = null;
       this.openMore = false;
-      this.spinOpen = false;
+      this.store.spinOpen.set(false);
       this.store.menuOpen.set(false);
       this.store.searchOpen.set(false);
       this.store.cartOpen.set(this.store.consumeCartOpenRequest());

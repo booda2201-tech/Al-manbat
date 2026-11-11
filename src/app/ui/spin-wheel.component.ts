@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, EventEmitter, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostBinding, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { Wheel } from 'spin-wheel';
 import { LocaleService } from '../services/locale.service';
 import { ShopApiService, WheelPrizeRow, WheelSpinRow } from '../services/shop-api.service';
@@ -23,13 +23,13 @@ interface SpinSlice {
   standalone: true,
   imports: [CommonModule, IconComponent],
   template: `
-    <div class="spin-scrim" (click)="close()"></div>
-    <div class="spin-dialog" role="dialog" aria-modal="true" [attr.aria-label]="locale.isAr() ? 'العب واكسب' : 'Play and win'" (click)="$event.stopPropagation()">
-      <button type="button" class="spin-close" (click)="close()" [attr.aria-label]="locale.isAr() ? 'إغلاق' : 'Close'">
+    <div *ngIf="!embedded" class="spin-scrim" (click)="close()"></div>
+    <div class="spin-dialog" [class.spin-dialog--inline]="embedded" role="dialog" [attr.aria-modal]="embedded ? null : true" [attr.aria-label]="locale.isAr() ? 'العب واكسب' : 'Play and win'" (click)="$event.stopPropagation()">
+      <button *ngIf="!embedded" type="button" class="spin-close" (click)="close()" [attr.aria-label]="locale.isAr() ? 'إغلاق' : 'Close'">
         <app-icon name="close" [size]="16"></app-icon>
       </button>
-      <p class="spin-kicker">{{ locale.isAr() ? 'لفّة حظ' : 'A lucky spin' }}</p>
-      <h2 class="spin-title font-displayAr">{{ locale.isAr() ? 'العب واكسب' : 'Play and win' }}</h2>
+      <p *ngIf="!embedded" class="spin-kicker">{{ locale.isAr() ? 'لفّة حظ' : 'A lucky spin' }}</p>
+      <h2 *ngIf="!embedded" class="spin-title font-displayAr">{{ locale.isAr() ? 'العب واكسب' : 'Play and win' }}</h2>
 
       <div class="spin-stage">
         <span class="spin-pointer" aria-hidden="true"></span>
@@ -52,11 +52,36 @@ interface SpinSlice {
           {{ locale.isAr() ? 'استخدم الجائزة' : 'Use this prize' }}
         </button>
       </div>
-      <p *ngIf="!result" class="spin-hint">{{ hint }}</p>
+      <p *ngIf="!result && !embedded" class="spin-hint">{{ hint }}</p>
     </div>
   `,
   styles: [`
     :host { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; overflow: hidden; }
+    :host(.is-embedded) { display: contents; }
+    .spin-dialog.spin-dialog--inline { display: contents; }
+    .spin-dialog.spin-dialog--inline .spin-stage {
+      width: min(300px, 100%);
+      margin: 2rem auto 0;
+    }
+    :host(.is-embedded) .spin-hub {
+      width: 5.15rem;
+      height: 5.15rem;
+      border: 4px solid #f8efd2;
+      background: radial-gradient(circle at 34% 28%, #f3dc96, #e0c36a 40%, #b8923e 76%);
+      box-shadow: 0 0 0 4px #e7d39a, 0 0 0 7px #fbf8ee, 0 10px 18px rgba(90, 70, 20, 0.28);
+      font-size: 1.2rem;
+    }
+    :host(.is-embedded) .spin-pointer {
+      top: -16px;
+      border-left-width: 14px;
+      border-right-width: 14px;
+      border-top-width: 22px;
+      border-top-color: #e2c56a;
+      filter: drop-shadow(0 2px 0 #8d7040);
+    }
+    @media (min-width: 1024px) {
+      .spin-dialog.spin-dialog--inline .spin-stage { width: min(368px, 100%); margin: 0; }
+    }
     .spin-scrim { position: absolute; inset: 0; background: rgba(24, 28, 8, 0.62); }
     .spin-dialog {
       position: relative;
@@ -179,7 +204,11 @@ interface SpinSlice {
   `],
 })
 export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
+  @Input() embedded = false;
   @Output() closed = new EventEmitter<void>();
+  @HostBinding('class.is-embedded') get embeddedHost(): boolean {
+    return this.embedded;
+  }
   @ViewChild('wheelHost') wheelHost?: ElementRef<HTMLElement>;
   @ViewChild('labelLayer') labelLayer?: ElementRef<HTMLElement>;
   spinning = false;
@@ -195,12 +224,13 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
     private store: StoreService,
     private shop: ShopApiService,
     private zone: NgZone
-  ) {
-    this.bodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-  }
+  ) {}
 
   ngOnInit(): void {
+    if (!this.embedded) {
+      this.bodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
     this.shop.getWheelPrizes().subscribe({
       next: (rows) => {
         this.slices = (rows ?? []).map((row, index) => this.toSlice(row, index));
@@ -222,7 +252,7 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.followId) cancelAnimationFrame(this.followId);
     this.wheel?.remove();
-    document.body.style.overflow = this.bodyOverflow;
+    if (!this.embedded) document.body.style.overflow = this.bodyOverflow;
   }
 
   get hint(): string {
@@ -303,8 +333,8 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
         backgroundColor: FILLS[index % FILLS.length],
       })),
       isInteractive: false,
-      borderColor: '#a88937',
-      borderWidth: 8,
+      borderColor: this.embedded ? '#e0c36a' : '#a88937',
+      borderWidth: this.embedded ? 14 : 8,
       lineColor: '#fbf8ee',
       lineWidth: 8,
       radius: 0.96,
@@ -312,6 +342,7 @@ export class SpinWheelComponent implements OnInit, AfterViewInit, OnDestroy {
       onRest: () => this.zone.run(() => this.rested()),
     });
     document.fonts?.ready.then(() => this.wheel?.resize());
+    requestAnimationFrame(() => this.wheel?.resize());
     this.followWheel();
   }
 

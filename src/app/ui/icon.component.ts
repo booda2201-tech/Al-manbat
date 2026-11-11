@@ -70,6 +70,16 @@ import { Component, Input } from '@angular/core';
         <path *ngSwitchCase="'headset'" d="M4 13a8 8 0 0 1 16 0M4 13v5a2 2 0 0 0 2 2h1v-7H6a2 2 0 0 0-2 2zM20 13v5a2 2 0 0 1-2 2h-1v-7h1a2 2 0 0 1 2 2z" />
         <path *ngSwitchCase="'chat'" d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
         <path *ngSwitchCase="'package'" d="M3 7.5 12 3l9 4.5V18l-9 4-9-4zM12 12v10M3 8l9 4 9-4" />
+        <ng-container *ngSwitchCase="'gift'">
+          <path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" />
+          <path d="M2 7h20v5H2zM12 22V7" />
+          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+        </ng-container>
+        <ng-container *ngSwitchCase="'tag'">
+          <path d="M20 13 11 22 2 13V4h9z" />
+          <path d="M7.5 7.5h.01" />
+        </ng-container>
         <path *ngSwitchCase="'home'" d="M4 11 12 4l8 7v9H4zM9 20v-6h6v6" />
         <path *ngSwitchCase="'grid'" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
         <path *ngSwitchCase="'sliders'" d="M4 7h16M4 17h16M8 4v6M16 14v6" />
