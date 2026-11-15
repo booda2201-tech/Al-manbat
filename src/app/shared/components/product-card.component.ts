@@ -21,7 +21,7 @@ import { RatingComponent } from './ui-bits.component';
         <a [routerLink]="['/product', product.slug]">
           <img [src]="product.images[0]" [alt]="product.nameAr" width="400" height="500" loading="lazy" />
         </a>
-        <span class="chip disc" *ngIf="product.discountPercent">خصم {{ product.discountPercent }}٪</span>
+        <span class="chip disc" *ngIf="product.discountPercent">خصم {{ product.discountPercent }}%</span>
         <button class="wish" type="button" (click)="toggleWish()" [attr.aria-label]="wishLabel">
           <app-icon name="heart" [size]="18"></app-icon>
         </button>

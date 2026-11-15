@@ -137,7 +137,7 @@ export class AdminWheelComponent implements OnInit {
     if (this.draft.kind === 'Percent') {
       const percent = Number(this.draft.percent);
       if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
-        this.toast(this.locale.isAr() ? 'اكتب نسبة الخصم من ١ لـ ١٠٠.' : 'Enter a discount from 1 to 100.', 'warning');
+        this.toast(this.locale.isAr() ? 'اكتب نسبة الخصم من 1 لـ 100.' : 'Enter a discount from 1 to 100.', 'warning');
         return;
       }
     }

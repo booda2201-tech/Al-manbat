@@ -808,7 +808,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     const existing = this.productDraft.images;
     const room = Math.max(0, 8 - existing.length);
     if (room <= 0) {
-      this.toast(this.locale.isAr() ? 'الحد الأقصى ٨ صور.' : 'Maximum of 8 images.', 'warning');
+      this.toast(this.locale.isAr() ? 'الحد الأقصى 8 صور.' : 'Maximum of 8 images.', 'warning');
       return;
     }
     const slots = files.slice(0, room).map((file) => ({
@@ -816,7 +816,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       file,
     }));
     if (files.length > room) {
-      this.toast(this.locale.isAr() ? 'الحد الأقصى ٨ صور. أُضيف المتاح فقط.' : 'Maximum of 8 images. Extra files were skipped.', 'warning');
+      this.toast(this.locale.isAr() ? 'الحد الأقصى 8 صور. أُضيف المتاح فقط.' : 'Maximum of 8 images. Extra files were skipped.', 'warning');
     }
     this.productDraft.images = [...existing, ...slots];
     this.botSuggestions = this.botSuggestions.filter((item) => item.key !== 'images');
@@ -1281,7 +1281,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   formatDate(iso: string): string {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(this.locale.isAr() ? 'ar-SA' : 'en-GB');
+    return d.toLocaleDateString(this.locale.isAr() ? 'ar-EG-u-ca-gregory-nu-latn' : 'en-GB');
   }
 
   formatOrderWhen(iso: string): string {

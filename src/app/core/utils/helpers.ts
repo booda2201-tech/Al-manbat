@@ -7,7 +7,7 @@ export function mockDelay<T>(value: T, ms = 380): Observable<T> {
 }
 
 export function formatEgp(value: number): string {
-  return new Intl.NumberFormat('ar-EG', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'EGP',
     maximumFractionDigits: 0,

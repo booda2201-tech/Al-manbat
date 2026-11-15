@@ -8,7 +8,7 @@ export const heroAds: HeroAd[] = [
     id: 'harvest',
     image: images.hero,
     badge: { ar: 'حملة الموسم', en: 'Season campaign' },
-    eyebrow: { ar: 'موسم الحصاد ٢٠٢٦', en: 'Harvest season 2026' },
+    eyebrow: { ar: 'موسم الحصاد 2026', en: 'Harvest season 2026' },
     heading: { ar: 'من الجذور إلى بيتك', en: 'From the roots\nto your home' },
     body: {
       ar: 'زيت زيتون بكر، زيتون مائدة، ومخللات بكل أنواعها — من البستان إلى بيتك، بمعيار واحد للجودة.',

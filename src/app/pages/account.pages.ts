@@ -355,7 +355,7 @@ export class AccountPageComponent implements OnInit, OnDestroy {
 
   formatDate(iso: string): string {
     const d = new Date(iso + 'T12:00:00');
-    return d.toLocaleDateString(this.locale.isAr() ? 'ar-SA' : 'en-GB', {
+    return d.toLocaleDateString(this.locale.isAr() ? 'ar-EG-u-ca-gregory-nu-latn' : 'en-GB', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',

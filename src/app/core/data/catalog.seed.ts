@@ -56,7 +56,7 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const COUPONS: Coupon[] = [
-  { code: 'KHAIR10', label: 'خصم 10٪ على الطلب', type: 'percent', value: 10, minSubtotal: 250 },
+  { code: 'KHAIR10', label: 'خصم 10% على الطلب', type: 'percent', value: 10, minSubtotal: 250 },
   { code: 'MANBAT50', label: 'خصم 50 ج.م', type: 'fixed', value: 50, minSubtotal: 400 },
 ];
 
@@ -178,11 +178,11 @@ export const PRODUCTS: Product[] = [
     specifications: [
       { label: 'الحجم', value: '500 مل' },
       { label: 'نوع العصر', value: 'عصر أول بارد' },
-      { label: 'الحموضة', value: 'أقل من 0.8٪' },
+      { label: 'الحموضة', value: 'أقل من 0.8%' },
     ],
     grocery: {
       weight: '500 مل',
-      ingredients: 'زيت زيتون بكر ممتاز 100٪',
+      ingredients: 'زيت زيتون بكر ممتاز 100%',
       origin: 'مصر',
       storage: 'مكان بارد ومظلم بعد الفتح',
       expiryPlaceholder: 'يُذكر تاريخ الصلاحية على العبوة',
@@ -206,7 +206,7 @@ export const PRODUCTS: Product[] = [
     specifications: [{ label: 'الوزن', value: '350 جم' }],
     grocery: {
       weight: '350 جم',
-      ingredients: 'عسل زهور 100٪',
+      ingredients: 'عسل زهور 100%',
       origin: 'سيوة',
       storage: 'درجة حرارة الغرفة بعيدًا عن الرطوبة',
       expiryPlaceholder: 'يُذكر على الغطاء',
@@ -267,7 +267,7 @@ export const PRODUCTS: Product[] = [
     specifications: [{ label: 'الوزن', value: '400 جم' }],
     grocery: {
       weight: '400 جم',
-      ingredients: 'سمسم محمّص 100٪',
+      ingredients: 'سمسم محمّص 100%',
       origin: 'مصر',
       storage: 'حرّك قبل الاستخدام واحفظ في مكان جاف',
       expiryPlaceholder: 'مذكور على الغطاء',

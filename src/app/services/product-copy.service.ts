@@ -397,7 +397,7 @@ function buildSuggestions(
       key: 'acidity',
       labelAr: 'الحموضة',
       labelEn: 'Acidity',
-      previewAr: '0.4٪',
+      previewAr: '0.4%',
       previewEn: '0.4%',
       extra: { acidity: 0.4 },
     });
@@ -523,7 +523,7 @@ export function parseProductDump(prompt: string, categories: ApiCategory[]): Par
       !out.nameEn &&
       line.length <= 80 &&
       !detectSize(line)?.ar &&
-      !/(جنيه|ج\.?\s*م|egp|حموض|خصم|٪|%)/i.test(line)
+      !/(جنيه|ج\.?\s*م|egp|حموض|خصم|%|%)/i.test(line)
     ) {
       assignDumpValue(out, 'name', line, categories);
       continue;
@@ -594,7 +594,7 @@ function canonLabel(label: string): string {
     .replace(/[أإآٱ]/g, 'ا')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
-    .replace(/[^\p{L}\p{N}٪%]+/gu, '')
+    .replace(/[^\p{L}\p{N}%%]+/gu, '')
     .toLowerCase();
 }
 
@@ -660,7 +660,7 @@ function assignDumpValue(
   }
   if (target === 'hasOffer') {
     const n = parseNumber(value);
-    if (n != null && /%|٪/.test(value)) {
+    if (n != null && /%|%/.test(value)) {
       out.discountPercent = n;
       out.hasOffer = n > 0;
       return;
@@ -945,8 +945,8 @@ function pickHarvest(similar?: ApiProduct): { ar: string; en: string } {
 function pickDelivery(similar?: ApiProduct): { ar: string; en: string } {
   const ar = similar?.deliveryAr || similar?.delivery || '';
   const en = similar?.deliveryEn || '';
-  if (ar || en) return { ar: ar || '٢–٤ أيام عمل', en: en || '2–4 working days' };
-  return { ar: '٢–٤ أيام عمل · توصيل مجاني فوق ٢٥٠ ج.م', en: '2–4 working days · free delivery over EGP 250' };
+  if (ar || en) return { ar: ar || '2–4 أيام عمل', en: en || '2–4 working days' };
+  return { ar: '2–4 أيام عمل · توصيل مجاني فوق 250 ج.م', en: '2–4 working days · free delivery over EGP 250' };
 }
 
 function similarAcidity(similar?: ApiProduct): number | null {

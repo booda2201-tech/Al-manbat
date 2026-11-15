@@ -6,10 +6,10 @@ export const copy: Record<string, Bilingual> = {
   brandTagline: { ar: 'سر الخير', en: 'The Root of Goodness' },
 
   // Announcement + header
-  announcement1: { ar: 'توصيل مجاني للطلبات أكثر من ٢٥٠ ج.م', en: 'Complimentary delivery on orders over EGP 250' },
+  announcement1: { ar: 'توصيل مجاني للطلبات أكثر من 250 ج.م', en: 'Complimentary delivery on orders over EGP 250' },
   announcement2: { ar: 'كل دفعة موثّقة بتاريخ حصاد واضح', en: 'Every batch traced with a clear harvest date' },
-  announcement3: { ar: 'خدمة العملاء ٢٤/٧', en: 'Client care, 24/7' },
-  announcement4: { ar: 'موسم الحصاد ٢٠٢٦ — دفعات محدودة من مصر', en: 'Harvest 2026 — limited lots from Egypt' },
+  announcement3: { ar: 'خدمة العملاء 24/7', en: 'Client care, 24/7' },
+  announcement4: { ar: 'موسم الحصاد 2026 — دفعات محدودة من مصر', en: 'Harvest 2026 — limited lots from Egypt' },
   announcement5: { ar: 'توصيل اليوم داخل القاهرة', en: 'Same-day delivery in Cairo' },
   announcement6: { ar: 'ادفع عند الاستلام أو بالبطاقة', en: 'Pay on delivery or by card' },
   announcement7: { ar: 'زيت معصور على البارد خلال ساعات الحصاد', en: 'Cold-pressed within hours of harvest' },
@@ -109,7 +109,7 @@ export const copy: Record<string, Bilingual> = {
   faq: { ar: 'الأسئلة الشائعة', en: 'FAQ' },
   deliveryEstimate: { ar: 'التوصيل المتوقع', en: 'Estimated delivery' },
   securePayment: { ar: 'دفع آمن ومشفّر', en: 'Encrypted secure payment' },
-  authenticGuarantee: { ar: 'أصالة الحصاد ١٠٠٪', en: '100% harvest authenticity' },
+  authenticGuarantee: { ar: 'أصالة الحصاد 100%', en: '100% harvest authenticity' },
   verifiedPurchase: { ar: 'شراء موثّق', en: 'Verified purchase' },
   save: { ar: 'وفّر', en: 'Save' },
   daysDelivery: { ar: 'أيام', en: 'days' },

@@ -58,7 +58,7 @@ export class AuthPageComponent implements OnInit {
     const phone = normalizeAuthPhone(this.phone) || this.phone.trim();
     if (phone.length < 8 || this.password.length < 6) {
       this.error = this.locale.isAr()
-        ? 'أدخل رقم جوال صحيح وكلمة مرور من ٦ أحرف على الأقل.'
+        ? 'أدخل رقم جوال صحيح وكلمة مرور من 6 أحرف على الأقل.'
         : 'Enter a valid mobile number and a password of at least 6 characters.';
       return;
     }

@@ -244,7 +244,7 @@ export class ProductCardComponent {
       this.store.pushToast({
         tone: 'warning',
         title: this.locale.isAr() ? 'المقارنة ممتلئة' : 'Compare is full',
-        description: this.locale.isAr() ? 'يمكن مقارنة ٤ منتجات فقط' : 'You can compare up to 4 products',
+        description: this.locale.isAr() ? 'يمكن مقارنة 4 منتجات فقط' : 'You can compare up to 4 products',
       });
       return;
     }

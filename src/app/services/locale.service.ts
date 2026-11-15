@@ -1,6 +1,7 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import type { Bilingual, Locale } from '../types';
 import { copy } from '../data/copy';
+import { latinDigits } from '../utils/format';
 
 @Injectable({ providedIn: 'root' })
 export class LocaleService {
@@ -18,11 +19,15 @@ export class LocaleService {
   }
 
   ui(key: keyof typeof copy): string {
-    return copy[key][this.locale()];
+    return latinDigits(copy[key][this.locale()]);
   }
 
   tr(value: Bilingual): string {
-    return value[this.locale()];
+    return latinDigits(value[this.locale()] || '');
+  }
+
+  digits(value: string | null | undefined): string {
+    return latinDigits(value || '');
   }
 
   toggle(): void {

@@ -50,7 +50,7 @@
         {{ locale.isAr() ? 'اختيار صورة' : 'Choose image' }}
       </button>
       <input #adImageInput type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden" (change)="onAdImage($event)" />
-      <p class="mt-1 text-xs text-ink-muted">{{ locale.isAr() ? 'JPG أو PNG أو WEBP — حد أقصى ٥ ميجا.' : 'JPG, PNG or WEBP — max 5 MB.' }}</p>
+      <p class="mt-1 text-xs text-ink-muted">{{ locale.isAr() ? 'JPG أو PNG أو WEBP — حد أقصى 5 ميجا.' : 'JPG, PNG or WEBP — max 5 MB.' }}</p>
     </div>
     <div>
       <label class="auth-label" for="ad-badge-ar"><span>الشارة</span><span>Badge</span></label>
@@ -152,7 +152,7 @@
         {{ videoDraft.videoName || (locale.isAr() ? 'أو ارفع ملف mp4 / webm / mov' : 'Or upload mp4 / webm / mov') }}
       </button>
       <input #videoInput type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" class="hidden" (change)="onVideoFile($event)" />
-      <p class="mt-1 text-xs text-ink-muted">{{ locale.isAr() ? 'حد أقصى ٥٠ ميجا، أو رابط جاهز.' : 'Max 50 MB, or an existing link.' }}</p>
+      <p class="mt-1 text-xs text-ink-muted">{{ locale.isAr() ? 'حد أقصى 50 ميجا، أو رابط جاهز.' : 'Max 50 MB, or an existing link.' }}</p>
     </div>
     <div class="sm:col-span-2">
       <p class="auth-label"><span>صورة الغلاف</span><span>Cover</span></p>

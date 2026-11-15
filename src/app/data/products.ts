@@ -15,7 +15,7 @@ export const products: Product[] = [
   {
     id: 'oil-reserve',
     slug: 'reserve-olive-oil',
-    name: { ar: 'زيت زيتون بكر ممتاز — محصول محفوظ ٥٠٠ مل', en: 'Extra Virgin Olive Oil — Reserve Harvest 500ml' },
+    name: { ar: 'زيت زيتون بكر ممتاز — محصول محفوظ 500 مل', en: 'Extra Virgin Olive Oil — Reserve Harvest 500ml' },
     brand: almanbat,
     category: 'olive-oil',
     subcategory: 'extra-virgin',
@@ -30,17 +30,17 @@ export const products: Product[] = [
     deliveryDays: 2,
     freeShipping: true,
     highlights: [
-      { ar: 'معصور على البارد خلال ٦ ساعات من الحصاد', en: 'Cold-pressed within 6 hours of harvest' },
-      { ar: 'حموضة ٠٫٢٪ — من أدنى المستويات', en: '0.2% acidity — among the lowest' },
+      { ar: 'معصور على البارد خلال 6 ساعات من الحصاد', en: 'Cold-pressed within 6 hours of harvest' },
+      { ar: 'حموضة 0.2% — من أدنى المستويات', en: '0.2% acidity — among the lowest' },
       { ar: 'زجاجة داكنة تحفظ مضادات الأكسدة', en: 'Dark glass preserves polyphenols' },
-      { ar: 'موسم ٢٠٢٦ — دفعة محدودة', en: '2026 season — limited batch' },
+      { ar: 'موسم 2026 — دفعة محدودة', en: '2026 season — limited batch' },
     ],
     specs: [
-      spec('الحجم', 'Volume', '٥٠٠ مل', '500 ml'),
+      spec('الحجم', 'Volume', '500 مل', '500 ml'),
       spec('المنشأ', 'Origin', 'مصر', 'Egypt'),
       spec('الصنف', 'Varietal', 'أربيكينا', 'Arbequina'),
-      spec('الحموضة', 'Acidity', '٠٫٢٪', '0.2%'),
-      spec('الحصاد', 'Harvest', 'نوفمبر ٢٠٢٥', 'November 2025'),
+      spec('الحموضة', 'Acidity', '0.2%', '0.2%'),
+      spec('الحصاد', 'Harvest', 'نوفمبر 2025', 'November 2025'),
     ],
     description: {
       ar: 'زيت من بساتين الجوف، يُحصد يدوياً ويُعصر في اليوم نفسه. نكهة عشبية ومرارة نبيلة — للتقديم على الخبز والسلطات.',
@@ -50,7 +50,7 @@ export const products: Product[] = [
   {
     id: 'oil-jouf',
     slug: 'jouf-olive-oil-1l',
-    name: { ar: 'زيت زيتون الجوف البكر ١ لتر', en: 'Al-Jouf Virgin Olive Oil 1L' },
+    name: { ar: 'زيت زيتون الجوف البكر 1 لتر', en: 'Al-Jouf Virgin Olive Oil 1L' },
     brand: joufGrove,
     category: 'olive-oil',
     subcategory: 'virgin',
@@ -68,9 +68,9 @@ export const products: Product[] = [
       { ar: 'معصور على البارد', en: 'Cold-pressed' },
     ],
     specs: [
-      spec('الحجم', 'Volume', '١ لتر', '1 L'),
+      spec('الحجم', 'Volume', '1 لتر', '1 L'),
       spec('المنشأ', 'Origin', 'الجوف', 'Al-Jouf'),
-      spec('الحموضة', 'Acidity', '٠٫٦٪', '0.6%'),
+      spec('الحموضة', 'Acidity', '0.6%', '0.6%'),
     ],
     description: {
       ar: 'زيت يومي متوازن للقلي الخفيف والطبخ — أوضح من البكر الممتاز، وأصدق من الزيوت المكررة.',
@@ -80,7 +80,7 @@ export const products: Product[] = [
   {
     id: 'oil-tin',
     slug: 'family-olive-oil-tin',
-    name: { ar: 'تنكة زيت الزيتون العائلية ٥ لتر', en: 'Family Olive Oil Tin 5L' },
+    name: { ar: 'تنكة زيت الزيتون العائلية 5 لتر', en: 'Family Olive Oil Tin 5L' },
     brand: joufGrove,
     category: 'olive-oil',
     subcategory: 'tins',
@@ -99,9 +99,9 @@ export const products: Product[] = [
       { ar: 'تكفي بيتاً لموسم كامل', en: 'A household season’s worth' },
     ],
     specs: [
-      spec('الحجم', 'Volume', '٥ لتر', '5 L'),
+      spec('الحجم', 'Volume', '5 لتر', '5 L'),
       spec('التعبئة', 'Pack', 'تنكة معدنية', 'Metal tin'),
-      spec('الحموضة', 'Acidity', '٠٫٤٪', '0.4%'),
+      spec('الحموضة', 'Acidity', '0.4%', '0.4%'),
     ],
     description: {
       ar: 'تنكة العائلة: زيت بكر لمعظم الطبخ، معبّأ بعيداً عن الضوء. اقتصادية دون التنازل عن المصدر.',
@@ -111,7 +111,7 @@ export const products: Product[] = [
   {
     id: 'oil-infused',
     slug: 'lemon-garlic-olive-oil',
-    name: { ar: 'زيت زيتون بالليمون والثوم ٢٥٠ مل', en: 'Lemon & Garlic Infused Olive Oil 250ml' },
+    name: { ar: 'زيت زيتون بالليمون والثوم 250 مل', en: 'Lemon & Garlic Infused Olive Oil 250ml' },
     brand: harvestHouse,
     category: 'olive-oil',
     subcategory: 'infused',
@@ -129,7 +129,7 @@ export const products: Product[] = [
       { ar: 'للتقديم لا للقلي العميق', en: 'For finishing, not deep frying' },
     ],
     specs: [
-      spec('الحجم', 'Volume', '٢٥٠ مل', '250 ml'),
+      spec('الحجم', 'Volume', '250 مل', '250 ml'),
       spec('النكهة', 'Flavour', 'ليمون وثوم', 'Lemon & garlic'),
     ],
     description: {
@@ -140,7 +140,7 @@ export const products: Product[] = [
   {
     id: 'oil-organic',
     slug: 'organic-cold-press-750',
-    name: { ar: 'زيت عضوي معصور على البارد ٧٥٠ مل', en: 'Organic Cold-Pressed Olive Oil 750ml' },
+    name: { ar: 'زيت عضوي معصور على البارد 750 مل', en: 'Organic Cold-Pressed Olive Oil 750ml' },
     brand: almanbat,
     category: 'olive-oil',
     subcategory: 'extra-virgin',
@@ -158,9 +158,9 @@ export const products: Product[] = [
       { ar: 'حصاد واحد قابل للتتبع', en: 'Single harvest, traceable' },
     ],
     specs: [
-      spec('الحجم', 'Volume', '٧٥٠ مل', '750 ml'),
+      spec('الحجم', 'Volume', '750 مل', '750 ml'),
       spec('الشهادة', 'Certification', 'عضوي', 'Organic'),
-      spec('الحموضة', 'Acidity', '٠٫٣٪', '0.3%'),
+      spec('الحموضة', 'Acidity', '0.3%', '0.3%'),
     ],
     description: {
       ar: 'دفعة عضوية من بستان واحد، بلا مبيدات. كثافة أعلى وقوام أنعم على اللسان.',
@@ -170,7 +170,7 @@ export const products: Product[] = [
   {
     id: 'olv-green',
     slug: 'baladi-green-olives',
-    name: { ar: 'زيتون أخضر بلدي ٥٠٠ غرام', en: 'Baladi Green Olives 500g' },
+    name: { ar: 'زيتون أخضر بلدي 500 غرام', en: 'Baladi Green Olives 500g' },
     brand: dar,
     category: 'table-olives',
     subcategory: 'green',
@@ -188,7 +188,7 @@ export const products: Product[] = [
       { ar: 'ملوحة متوازنة', en: 'Balanced salinity' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٥٠٠ غرام', '500 g'),
+      spec('الوزن', 'Weight', '500 غرام', '500 g'),
       spec('النوع', 'Style', 'أخضر كامل', 'Whole green'),
       spec('التعبئة', 'Pack', 'برطمان زجاج', 'Glass jar'),
     ],
@@ -200,7 +200,7 @@ export const products: Product[] = [
   {
     id: 'olv-black',
     slug: 'cured-black-olives',
-    name: { ar: 'زيتون أسود معتّق ٥٠٠ غرام', en: 'Cured Black Olives 500g' },
+    name: { ar: 'زيتون أسود معتّق 500 غرام', en: 'Cured Black Olives 500g' },
     brand: dar,
     category: 'table-olives',
     subcategory: 'black',
@@ -218,7 +218,7 @@ export const products: Product[] = [
       { ar: 'لحم ناعم ونكهة أعمق', en: 'Softer flesh, deeper flavour' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٥٠٠ غرام', '500 g'),
+      spec('الوزن', 'Weight', '500 غرام', '500 g'),
       spec('النوع', 'Style', 'أسود معتّق', 'Cured black'),
     ],
     description: {
@@ -229,7 +229,7 @@ export const products: Product[] = [
   {
     id: 'olv-kalamata',
     slug: 'kalamata-olives',
-    name: { ar: 'زيتون كلاماتا يوناني ٤٥٠ غرام', en: 'Greek Kalamata Olives 450g' },
+    name: { ar: 'زيتون كلاماتا يوناني 450 غرام', en: 'Greek Kalamata Olives 450g' },
     brand: harvestHouse,
     category: 'table-olives',
     subcategory: 'black',
@@ -248,7 +248,7 @@ export const products: Product[] = [
       { ar: 'منقوع بزيت الزيتون والخل', en: 'Held in olive oil and vinegar' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٤٥٠ غرام', '450 g'),
+      spec('الوزن', 'Weight', '450 غرام', '450 g'),
       spec('المنشأ', 'Origin', 'اليونان', 'Greece'),
       spec('الشكل', 'Shape', 'لوزي', 'Almond-shaped'),
     ],
@@ -260,7 +260,7 @@ export const products: Product[] = [
   {
     id: 'olv-stuffed',
     slug: 'pimento-stuffed-olives',
-    name: { ar: 'زيتون محشي فلفل أحمر ٥٠٠ غرام', en: 'Pimento-Stuffed Olives 500g' },
+    name: { ar: 'زيتون محشي فلفل أحمر 500 غرام', en: 'Pimento-Stuffed Olives 500g' },
     brand: dar,
     category: 'table-olives',
     subcategory: 'stuffed',
@@ -278,7 +278,7 @@ export const products: Product[] = [
       { ar: 'مناسب للضيافة', en: 'Made for hospitality' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٥٠٠ غرام', '500 g'),
+      spec('الوزن', 'Weight', '500 غرام', '500 g'),
       spec('الحشوة', 'Filling', 'فلفل أحمر', 'Red pimento'),
     ],
     description: {
@@ -289,7 +289,7 @@ export const products: Product[] = [
   {
     id: 'olv-sliced',
     slug: 'sliced-green-olives',
-    name: { ar: 'شرائح زيتون أخضر ٤٠٠ غرام', en: 'Sliced Green Olives 400g' },
+    name: { ar: 'شرائح زيتون أخضر 400 غرام', en: 'Sliced Green Olives 400g' },
     brand: dar,
     category: 'table-olives',
     subcategory: 'sliced',
@@ -303,7 +303,7 @@ export const products: Product[] = [
     deliveryDays: 1,
     freeShipping: false,
     highlights: [{ ar: 'جاهز للبيتزا والمعجنات', en: 'Ready for pizza and pastry' }],
-    specs: [spec('الوزن', 'Weight', '٤٠٠ غرام', '400 g'), spec('القطع', 'Cut', 'شرائح', 'Sliced')],
+    specs: [spec('الوزن', 'Weight', '400 غرام', '400 g'), spec('القطع', 'Cut', 'شرائح', 'Sliced')],
     description: {
       ar: 'شرائح متساوية للمطبخ السريع: بيتزا، فطائر، وصلصات.',
       en: 'Even slices for fast cooking: pizza, pies and sauces.',
@@ -312,7 +312,7 @@ export const products: Product[] = [
   {
     id: 'olv-lemon',
     slug: 'lemon-cured-olives',
-    name: { ar: 'زيتون أخضر بالليمون ٥٠٠ غرام', en: 'Lemon-Cured Green Olives 500g' },
+    name: { ar: 'زيتون أخضر بالليمون 500 غرام', en: 'Lemon-Cured Green Olives 500g' },
     brand: almanbat,
     category: 'table-olives',
     subcategory: 'green',
@@ -330,7 +330,7 @@ export const products: Product[] = [
       { ar: 'حمضية لطيفة دون خل حاد', en: 'Gentle acidity, no harsh vinegar' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٥٠٠ غرام', '500 g'),
+      spec('الوزن', 'Weight', '500 غرام', '500 g'),
       spec('النكهة', 'Flavour', 'ليمون', 'Lemon'),
     ],
     description: {
@@ -341,7 +341,7 @@ export const products: Product[] = [
   {
     id: 'pkl-cucumber',
     slug: 'baladi-pickled-cucumber',
-    name: { ar: 'خيار مخلل بلدي ٦٦٠ غرام', en: 'Baladi Pickled Cucumber 660g' },
+    name: { ar: 'خيار مخلل بلدي 660 غرام', en: 'Baladi Pickled Cucumber 660g' },
     brand: dar,
     category: 'pickles',
     subcategory: 'cucumber',
@@ -359,7 +359,7 @@ export const products: Product[] = [
       { ar: 'شبت وثوم في المحلول', en: 'Dill and garlic in the brine' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٦٦٠ غرام', '660 g'),
+      spec('الوزن', 'Weight', '660 غرام', '660 g'),
       spec('الحجم', 'Cut', 'خيار كامل صغير', 'Whole baby cucumber'),
     ],
     description: {
@@ -370,7 +370,7 @@ export const products: Product[] = [
   {
     id: 'pkl-mixed',
     slug: 'mixed-pickles',
-    name: { ar: 'مخلل مشكل ٧٠٠ غرام', en: 'Mixed Pickles 700g' },
+    name: { ar: 'مخلل مشكل 700 غرام', en: 'Mixed Pickles 700g' },
     brand: dar,
     category: 'pickles',
     subcategory: 'mixed',
@@ -389,7 +389,7 @@ export const products: Product[] = [
       { ar: 'توابل المونة التقليدية', en: 'Traditional pantry spice' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٧٠٠ غرام', '700 g'),
+      spec('الوزن', 'Weight', '700 غرام', '700 g'),
       spec('المحتوى', 'Contents', 'مشكل خضار', 'Mixed vegetables'),
     ],
     description: {
@@ -400,7 +400,7 @@ export const products: Product[] = [
   {
     id: 'pkl-turnip',
     slug: 'pickled-turnip',
-    name: { ar: 'لفت مخلل ٦٠٠ غرام', en: 'Pickled Turnip 600g' },
+    name: { ar: 'لفت مخلل 600 غرام', en: 'Pickled Turnip 600g' },
     brand: dar,
     category: 'pickles',
     subcategory: 'turnip',
@@ -418,7 +418,7 @@ export const products: Product[] = [
       { ar: 'حامض منعش مع الشاورما', en: 'Bright acidity with shawarma' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٦٠٠ غرام', '600 g'),
+      spec('الوزن', 'Weight', '600 غرام', '600 g'),
       spec('اللون', 'Colour', 'وردي طبيعي', 'Natural pink'),
     ],
     description: {
@@ -429,7 +429,7 @@ export const products: Product[] = [
   {
     id: 'pkl-cauliflower',
     slug: 'pickled-cauliflower',
-    name: { ar: 'زهرة وملفوف مخلل ٦٥٠ غرام', en: 'Pickled Cauliflower & Cabbage 650g' },
+    name: { ar: 'زهرة وملفوف مخلل 650 غرام', en: 'Pickled Cauliflower & Cabbage 650g' },
     brand: harvestHouse,
     category: 'pickles',
     subcategory: 'mixed',
@@ -443,7 +443,7 @@ export const products: Product[] = [
     deliveryDays: 2,
     freeShipping: false,
     highlights: [{ ar: 'كركم خفيف في المحلول', en: 'A hint of turmeric in the brine' }],
-    specs: [spec('الوزن', 'Weight', '٦٥٠ غرام', '650 g')],
+    specs: [spec('الوزن', 'Weight', '650 غرام', '650 g')],
     description: {
       ar: 'زهرة تبقى متماسكة وملفوف يأخذ الحموضة بسرعة. للمناسف والمقبلات الباردة.',
       en: 'Cauliflower that holds, cabbage that takes acidity fast. For cold mezze and rice dishes.',
@@ -452,7 +452,7 @@ export const products: Product[] = [
   {
     id: 'pkl-pepper',
     slug: 'hot-pickled-peppers',
-    name: { ar: 'فلفل حار مخلل ٥٠٠ غرام', en: 'Hot Pickled Peppers 500g' },
+    name: { ar: 'فلفل حار مخلل 500 غرام', en: 'Hot Pickled Peppers 500g' },
     brand: dar,
     category: 'pickles',
     subcategory: 'peppers',
@@ -469,7 +469,7 @@ export const products: Product[] = [
       { ar: 'حرارة متوسطة لا تحرق الطبق', en: 'Medium heat that doesn’t scorch the plate' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٥٠٠ غرام', '500 g'),
+      spec('الوزن', 'Weight', '500 غرام', '500 g'),
       spec('الحرارة', 'Heat', 'متوسطة', 'Medium'),
     ],
     description: {
@@ -480,7 +480,7 @@ export const products: Product[] = [
   {
     id: 'pkl-carrot',
     slug: 'pickled-carrot',
-    name: { ar: 'جزر مخلل ٥٥٠ غرام', en: 'Pickled Carrot 550g' },
+    name: { ar: 'جزر مخلل 550 غرام', en: 'Pickled Carrot 550g' },
     brand: dar,
     category: 'pickles',
     subcategory: 'mixed',
@@ -494,7 +494,7 @@ export const products: Product[] = [
     deliveryDays: 1,
     freeShipping: false,
     highlights: [{ ar: 'شرائح سميكة تقرمش', en: 'Thick slices that stay crisp' }],
-    specs: [spec('الوزن', 'Weight', '٥٥٠ غرام', '550 g')],
+    specs: [spec('الوزن', 'Weight', '550 غرام', '550 g')],
     description: {
       ar: 'جزر حلو يكتسب حموضة المحلول دون أن يلين. للأطفال وللمائدة اليومية.',
       en: 'Sweet carrot that takes the brine without going soft. For the daily table.',
@@ -503,7 +503,7 @@ export const products: Product[] = [
   {
     id: 'stf-makdous',
     slug: 'walnut-makdous',
-    name: { ar: 'مكدوس باذنجان بالجوز ٦٥٠ غرام', en: 'Walnut Makdous 650g' },
+    name: { ar: 'مكدوس باذنجان بالجوز 650 غرام', en: 'Walnut Makdous 650g' },
     brand: almanbat,
     category: 'stuffed',
     subcategory: 'makdous',
@@ -521,7 +521,7 @@ export const products: Product[] = [
       { ar: 'مغمور بزيت الزيتون البكر', en: 'Covered in extra virgin olive oil' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٦٥٠ غرام', '650 g'),
+      spec('الوزن', 'Weight', '650 غرام', '650 g'),
       spec('الحشوة', 'Filling', 'جوز وثوم وفلفل', 'Walnut, garlic, pepper'),
     ],
     description: {
@@ -532,7 +532,7 @@ export const products: Product[] = [
   {
     id: 'stf-vine',
     slug: 'stuffed-vine-leaves',
-    name: { ar: 'ورق عنب محشي ٨٠٠ غرام', en: 'Stuffed Vine Leaves 800g' },
+    name: { ar: 'ورق عنب محشي 800 غرام', en: 'Stuffed Vine Leaves 800g' },
     brand: harvestHouse,
     category: 'stuffed',
     subcategory: 'vine-leaves',
@@ -551,7 +551,7 @@ export const products: Product[] = [
       { ar: 'يُسخَّن أو يُقدَّم بارداً', en: 'Serve warm or cold' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٨٠٠ غرام', '800 g'),
+      spec('الوزن', 'Weight', '800 غرام', '800 g'),
       spec('الحشوة', 'Filling', 'رز وحمضيات', 'Rice and citrus'),
     ],
     description: {
@@ -562,7 +562,7 @@ export const products: Product[] = [
   {
     id: 'stf-pepper',
     slug: 'cheese-stuffed-peppers',
-    name: { ar: 'فلفل محشي لبنة بالزيت ٤٥٠ غرام', en: 'Labneh-Stuffed Peppers 450g' },
+    name: { ar: 'فلفل محشي لبنة بالزيت 450 غرام', en: 'Labneh-Stuffed Peppers 450g' },
     brand: harvestHouse,
     category: 'stuffed',
     subcategory: 'peppers',
@@ -580,7 +580,7 @@ export const products: Product[] = [
       { ar: 'محفوظ في زيت الزيتون', en: 'Held in olive oil' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٤٥٠ غرام', '450 g'),
+      spec('الوزن', 'Weight', '450 غرام', '450 g'),
       spec('الحشوة', 'Filling', 'لبنة', 'Labneh'),
     ],
     description: {
@@ -591,7 +591,7 @@ export const products: Product[] = [
   {
     id: 'stf-paste',
     slug: 'black-olive-paste',
-    name: { ar: 'معجون زيتون أسود ٢٠٠ غرام', en: 'Black Olive Paste 200g' },
+    name: { ar: 'معجون زيتون أسود 200 غرام', en: 'Black Olive Paste 200g' },
     brand: almanbat,
     category: 'stuffed',
     subcategory: 'paste',
@@ -609,7 +609,7 @@ export const products: Product[] = [
       { ar: 'على الخبز أو مع الجبن', en: 'On bread or with cheese' },
     ],
     specs: [
-      spec('الوزن', 'Weight', '٢٠٠ غرام', '200 g'),
+      spec('الوزن', 'Weight', '200 غرام', '200 g'),
       spec('المكوّنات', 'Ingredients', 'زيتون وزيت', 'Olives and oil'),
     ],
     description: {
@@ -635,12 +635,12 @@ export const products: Product[] = [
     deliveryDays: 3,
     freeShipping: true,
     highlights: [
-      { ar: 'ثلاث زجاجات ٢٥٠ مل من محاصيل مختلفة', en: 'Three 250ml bottles from different harvests' },
+      { ar: 'ثلاث زجاجات 250 مل من محاصيل مختلفة', en: 'Three 250ml bottles from different harvests' },
       { ar: 'بطاقة تذوق مطبوعة عربي/إنجليزي', en: 'Bilingual tasting card' },
     ],
     specs: [
-      spec('المحتوى', 'Contents', '٣ زجاجات', '3 bottles'),
-      spec('الحجم', 'Size', '٢٥٠ مل × ٣', '250 ml × 3'),
+      spec('المحتوى', 'Contents', '3 زجاجات', '3 bottles'),
+      spec('الحجم', 'Size', '250 مل × 3', '250 ml × 3'),
     ],
     description: {
       ar: 'هدية من يعرف الزيت: ثلاث دفعات للتذوق جنباً إلى جنب، في صندوق خشبي بسيط.',
@@ -664,9 +664,9 @@ export const products: Product[] = [
     deliveryDays: 2,
     freeShipping: true,
     highlights: [
-      { ar: 'زيت ٥٠٠ مل + زيتون أخضر + خيار مخلل', en: '500ml oil, green olives, pickled cucumber' },
+      { ar: 'زيت 500 مل + زيتون أخضر + خيار مخلل', en: '500ml oil, green olives, pickled cucumber' },
     ],
-    specs: [spec('المحتوى', 'Contents', '٣ منتجات', '3 products')],
+    specs: [spec('المحتوى', 'Contents', '3 منتجات', '3 products')],
     description: {
       ar: 'أول طلب لبيت جديد، أو هدية بلا حيرة: الأساسيات الثلاثة على مائدة المنبت.',
       en: 'A first order for a new kitchen, or a gift with no guesswork: the three Almanbat table staples.',
@@ -691,7 +691,7 @@ export const products: Product[] = [
     highlights: [
       { ar: 'زيتون محشي، كلاماتا، لفت، ومكدوس صغير', en: 'Stuffed olives, Kalamata, turnip, mini makdous' },
     ],
-    specs: [spec('المحتوى', 'Contents', '٤ برطمانات', '4 jars')],
+    specs: [spec('المحتوى', 'Contents', '4 برطمانات', '4 jars')],
     description: {
       ar: 'تفتح السلة وتصفّ الأطباق. ضيافة جاهزة لزيارة مفاجئة.',
       en: 'Open the tray and plate. Hospitality for an unannounced visit.',

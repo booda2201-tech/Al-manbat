@@ -239,7 +239,7 @@
                     <app-icon name="image" [size]="20" class="text-gold-400"></app-icon>
                   </span>
                   <span class="text-sm font-medium">{{ dropActive ? (locale.isAr() ? 'أفلت الصور هنا' : 'Drop images here') : (locale.isAr() ? 'اسحب الصور هنا أو اضغط للاختيار' : 'Drag images here or click to browse') }}</span>
-                  <span class="text-xs">{{ locale.isAr() ? 'أضف حتى ٨ صور. الجديدة تنضم للمعرض بدون مسح القديمة. الأولى هي الرئيسية.' : 'Add up to 8 photos. New ones join the gallery without replacing the rest. The first is the cover.' }}</span>
+                  <span class="text-xs">{{ locale.isAr() ? 'أضف حتى 8 صور. الجديدة تنضم للمعرض بدون مسح القديمة. الأولى هي الرئيسية.' : 'Add up to 8 photos. New ones join the gallery without replacing the rest. The first is the cover.' }}</span>
                 </button>
                 <input #imageInput id="pr-images" type="file" accept="image/*" multiple class="hidden" (change)="onProductImagesPicked($event)" />
               </div>
@@ -294,7 +294,7 @@
               <input id="pr-delivery-en" name="deliveryEn" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.deliveryEn" />
             </div>
             <div>
-              <label class="auth-label" for="pr-acidity"><span>الحموضة ٪</span><span>Acidity %</span></label>
+              <label class="auth-label" for="pr-acidity"><span>الحموضة %</span><span>Acidity %</span></label>
               <input id="pr-acidity" name="acidity" type="number" min="0" max="100" step="0.01" class="field-input !mt-1.5" dir="ltr" [(ngModel)]="productDraft.acidity" />
             </div>
             <div class="grid grid-cols-3 gap-2 sm:col-span-2 sm:items-end">
@@ -445,7 +445,7 @@
                     <app-icon name="image" [size]="20" class="text-gold-400"></app-icon>
                   </span>
                   <span class="text-sm font-medium">{{ dropActive ? (locale.isAr() ? 'أفلت الصورة هنا' : 'Drop the image here') : (locale.isAr() ? 'اسحب الصورة هنا أو اضغط للاختيار' : 'Drag an image here or click to browse') }}</span>
-                  <span class="text-xs">{{ locale.isAr() ? 'JPG أو PNG أو WEBP — حد أقصى ٥ ميجا. صورة واحدة للقسم.' : 'JPG, PNG or WEBP — max 5 MB. One image per category.' }}</span>
+                  <span class="text-xs">{{ locale.isAr() ? 'JPG أو PNG أو WEBP — حد أقصى 5 ميجا. صورة واحدة للقسم.' : 'JPG, PNG or WEBP — max 5 MB. One image per category.' }}</span>
                 </button>
                 <input #categoryImageInput type="file" accept="image/*" class="hidden" (change)="onCategoryImagePicked($event)" />
               </div>

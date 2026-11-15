@@ -27,7 +27,7 @@ export const trustPoints: Array<{icon: 'truck' | 'shield' | 'lock' | 'headset';t
 export const testimonials: Array<{name: Bilingual;role: Bilingual;quote: Bilingual;rating: number;}> = [
 {
   name: { ar: 'ندى حسن', en: 'Nada Hassan' },
-  role: { ar: 'القاهرة · عميلة منذ ٢٠٢٣', en: 'Cairo · Customer since 2023' },
+  role: { ar: 'القاهرة · عميلة منذ 2023', en: 'Cairo · Customer since 2023' },
   quote: {
     ar: 'زيت المحصول المحفوظ صار الزيت الوحيد في المطبخ. التغليف محكم والطعم كما وُصف، بلا مبالغة.',
     en: 'The reserve oil is now the only oil in the kitchen. Tight packaging, and the taste matches the description — no exaggeration.'
@@ -36,7 +36,7 @@ export const testimonials: Array<{name: Bilingual;role: Bilingual;quote: Bilingu
 },
 {
   name: { ar: 'عمرو فؤاد', en: 'Amr Fouad' },
-  role: { ar: 'الإسكندرية · عميل منذ ٢٠٢٢', en: 'Alexandria · Customer since 2022' },
+  role: { ar: 'الإسكندرية · عميل منذ 2022', en: 'Alexandria · Customer since 2022' },
   quote: {
     ar: 'طلبت تنكة العائلة ومكدوس في شحنة واحدة. وصل بارد، والبرطمانات محكمة كما لو خرجت من المونة.',
     en: 'I ordered the family tin and makdous in one shipment. It arrived cool, jars sealed as if they left a home pantry.'
@@ -45,7 +45,7 @@ export const testimonials: Array<{name: Bilingual;role: Bilingual;quote: Bilingu
 },
 {
   name: { ar: 'سارة علي', en: 'Sara Ali' },
-  role: { ar: 'المنصورة · عميلة منذ ٢٠٢٤', en: 'Mansoura · Customer since 2024' },
+  role: { ar: 'المنصورة · عميلة منذ 2024', en: 'Mansoura · Customer since 2024' },
   quote: {
     ar: 'اللفت المخلل لونه من الشمندر فعلاً، والخيار يقرمش بعد أسبوع من الفتح. هذا مخلل بيت.',
     en: 'The pickled turnip really is coloured by beet, and the cucumber still crunches a week after opening. This is house pickle.'
@@ -132,7 +132,7 @@ export const orders: Order[] = [
   status: 'in_transit',
   total: 197,
   itemIds: ['oil-reserve', 'pkl-cucumber'],
-  eta: { ar: 'يصل غداً قبل ٦ مساءً', en: 'Arriving tomorrow before 6pm' }
+  eta: { ar: 'يصل غداً قبل 6 مساءً', en: 'Arriving tomorrow before 6pm' }
 },
 {
   id: 'ALM-24102',
@@ -161,7 +161,7 @@ export const addresses: Address[] = [
 {
   id: 'a1',
   label: { ar: 'المنزل', en: 'Home' },
-  line: { ar: 'المعادي، شارع ٩، مبنى ١٢', en: 'Maadi, Street 9, Building 12' },
+  line: { ar: 'المعادي، شارع 9، مبنى 12', en: 'Maadi, Street 9, Building 12' },
   city: { ar: 'القاهرة', en: 'Cairo' },
   phone: '+20 10 014 2288',
   isDefault: true
@@ -169,7 +169,7 @@ export const addresses: Address[] = [
 {
   id: 'a2',
   label: { ar: 'المكتب', en: 'Office' },
-  line: { ar: 'وسط البلد، شارع قصر النيل، الطابق ٩', en: 'Downtown, Qasr El Nil St, Floor 9' },
+  line: { ar: 'وسط البلد، شارع قصر النيل، الطابق 9', en: 'Downtown, Qasr El Nil St, Floor 9' },
   city: { ar: 'القاهرة', en: 'Cairo' },
   phone: '+20 10 014 2288',
   isDefault: false
@@ -210,19 +210,19 @@ export const faqs: Array<{q: Bilingual;a: Bilingual;}> = [
 export const supportChannels: Array<{title: Bilingual;detail: Bilingual;action: Bilingual;href: string;}> = [
 {
   title: { ar: 'محادثة فورية', en: 'Live chat' },
-  detail: { ar: 'متوسط الرد دقيقتان · ٢٤/٧', en: 'Average reply 2 minutes · 24/7' },
+  detail: { ar: 'متوسط الرد دقيقتان · 24/7', en: 'Average reply 2 minutes · 24/7' },
   action: { ar: 'ابدأ المحادثة', en: 'Start chat' },
   href: '#contact-form'
 },
 {
   title: { ar: 'الهاتف', en: 'Phone' },
-  detail: { ar: 'من ٨ص إلى ١١م', en: '8am – 11pm' },
+  detail: { ar: 'من 8ص إلى 11م', en: '8am – 11pm' },
   action: { ar: 'اتصل بنا', en: 'Call us' },
   href: '#contact-form'
 },
 {
   title: { ar: 'البريد الإلكتروني', en: 'Email' },
-  detail: { ar: 'care@almanbat.sa · رد خلال ٤ ساعات', en: 'care@almanbat.sa · reply within 4 hours' },
+  detail: { ar: 'care@almanbat.sa · رد خلال 4 ساعات', en: 'care@almanbat.sa · reply within 4 hours' },
   action: { ar: 'أرسل رسالة', en: 'Send a message' },
   href: 'mailto:care@almanbat.sa'
 }];

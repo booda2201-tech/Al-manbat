@@ -221,7 +221,7 @@ export class AdminMediaComponent implements OnInit, OnDestroy {
   }
 
   onAdImage(ev: Event): void {
-    const file = this.picked(ev, 5 * 1024 * 1024, this.locale.isAr() ? 'صورة الإعلان أكبر من ٥ ميجا.' : 'Banner image is larger than 5 MB.');
+    const file = this.picked(ev, 5 * 1024 * 1024, this.locale.isAr() ? 'صورة الإعلان أكبر من 5 ميجا.' : 'Banner image is larger than 5 MB.');
     if (!file) return;
     this.revoke(this.adDraft.imagePreview);
     this.adDraft.imageFile = file;
@@ -229,14 +229,14 @@ export class AdminMediaComponent implements OnInit, OnDestroy {
   }
 
   onVideoFile(ev: Event): void {
-    const file = this.picked(ev, 50 * 1024 * 1024, this.locale.isAr() ? 'الفيديو أكبر من ٥٠ ميجا.' : 'Video is larger than 50 MB.');
+    const file = this.picked(ev, 50 * 1024 * 1024, this.locale.isAr() ? 'الفيديو أكبر من 50 ميجا.' : 'Video is larger than 50 MB.');
     if (!file) return;
     this.videoDraft.videoFile = file;
     this.videoDraft.videoName = file.name;
   }
 
   onThumb(ev: Event): void {
-    const file = this.picked(ev, 5 * 1024 * 1024, this.locale.isAr() ? 'صورة الغلاف أكبر من ٥ ميجا.' : 'Cover image is larger than 5 MB.');
+    const file = this.picked(ev, 5 * 1024 * 1024, this.locale.isAr() ? 'صورة الغلاف أكبر من 5 ميجا.' : 'Cover image is larger than 5 MB.');
     if (!file) return;
     this.revoke(this.videoDraft.thumbnailPreview);
     this.videoDraft.thumbnailFile = file;

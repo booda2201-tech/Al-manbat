@@ -4,8 +4,10 @@ export function t(value: Bilingual, locale: Locale): string {
   return value[locale];
 }
 
+const AR_DATE = 'ar-EG-u-ca-gregory-nu-latn';
+
 export function formatPrice(amount: number, locale: Locale): string {
-  const value = amount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US', {
+  const value = amount.toLocaleString('en-US', {
     minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2
   });
@@ -31,7 +33,7 @@ export function offerWindowLabel(
   if (endsAt) {
     const date = new Date(endsAt);
     if (!Number.isNaN(date.getTime())) {
-      const formatted = date.toLocaleDateString(ar ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short' });
+      const formatted = date.toLocaleDateString(ar ? AR_DATE : 'en-GB', { day: 'numeric', month: 'short' });
       parts.push(ar ? `حتى ${formatted}` : `until ${formatted}`);
     }
   }
@@ -39,7 +41,15 @@ export function offerWindowLabel(
 }
 
 export function formatCount(n: number, locale: Locale): string {
-  return n.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US');
+  return n.toLocaleString('en-US');
+}
+
+export function latinDigits(value: string): string {
+  return value
+    .replace(/[٠-٩]/g, (ch) => String(ch.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (ch) => String(ch.charCodeAt(0) - 0x06f0))
+    .replace(/٫/g, '.')
+    .replace(/٪/g, '%');
 }
 
 export function cx(...parts: Array<string | false | null | undefined>): string {

@@ -51,8 +51,8 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
   placing = false;
   private whatsappTab: Window | null = null;
   shippingOptions = [
-    { id: 'sameday', title: { ar: 'توصيل في نفس اليوم', en: 'Same-day delivery' }, detail: { ar: 'قبل ١١ مساءً · القاهرة والجيزة', en: 'Before 11pm · Cairo and Giza' }, price: 35 },
-    { id: 'standard', title: { ar: 'التوصيل القياسي', en: 'Standard delivery' }, detail: { ar: 'من يومين إلى ٤ أيام عمل', en: '2 – 4 working days' }, price: 0 },
+    { id: 'sameday', title: { ar: 'توصيل في نفس اليوم', en: 'Same-day delivery' }, detail: { ar: 'قبل 11 مساءً · القاهرة والجيزة', en: 'Before 11pm · Cairo and Giza' }, price: 35 },
+    { id: 'standard', title: { ar: 'التوصيل القياسي', en: 'Standard delivery' }, detail: { ar: 'من يومين إلى 4 أيام عمل', en: '2 – 4 working days' }, price: 0 },
     { id: 'pickup', title: { ar: 'الاستلام من المعرض', en: 'Collect in store' }, detail: { ar: 'جاهز خلال ساعتين · المعادي', en: 'Ready in 2 hours · Maadi' }, price: 0 },
   ];
   payOptions = [
@@ -281,8 +281,8 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       .map((row, index) => {
         const name = row.product.name.ar || row.product.name.en;
         const line = row.product.price * row.qty;
-        const n = (index + 1).toLocaleString('ar-EG');
-        const qty = row.qty.toLocaleString('ar-EG');
+        const n = String(index + 1);
+        const qty = String(row.qty);
         const lines = [`${n}. ${name}`, `   ${qty} × ${money(row.product.price)}  =  ${money(line)}`];
         if (row.product.compareAt && row.product.compareAt > row.product.price) {
           lines.push(`   قبل الخصم: ${money(row.product.compareAt)}`);
@@ -458,7 +458,7 @@ function readWhatsappOrder(): string {
 }
 
 function money(amount: number): string {
-  const value = amount.toLocaleString('ar-EG', {
+  const value = amount.toLocaleString('en-US', {
     minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
     maximumFractionDigits: 2,
   });
@@ -467,7 +467,7 @@ function money(amount: number): string {
 
 function orderStamp(): string {
   const now = new Date();
-  const date = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-  const time = now.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' });
+  const date = now.toLocaleDateString('ar-EG-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
+  const time = now.toLocaleTimeString('ar-EG-u-ca-gregory-nu-latn', { hour: 'numeric', minute: '2-digit' });
   return `${date}، ${time}`;
 }

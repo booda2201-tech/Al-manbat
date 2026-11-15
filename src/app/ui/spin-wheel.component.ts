@@ -38,7 +38,7 @@ interface SpinSlice {
         <div #wheelHost class="spin-host"></div>
         <div #labelLayer class="spin-labels">
           <span *ngFor="let slice of slices; let i = index" class="spin-label" [style.color]="slice.ink" [style.transform]="labelTransform(i)">
-            <span>{{ locale.isAr() ? slice.ar : slice.en }}</span>
+            <span>{{ locale.digits(locale.isAr() ? slice.ar : slice.en) }}</span>
           </span>
         </div>
         <button type="button" class="spin-hub" (click)="spin()" [disabled]="session.isLoggedIn() && (spinning || !!result || !slices.length)">
@@ -48,8 +48,8 @@ interface SpinSlice {
 
       <div *ngIf="result" class="spin-result">
         <p class="spin-result__kicker">{{ locale.isAr() ? 'وقفت على' : 'You landed on' }}</p>
-        <p class="spin-result__title font-displayAr">{{ locale.isAr() ? result.ar : result.en }}</p>
-        <p class="spin-result__detail">{{ locale.isAr() ? result.detailAr : result.detailEn }}</p>
+        <p class="spin-result__title font-displayAr">{{ locale.digits(locale.isAr() ? result.ar : result.en) }}</p>
+        <p class="spin-result__detail">{{ locale.digits(locale.isAr() ? result.detailAr : result.detailEn) }}</p>
         <button *ngIf="result.token" type="button" class="spin-apply" (click)="applyPrize()">
           {{ locale.isAr() ? 'استخدم الجائزة' : 'Use this prize' }}
         </button>
